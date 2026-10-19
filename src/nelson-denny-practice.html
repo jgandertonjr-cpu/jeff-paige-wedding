@@ -1,0 +1,1793 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Nelson-Denny Reading Test — Practice Tool</title>
+<meta name="robots" content="noindex">
+<style>
+:root{
+  --bg:#f6f7f9; --card:#ffffff; --ink:#1c2430; --muted:#5b6675; --line:#e2e6ec;
+  --accent:#2563eb; --accent-ink:#ffffff;
+  --ok:#15803d; --ok-bg:#dcfce7; --no:#b91c1c; --no-bg:#fee2e2;
+  --warn:#b45309; --warn-bg:#fef3c7; --danger:#dc2626; --danger-bg:#fee2e2;
+  --radius:12px;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0f141a; --card:#171e26; --ink:#e6eaf0; --muted:#93a0b0; --line:#29323d;
+    --accent:#3b82f6; --accent-ink:#0b1016;
+    --ok:#4ade80; --ok-bg:#0f2a1a; --no:#f87171; --no-bg:#2c1416;
+    --warn:#f59e0b; --warn-bg:#2a2109; --danger:#ef4444; --danger-bg:#2c1416;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink); font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-text-size-adjust:100%;
+}
+.topbar{
+  position:sticky; top:0; z-index:20; display:flex; align-items:center; gap:10px;
+  padding:10px 16px; background:var(--card); border-bottom:1px solid var(--line);
+}
+.brand{
+  font-weight:700; font-size:16px; background:none; border:0; color:var(--ink); cursor:pointer; padding:4px 6px;
+}
+.brand:hover{color:var(--accent)}
+.spacer{flex:1}
+.top-right{font-size:13px; color:var(--muted); text-align:right}
+.wrap{max-width:820px; margin:0 auto; padding:20px 16px 64px}
+h1{font-size:22px; margin:0 0 4px}
+h2{font-size:18px; margin:22px 0 10px}
+h3{font-size:16px; margin:0 0 6px}
+p{margin:0 0 10px}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.card{
+  background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+  padding:16px; margin-bottom:14px;
+}
+.btn{
+  display:inline-block; font:inherit; font-weight:600; cursor:pointer;
+  border:1px solid var(--line); background:var(--card); color:var(--ink);
+  padding:10px 16px; border-radius:10px;
+}
+.btn:hover{border-color:var(--accent)}
+.btn:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+.btn-primary{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+.btn-primary:hover{filter:brightness(1.05)}
+.btn-danger{color:var(--no); border-color:var(--no)}
+.btn-block{display:block; width:100%; text-align:center}
+.btn[disabled]{opacity:.5; cursor:not-allowed}
+.btn-row{display:flex; flex-wrap:wrap; gap:10px}
+.link{background:none; border:0; color:var(--accent); cursor:pointer; padding:0; font:inherit; text-decoration:underline}
+
+.count{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap}
+.count .num{font-size:44px; font-weight:800; line-height:1; color:var(--accent)}
+.stats{display:flex; flex-wrap:wrap; gap:10px; margin-top:6px}
+.stat{flex:1 1 120px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 12px}
+.stat .n{font-size:22px; font-weight:700}
+.stat .l{font-size:12px; color:var(--muted)}
+
+.modes{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+.mode{
+  text-align:left; background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+  padding:14px; cursor:pointer; color:var(--ink); font:inherit;
+}
+.mode:hover{border-color:var(--accent)}
+.mode h3{margin-bottom:4px}
+.mode p{margin:0; font-size:13px; color:var(--muted)}
+
+.field{margin:12px 0}
+.field label{display:block; font-weight:600; margin-bottom:6px}
+.seg{display:inline-flex; border:1px solid var(--line); border-radius:10px; overflow:hidden}
+.seg button{font:inherit; padding:8px 14px; background:var(--card); color:var(--ink); border:0; border-left:1px solid var(--line); cursor:pointer}
+.seg button:first-child{border-left:0}
+.seg button.on{background:var(--accent); color:var(--accent-ink)}
+.toggle{display:flex; align-items:center; gap:8px; margin:10px 0}
+.toggle input{width:18px; height:18px}
+select.grade{font:inherit; padding:6px 8px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--ink)}
+
+.qhead{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px}
+.qnum{font-size:13px; color:var(--muted); font-weight:600}
+.tag{font-size:11px; text-transform:uppercase; letter-spacing:.04em; font-weight:700; color:var(--muted); border:1px solid var(--line); border-radius:999px; padding:2px 8px}
+.qtext{font-size:17px; margin:8px 0 12px}
+.vstem{font-weight:800}
+.choices{display:flex; flex-direction:column; gap:8px}
+.choice{
+  display:flex; gap:10px; align-items:flex-start; text-align:left; width:100%;
+  background:var(--card); border:1px solid var(--line); border-radius:10px; padding:11px 12px;
+  cursor:pointer; font:inherit; color:var(--ink);
+}
+.choice:hover{border-color:var(--accent)}
+.choice .k{font-weight:700; color:var(--muted); min-width:18px}
+.choice.sel{border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent)}
+.choice.correct{border-color:var(--ok); background:var(--ok-bg)}
+.choice.wrong{border-color:var(--no); background:var(--no-bg)}
+.choice[disabled]{cursor:default}
+.feedback{margin-top:12px; font-weight:700}
+.feedback.ok{color:var(--ok)}
+.feedback.no{color:var(--no)}
+.explain{margin-top:4px; font-weight:400; color:var(--ink)}
+
+.passage h3{margin-bottom:2px}
+.passage .domain{font-size:12px; color:var(--muted); margin-bottom:10px}
+.passage p{font-size:15px}
+
+.prog{height:6px; background:var(--line); border-radius:999px; overflow:hidden; margin-bottom:14px}
+.prog > i{display:block; height:100%; background:var(--accent)}
+
+.timerbar{
+  position:sticky; top:52px; z-index:10; display:flex; align-items:center; justify-content:space-between;
+  gap:10px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:8px 12px; margin-bottom:14px;
+}
+.timer{font-variant-numeric:tabular-nums; font-weight:800; font-size:20px}
+.timer.warn{color:var(--warn)}
+.timer.danger{color:var(--danger); animation:pulse 1s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.45}}
+
+.navgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(38px,1fr)); gap:6px; margin:12px 0}
+.navgrid button{
+  font:inherit; font-size:13px; padding:8px 0; border-radius:8px; border:1px solid var(--line);
+  background:var(--card); color:var(--ink); cursor:pointer;
+}
+.navgrid button.on{border-color:var(--accent); background:color-mix(in srgb,var(--accent) 14%, var(--card))}
+.navgrid button.cur{outline:2px solid var(--accent); outline-offset:1px}
+
+.ratelines{border:1px solid var(--line); border-radius:10px; padding:6px; margin:12px 0}
+.rateline{
+  display:block; width:100%; text-align:left; font:inherit; font-size:16px; line-height:1.7;
+  background:none; border:0; border-radius:6px; color:var(--ink); cursor:pointer; padding:2px 8px;
+}
+.rateline:hover{background:color-mix(in srgb,var(--accent) 10%, transparent)}
+.rateline .ln{color:var(--muted); font-size:12px; display:inline-block; min-width:26px}
+.rateline.picked{background:var(--ok-bg); border:1px solid var(--ok)}
+.rateline.after{opacity:.38}
+
+.banner{background:var(--warn-bg); color:var(--warn); border:1px solid var(--warn); border-radius:10px; padding:10px 12px; margin-bottom:12px; font-weight:700}
+.disclaimer{border-left:3px solid var(--line); padding:6px 0 6px 12px; color:var(--muted); font-size:13px; margin:10px 0}
+
+.tbl{width:100%; border-collapse:collapse; font-size:14px}
+.tbl th,.tbl td{text-align:left; padding:7px 8px; border-bottom:1px solid var(--line)}
+.tbl th{color:var(--muted); font-weight:600}
+.tbl td.r,.tbl th.r{text-align:right}
+
+.scoreline{font-size:30px; font-weight:800}
+.pill{display:inline-block; font-weight:700; border-radius:999px; padding:3px 10px; font-size:13px}
+.pill.ok{background:var(--ok-bg); color:var(--ok)}
+.pill.no{background:var(--warn-bg); color:var(--warn)}
+
+details{border:1px solid var(--line); border-radius:10px; padding:8px 12px; margin-top:10px}
+summary{cursor:pointer; font-weight:600}
+.rev-item{padding:10px 0; border-bottom:1px solid var(--line); font-size:14px}
+.rev-item:last-child{border-bottom:0}
+.rev-yours.bad{color:var(--no)}
+.rev-yours.good{color:var(--ok)}
+
+.foot{margin-top:26px; font-size:12px; color:var(--muted)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);border:0}
+
+@media (max-width:640px){
+  .wrap{padding:16px 12px 56px}
+  .modes{grid-template-columns:1fr}
+  .count .num{font-size:36px}
+  .timerbar{top:50px}
+  .timer{font-size:18px}
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <button class="brand" id="brandBtn">📖 Nelson-Denny Practice</button>
+  <div class="spacer"></div>
+  <span class="top-right" id="topRight"></span>
+</div>
+<main class="wrap" id="app"></main>
+
+<script>
+(function(){
+'use strict';
+
+/* ================================================================
+   DATA — VOCABULARY  (starter bank; expanded in later stages)
+   tuple: [stem, [c0,c1,c2,c3,c4], answerIndex, note, difficulty(1-3), frame?]
+   - frame with "___"  : stem is shown inside that sentence
+   - frame + stem===""  : association item ("A cartographer works with ...")
+   - no frame           : rendered as  <stem> most nearly means:
+   ================================================================ */
+const VOCAB_RAW = [
+["abate",["subside","gather speed","spread out","harden","echo"],0,"Abate = die down or lessen; the storm abated.",2],
+["aberration",["a firm rule","a normal event","a departure from the norm","a bad habit","a clear signal"],2,"An aberration is a one-off, out of the ordinary.",3],
+["abstain",["indulge freely","obtain","argue","assist","refrain"],4,"Abstain = choose not to do or take something.",2],
+["acute",["dull","sharp and severe","mild","slow","hidden"],1,"Acute pain is sharp and intense; opposite of chronic.",2],
+["adept",["clumsy","reluctant","average","skilled","adopted"],3,"Adept = highly skilled at something.",2],
+["admonish",["warn or mildly scold","praise warmly","reward","repeat","ignore"],0,"Admonish = give a gentle warning or reprimand.",3],
+["adverse",["helpful","eager","unfavorable","sideways","optional"],2,"Adverse conditions work against you (not 'averse' = unwilling).",2],
+["affable",["hostile","wealthy","formal","talkative","easygoing and friendly"],4,"Affable = pleasant and easy to talk to.",3],
+["aggravate",["soothe","make worse","begin","measure","gather"],1,"Aggravate = worsen (also, informally, to annoy).",2],
+["alleviate",["worsen","raise up","accuse","relieve","allow"],3,"Alleviate pain = make it easier to bear.",2],
+["aloof",["distant and detached","warm and involved","clumsy","alert","generous"],0,"Aloof = keeping apart; standoffish.",2],
+["amiable",["unfriendly","dishonest","good-natured","nervous","dull"],2,"Amiable = friendly and agreeable.",2],
+["ample",["scarce","simple","tiny","eager","more than enough"],4,"Ample = plentiful.",2],
+["anecdote",["a cure","a short personal story","a formal proof","a warning","a debt"],1,"Anecdote = a brief real-life story (not 'antidote').",2],
+["animosity",["strong friendship","mild interest","calm","open hostility","energy"],3,"Animosity = deep ill will.",3],
+["apathy",["lack of interest or feeling","deep concern","sudden anger","careful study","warm sympathy"],0,"Apathy = simply not caring.",2],
+["apprehensive",["confident","furious","uneasy","curious","weary"],2,"Apprehensive = anxious that something bad may happen.",2],
+["arduous",["easy","brief","cheerful","optional","extremely difficult"],4,"An arduous task demands sustained effort.",3],
+["articulate",["tongue-tied","clearly well-spoken","artistic","elderly","honest"],1,"Articulate = able to put ideas into clear words.",3],
+["astute",["foolish","gentle","noisy","sharp and perceptive","late"],3,"An astute observer sees what others miss.",3],
+["austere",["plain and severe","luxurious","cheerful","flexible","modern"],0,"Austere = bare, without comfort or ornament.",3],
+["authentic",["fake","recent","genuine","expensive","fragile"],2,"Authentic = the real thing, not a copy.",1],
+["avid",["reluctant","occasional","calm","skilled","keenly enthusiastic"],4,"An avid fan follows every game.",2],
+["benevolent",["cruel","wealthy","kindly and charitable","talkative","neutral"],2,"Benevolent = well-meaning toward others.",2],
+["benign",["harmful","gentle and harmless","huge","hidden","temporary"],1,"A benign growth is not dangerous; a benign look is kindly.",3],
+["blatant",["subtle","quiet","polite","glaringly obvious","rare"],3,"A blatant foul makes no attempt to hide.",2],
+["bolster",["prop up","weaken","hide","measure","delay"],0,"Bolster = add support to.",2],
+["candor",["deceit","shyness","openness and honesty","cruelty","caution"],2,"Candor = frankness, even when it is awkward.",3],
+["capricious",["steady and predictable","careful","generous","gloomy","given to sudden whims"],4,"Capricious = acting on whim; hard to predict.",3],
+["censure",["praise","strong official disapproval","a blank space","a repair","a delay"],1,"Censure = formal blame or condemnation (not 'censor').",3],
+["chronic",["brief","sudden","mild","long-lasting","fake"],3,"A chronic problem keeps recurring; opposite of acute.",2],
+["circumvent",["find a way around","run into","support","measure","repeat"],0,"Circumvent a rule = get around it.",3],
+["clandestine",["open","noisy","done in secret","legal","frequent"],2,"A clandestine meeting is deliberately hidden.",3],
+["coerce",["compel by force or threat","soothe","cooperate","release","postpone"],0,"Coerce = pressure someone into doing something.",2],
+["cohesive",["falling apart","transparent","expensive","brief","well unified"],4,"A cohesive group holds together.",3],
+["commend",["criticize","praise","command","comment","demand"],1,"Commend = speak highly of.",2],
+["compelling",["boring","optional","fake","hard to resist or ignore","brief"],3,"A compelling case demands your attention.",2],
+["complacent",["self-satisfied and unconcerned","worried","angry","curious","generous"],0,"Complacent = so content you stop trying.",3],
+["concede",["deny flatly","proceed","admit as true","conceal","demand"],2,"Concede a point = grant that it is correct.",2],
+["concise",["rambling","decorative","unclear","loud","short and to the point"],4,"Concise = much said in few words.",1],
+["condone",["punish","treat as acceptable","donate","convert","confess"],1,"To condone a wrong is to let it pass.",3],
+["conspicuous",["hidden","suspicious","crowded","standing out plainly","curious"],3,"Conspicuous = easily noticed.",2],
+["contempt",["utter scorn","deep respect","mild interest","an attempt","concern"],0,"To hold in contempt = to look down on.",2],
+["contentious",["calming","satisfied","likely to cause dispute","brief","hidden"],2,"A contentious topic splits people into camps.",3],
+["conventional",["unusual","modern","secret","costly","following common custom"],4,"Conventional = standard, what most people do.",2],
+["copious",["scarce","present in large amounts","brief","fake","narrow"],1,"Copious notes = a great many.",3],
+["corroborate",["contradict","weaken","invent","back up with evidence","delay"],3,"A second witness can corroborate the account.",3],
+["credible",["worthy of belief","far-fetched","recent","costly","hidden"],0,"Credible = you can reasonably believe it.",2],
+["cryptic",["plain","loud","puzzling and obscure","honest","brief"],2,"A cryptic message leaves you guessing.",3],
+["curtail",["extend","permit","complete","curl","cut short"],4,"Curtail = reduce or trim back.",2],
+["cynical",["trusting","distrustful of people's motives","hopeful","careless","angry"],1,"A cynical view assumes selfishness underneath.",3],
+["daunting",["encouraging","tiny","cheerful","discouragingly difficult","brief"],3,"A daunting task makes you hesitate to begin.",2],
+["dearth",["a shortage","a flood","a fee","a delay","a habit"],0,"A dearth of rain = far too little.",3],
+["debunk",["prove true","celebrate","expose as a myth","repeat","ignore"],2,"To debunk a claim is to show it is false.",3],
+["deference",["defiance","a difference","a delay","a demand","respectful yielding to another"],4,"Out of deference to elders, she waited to speak.",3],
+["deficient",["sufficient","not enough; lacking","efficient","delicate","defiant"],1,"Deficient in vitamin C = short of it.",2],
+["deleterious",["beneficial","delightful","delayed","causing harm","doubtful"],3,"Deleterious to health = damaging.",3],
+["deplete",["use up","refill","deploy","deplore","complete"],0,"Deplete the reserves = run them down.",2],
+["deter",["encourage","determine","discourage from acting","damage","delay"],2,"Deter = put someone off doing something.",1],
+["deviate",["stay on track","devise","turn away from the usual path","arrive","deprive"],2,"Deviate from the plan = do something different.",2],
+["devious",["straightforward","direct","generous","nervous","sly and dishonest"],4,"A devious route to the goal, not an honest one.",3],
+["diligent",["lazy","careful and hardworking","clever","calm","honest"],1,"A diligent worker keeps at it steadily.",1],
+["discern",["overlook","confuse","demand","make out clearly","delay"],3,"Discern a shape in the fog = just manage to see it.",3],
+["discord",["lack of agreement","harmony","a record","a chord","a delay"],0,"Discord = strife; opposite of harmony.",2],
+["discreet",["reckless","separate","careful and tactful","obvious","generous"],2,"Discreet keeps things private (not 'discrete' = separate).",3],
+["disparage",["praise","scatter","depart","display","speak of as worthless"],4,"To disparage an effort is to belittle it.",3],
+["disparity",["sameness","a marked difference","despair","a department","a delay"],1,"A pay disparity = an unfair gap.",3],
+["dispassionate",["hot-tempered","passionate","confused","calm and impartial","biased"],3,"A dispassionate review sets feelings aside.",3],
+["disperse",["break up and spread out","gather","delay","display","dispute"],0,"The crowd was told to disperse.",2],
+["disseminate",["collect","hide","spread widely","shorten","doubt"],2,"Disseminate findings = get them out to everyone.",3],
+["dogmatic",["open-minded","gentle","uncertain","brief","insisting rigidly on one's views"],4,"A dogmatic person will not weigh alternatives.",3],
+["dubious",["certain","open to doubt","daring","double","dull"],1,"Dubious = not so sure about that.",2],
+["eclectic",["uniform","electric","narrow","chosen from a wide variety","plain"],3,"An eclectic mix draws on many styles.",3],
+["egregious",["remarkably bad","slight","excellent","ordinary","hidden"],0,"An egregious error is impossible to excuse.",3],
+["elated",["gloomy","tired","filled with joy","calm","related"],2,"Elated = on top of the world.",2],
+["elusive",["easily grasped","obvious","loud","cheap","hard to pin down"],4,"An elusive answer keeps slipping away.",3],
+["embellish",["strip bare","add details to dress up","shorten","confirm","hide"],1,"To embellish a story is to add colorful extras.",2],
+["eminent",["unknown","imminent","modest","well-known and respected","hidden"],3,"An eminent scholar (not 'imminent' = about to happen).",2],
+["empirical",["drawn from observation or experiment","based on theory alone","imaginary","royal","emotional"],0,"Empirical evidence comes from the real world.",3],
+["emulate",["mock","ignore","strive to equal by imitating","erase","exceed"],2,"Younger players try to emulate the stars.",3],
+["endorse",["reject","enclose","endure","enforce","give public support to"],4,"Endorse a candidate = back them openly.",2],
+["enhance",["spoil","add to the quality of","reduce","hide","copy"],1,"Good lighting enhances the photo.",1],
+["enigma",["a plain fact","an insult","a reward","something hard to understand","a routine"],3,"His motive stayed an enigma.",3],
+["ephemeral",["lasting a very short time","everlasting","enormous","hidden","frequent"],0,"Ephemeral fame fades within a season.",3],
+["equivocal",["crystal clear","equal","deliberately vague","loud","final"],2,"An equivocal reply avoids a straight yes or no.",3],
+["erudite",["ignorant","rude","brief","modern","having deep learning"],4,"An erudite lecture shows wide reading.",3],
+["exacerbate",["ease","make a bad situation worse","begin","be exact","excuse"],1,"Scratching exacerbates the rash.",3],
+["exemplary",["poor","exempt","ordinary","serving as an excellent model","temporary"],3,"Exemplary conduct sets the standard.",2],
+["exhaustive",["covering every detail","quick and partial","tiring","exclusive","costly"],0,"An exhaustive search leaves nothing unchecked.",2],
+["exonerate",["convict","exhaust","free from blame","exit","examine"],2,"New evidence exonerated the suspect.",3],
+["expedite",["slow down","expand","explain","expire","speed up the progress of"],4,"Expedite the order = get it done faster.",2],
+["explicit",["merely hinted","fully and clearly stated","complicated","costly","sudden"],1,"Explicit directions leave nothing to guesswork.",2],
+["facilitate",["obstruct","fake","finish","help bring about","follow"],3,"A skilled host facilitates the discussion.",2],
+["fastidious",["fussy about detail","careless","generous","calm","quick"],0,"A fastidious dresser checks every seam.",3],
+["feasible",["impossible","fragile","able to be done","foreign","flexible"],2,"A feasible plan can actually work.",2],
+["fickle",["loyal","fragile","fierce","foolish","apt to change without reason"],4,"Fickle weather; a fickle friend.",2],
+["flagrant",["barely noticeable","openly shocking","fragrant","brief","legal"],1,"A flagrant violation, out in the open.",3],
+["fluctuate",["hold steady","flatten","flow","shift up and down","freeze"],3,"Prices fluctuate from day to day.",2],
+["formidable",["hard to overcome; impressive","feeble","friendly","formal","flexible"],0,"A formidable opponent is not to be underestimated.",2],
+["frugal",["wasteful","fruitful","careful with money","generous","wealthy"],2,"Frugal = economical, sparing.",2],
+["futile",["fruitful","fatal","having no useful result","fertile","future"],2,"Further argument was futile.",2],
+["garrulous",["silent","gracious","gloomy","greedy","excessively chatty"],4,"A garrulous seatmate talks the whole flight.",3],
+["gullible",["skeptical","too ready to believe","greedy","graceful","gruff"],1,"A gullible buyer falls for the scam.",2],
+["hackneyed",["fresh","brief","honest","worn out from overuse","complex"],3,"A hackneyed phrase has lost its punch.",3],
+["haphazard",["lacking order","carefully planned","hazardous","frequent","hidden"],0,"A haphazard pile, thrown together with no system.",2],
+["harbinger",["an aftereffect","a shelter","a forerunner or omen","a debt","a judge"],2,"Robins are a harbinger of spring.",3],
+["hamper",["assist","get in the way of","hurry","gather","decorate"],1,"Heavy bags hampered their escape.",2],
+["hypothetical",["actual","historical","hypnotic","practical","assumed, not real"],4,"A hypothetical case: suppose that...",2],
+["impeccable",["shabby","without fault","impossible","brief","rude"],1,"Impeccable manners; an impeccable record.",3],
+["impede",["assist","imitate","imply","slow the progress of","invade"],3,"Fallen rock impeded traffic.",2],
+["imperative",["urgently required","optional","polite","imperial","brief"],0,"It is imperative that we leave now.",2],
+["impetuous",["cautious","slow","rushing in without thought","generous","formal"],2,"An impetuous decision made in the heat of the moment.",3],
+["inadvertent",["deliberate","careful","frequent","hidden","done by accident"],4,"An inadvertent slip, not on purpose.",2],
+["incessant",["occasional","continuing without pause","brief","gentle","sudden"],1,"The incessant drip kept her awake.",2],
+["incite",["calm","insert","invite","urge on to action","imitate"],3,"To incite a riot is to stir it up.",3],
+["incongruous",["clashing with its surroundings","fitting","enormous","hidden","frequent"],0,"A palm tree looked incongruous in the snow.",3],
+["indifferent",["deeply caring","unfair","showing no interest either way","curious","hostile"],2,"He shrugged, indifferent to the outcome.",2],
+["indignant",["pleased","uninformed","independent","calm","angry at something unjust"],4,"Indignant customers demanded a refund.",2],
+["inevitable",["escapable","certain to happen","invisible","incredible","unusual"],1,"With no brakes, the crash was inevitable.",2],
+["infer",["state outright","inform","insert","reason out from clues","ignore"],3,"We infer; a writer implies.",2],
+["ingenious",["marked by clever originality","clumsy","honest","enormous","ancient"],0,"An ingenious fix using a paperclip.",2],
+["inherent",["added later","obvious","existing as a natural part","borrowed","occasional"],2,"Risk is inherent in mountaineering.",3],
+["innocuous",["dangerous","loud","costly","secret","causing no harm"],4,"An innocuous remark that offended no one.",3],
+["innovative",["traditional","featuring new methods","imitative","careless","hidden"],1,"An innovative design breaks with the old way.",2],
+["insipid",["spicy","bright","brief","lacking flavor or interest","loud"],3,"Insipid soup; an insipid film.",3],
+["intricate",["full of fine detail","simple","internal","immediate","integrated"],0,"An intricate carving with countless parts.",2],
+["intrinsic",["external","occasional","part of a thing's basic nature","accidental","obvious"],2,"The intrinsic worth of an education.",3],
+["inundate",["drain","invade","insulate","imitate","overwhelm as if by flood"],4,"We were inundated with applications.",3],
+["irrelevant",["central","having nothing to do with the matter","irregular","immediate","brief"],1,"True, perhaps, but irrelevant here.",1],
+["jeopardize",["protect","enjoy","put at risk","judge","delay"],2,"Jeopardize = endanger.",2],
+["laconic",["long-winded","cheerful","lazy","using very few words","loud"],3,"A laconic 'Nope' was his whole reply.",3],
+["lament",["express sorrow over","celebrate","explain","delay","ignore"],0,"They lamented the loss of the old theater.",2],
+["lavish",["stingy","plain","given in great abundance","brief","hidden"],2,"A lavish feast; lavish praise.",2],
+["lethargic",["energetic","alert","brief","cheerful","lacking energy"],4,"The heat left everyone lethargic.",2],
+["lucid",["confusing","dim","clear and easy to follow","lucky","loose"],2,"Lucid writing can be understood at once.",2],
+["lucrative",["money-losing","yielding good profit","luxurious","brief","legal"],1,"A lucrative contract pays well.",2],
+["malleable",["rigid","brittle","heavy","able to be shaped","hidden"],3,"Soft metals are malleable; so are young minds.",3],
+["mediocre",["no better than average","excellent","tiny","rare","brief"],0,"A mediocre showing, neither good nor bad.",2],
+["meticulous",["careless","enormous","extremely careful about detail","anxious","generous"],2,"Meticulous work leaves nothing sloppy.",2],
+["mitigate",["intensify","imitate","lessen the force of","migrate","motivate"],2,"Sandbags mitigated the flooding.",3],
+["morose",["cheerful","talkative","restless","polite","in low, sullen spirits"],4,"He sat morose in the corner all evening.",3],
+["mundane",["thrilling","commonplace and unexciting","monthly","filthy","foreign"],1,"The mundane chores of a weekday.",2],
+["nefarious",["virtuous","nervous","new","evil; villainous","noisy"],3,"A nefarious scheme straight out of a movie.",3],
+["negligible",["so small it can be ignored","significant","careless","obvious","required"],0,"The cost difference was negligible.",3],
+["nonchalant",["anxious","aggressive","casually indifferent","precise","formal"],2,"A nonchalant shrug, as if nothing had happened.",2],
+["notorious",["unknown","respected","invisible","ordinary","widely known in a bad way"],4,"A notorious stretch of dangerous road.",2],
+["nuance",["a broad category","a fine shade of meaning","a loud noise","a firm rule","a mistake"],1,"The translation lost the nuance of the original.",3],
+["obscure",["famous","cheerful","honest","hard to find or understand","brief"],3,"An obscure rule buried deep in the manual.",2],
+["obsolete",["current","outdated and no longer used","hidden","sturdy","frequent"],1,"Obsolete technology has been left behind.",2],
+["obstinate",["refusing to change course","yielding","obvious","gentle","brief"],0,"Obstinate as a mule about the route.",2],
+["ominous",["reassuring","obvious","suggesting trouble ahead","enormous","ancient"],2,"An ominous silence before the storm.",2],
+["opaque",["transparent","hollow","glossy","fragile","impossible to see through"],4,"Opaque glass; opaque legal language.",2],
+["opulent",["shabby","displaying great wealth","open","brief","plain"],1,"An opulent lobby of marble and gold.",3],
+["ostensible",["hidden","genuine","obvious","given as the outward reason","final"],3,"The ostensible purpose was research; the real one, profit.",3],
+["ostentatious",["flashy; designed to impress","modest","hidden","brief","plain"],0,"An ostentatious display of wealth.",3],
+["painstaking",["sloppy","painful","done with great care","quick","brief"],2,"Painstaking work, checked line by line.",2],
+["paramount",["minor","parallel","partial","permanent","more important than anything else"],4,"Safety is paramount here.",2],
+["partisan",["neutral","devoted to one party or cause","generous","foreign","temporary"],1,"A partisan crowd cheered only one side.",3],
+["peripheral",["central","personal","permanent","on the outer edge; of minor importance","partial"],3,"A peripheral detail, not the main issue.",3],
+["pervasive",["present throughout","localized","brief","hidden","optional"],0,"A pervasive smell of smoke in every room.",3],
+["placid",["stormy","plain","calm and untroubled","sour","hollow"],2,"A placid lake at dawn.",2],
+["pragmatic",["idealistic","dramatic","theoretical","cautious","dealing with things sensibly"],4,"A pragmatic choice based on what actually works.",2],
+["precarious",["secure","dangerously uncertain","precise","previous","brief"],1,"A precarious perch on the ledge.",3],
+["predominant",["rare","earliest","hidden","greatest in number or influence","equal"],3,"The predominant color in the room was blue.",2],
+["presumptuous",["taking more liberty than is proper","humble","punctual","precise","generous"],0,"It would be presumptuous to answer for her.",3],
+["pretentious",["unassuming","honest","making an exaggerated show of importance","brief","plain"],2,"A pretentious review stuffed with rare words.",3],
+["prevalent",["rare","previous","powerful","hidden","common; widely occurring"],4,"The belief was prevalent at the time.",2],
+["profound",["shallow","reaching deep; intense","loud","fake","brief"],1,"A profound change; a profound silence.",2],
+["proliferate",["die out","prefer","postpone","increase rapidly in number","purify"],3,"Cafes proliferated along the new street.",3],
+["prosaic",["plain and unimaginative","poetic","brief","loud","rare"],0,"A prosaic explanation with no romance to it.",3],
+["quell",["stir up","question","put an end to by force","quicken","spill"],2,"Troops moved in to quell the unrest.",2],
+["rancor",["goodwill","haste","calm","energy","deep, lasting bitterness"],4,"They parted without rancor.",3],
+["rebuke",["praise","scold firmly","rebuild","refuse","repeat"],1,"The referee rebuked him for the late tackle.",2],
+["reconcile",["drive apart","recall","refuse","restore friendly relations","repeat"],3,"It took years to reconcile the two branches of the family.",2],
+["redundant",["more than is needed; repeated","essential","brand-new","hidden","clear"],0,"'Free gift' is redundant.",2],
+["refute",["confirm","refuse","show to be false","reflect","repeat"],2,"Data that refute the earlier claim.",3],
+["relegate",["promote","relate","release","delay","push down to a lower position"],4,"Relegated to the back office.",3],
+["relentless",["merciful","not stopping or weakening","gentle","brief","rare"],1,"Relentless pressure wore them down.",2],
+["reprehensible",["praiseworthy","brief","hidden","deserving strong disapproval","costly"],3,"Reprehensible conduct that shocked everyone.",3],
+["repudiate",["refuse to accept or be linked with","embrace","repeat","republish","review"],0,"She repudiated the views of her former group.",3],
+["rescind",["enforce","delay","take back; annul","rewrite","approve"],2,"The board voted to rescind the rule.",3],
+["resilient",["fragile","reluctant","rigid","silent","able to bounce back"],4,"A resilient community rebuilt within a year.",2],
+["reticent",["talkative","reluctant to speak one's thoughts","restless","reliable","cheerful"],1,"Reticent about his past, he changed the subject.",3],
+["rudimentary",["advanced","rude","brief","at an early or basic stage","hidden"],3,"A rudimentary grasp of the language, just a few phrases.",3],
+["scarce",["hard to find; too few","plentiful","scattered","frightening","cheap"],0,"Water grew scarce by August.",1],
+["scrupulous",["careless","suspicious","painstakingly honest and exact","generous","nervous"],2,"Scrupulous about returning every last penny.",3],
+["scrutinize",["glance at","organize","examine closely","summarize","approve"],2,"Scrutinize = inspect in fine detail.",2],
+["sedentary",["active","settled","secondary","sudden","marked by much sitting; inactive"],4,"A sedentary job; a sedentary lifestyle.",2],
+["serene",["agitated","untroubled; tranquil","serious","brief","plain"],1,"A serene expression despite the chaos.",1],
+["skeptical",["trusting","hopeful","careless","not easily convinced","angry"],3,"Skeptical of promises that sound too good.",2],
+["solitary",["alone; single","crowded","sturdy","sunny","orderly"],0,"A solitary walker on the beach.",2],
+["spontaneous",["rehearsed","sluggish","arising naturally, without planning","spacious","sincere"],2,"A spontaneous round of applause.",2],
+["sporadic",["constant","sudden","rapid","lasting","occurring now and then"],4,"Sporadic gunfire, then long silences.",2],
+["spurious",["authentic","fake; not what it claims to be","brief","spurred","hidden"],1,"A spurious quotation wrongly credited to Lincoln.",3],
+["squander",["save","squeeze","scatter","spend or use wastefully","squabble"],3,"He squandered the lead in the final lap.",2],
+["static",["showing no change","dynamic","noisy","sturdy","scattered"],0,"Sales stayed static all year.",2],
+["stoic",["easily upset","cheerful","calm in the face of pain or trouble","brief","loud"],2,"A stoic nod was his only response to the news.",3],
+["stringent",["lax","stretchy","strange","generous","strict and demanding"],4,"Stringent safety rules with no exceptions.",3],
+["subtle",["blatant","so slight as to be hard to notice","heavy","cheerful","brief"],1,"A subtle hint of lemon; a subtle shift in tone.",2],
+["succinct",["long-winded","successful","sticky","expressed in few words","sudden"],3,"A succinct summary in two sentences.",3],
+["superficial",["concerned only with the surface","thorough","genuine","massive","temporary"],0,"A superficial reading that misses the point.",2],
+["superfluous",["essential","scarce","beyond what is required","supreme","enormous"],2,"Cut every superfluous word.",3],
+["surmount",["retreat from","cover up","get past or overcome","weaken","measure"],2,"Surmount an obstacle = rise above it.",2],
+["surpass",["fall short of","surround","support","survey","be greater or better than"],4,"Donations surpassed the goal by noon.",2],
+["susceptible",["resistant","open to being harmed or influenced","suspicious","sustainable","sensible"],1,"Tired travelers are susceptible to colds.",3],
+["tacit",["spoken aloud","brief","tactful","implied; unspoken","hidden"],3,"Tacit approval, a nod rather than a memo.",3],
+["tangential",["touching a subject only lightly","central","tangled","brief","hidden"],0,"A tangential remark that led us off topic.",3],
+["tangible",["imaginary","tangled","real enough to touch","temporary","hostile"],2,"Tangible results you can point to.",2],
+["tedious",["gripping","tender","dull and drawn-out","brief","tremendous"],2,"The tedious wait at the counter.",2],
+["tentative",["definite","tense","attentive","lengthy","done as a trial; unsure"],4,"A tentative plan, pencilled in.",2],
+["terse",["wordy","short and abrupt","gentle","vague","loud"],1,"A terse 'We will see.'",3],
+["transient",["permanent","transparent","rapid","passing quickly","ancient"],3,"A transient population that moves with the harvest.",3],
+["trivial",["so minor it hardly matters","crucial","typical","tragic","tribal"],0,"Don't get stuck on trivial details.",1],
+["turbulent",["calm","twisted","marked by violent disturbance","brief","tremendous"],2,"A turbulent meeting that broke up in shouting.",2],
+["ubiquitous",["rare","unique","unusual","uniform","seeming to be everywhere"],4,"Cell phones are now ubiquitous.",3],
+["unanimous",["divided","agreed on by everyone","unknown","unusual","uniform"],1,"A unanimous vote, 9 to 0.",2],
+["undermine",["strengthen","dig up","weaken gradually","understand","oversee"],2,"Undermine = eat away at the base of.",2],
+["unprecedented",["routine","unpredictable","unpleasant","without any earlier example","brief"],3,"An unprecedented turnout for a local election.",2],
+["unwarranted",["without good reason","deserved","brief","hidden","formal"],0,"Unwarranted criticism the facts don't support.",2],
+["vacillate",["stand firm","hurry","swing back and forth in indecision","vacate","echo"],2,"He vacillated for weeks before deciding.",3],
+["validate",["disprove","violate","vary","value","establish as sound or true"],4,"The results validate the earlier theory.",2],
+["verbose",["silent","truthful","using far more words than needed","forceful","versatile"],2,"Verbose writing buries the point.",2],
+["versatile",["narrowly limited","adaptable to many tasks","vertical","genuine","occasional"],1,"A versatile player who covers any position.",2],
+["viable",["doomed to fail","visible","violent","able to succeed in practice","hidden"],3,"A viable business plan.",2],
+["vigilant",["keeping careful watch for trouble","careless","energetic","violent","patient"],0,"Vigilant lifeguards scanning the water.",2],
+["vindicate",["accuse","repair","show to be right after doubt","announce","punish"],2,"The outcome vindicated her caution.",3],
+["volatile",["stable","voluntary","valuable","quiet","liable to sudden change"],4,"A volatile mood; a volatile market.",3],
+["wane",["grow","get smaller or weaker","wander","warn","win"],1,"Interest waned as the night wore on (opposite: wax).",2],
+["zealous",["indifferent","jealous","zany","full of eager enthusiasm","cautious"],3,"A zealous supporter who never misses a rally.",2],
+["augment",["shrink","replace","add to; make larger","delay","question"],2,"Augment your income = add to it.",2],
+["arbitrary",["carefully reasoned","required by law","based on nothing but personal whim","very old","openly hostile"],2,"An arbitrary rule with no logic behind it.",3],
+["brusque",["cheerful","abrupt","lengthy","gentle","confused"],1,"Brusque = blunt to the point of rudeness.",3,"Her ___ reply made it clear the meeting was over."],
+["candid",["frank","angry","brief","public","joyful"],0,"Candid = open and honest.",1,"In a rare ___ moment, the coach admitted the team was unprepared."],
+["wary",["tired","bold","friendly","cautious and on guard","puzzled"],3,"Wary = watchful, not easily trusting.",2,"After the first scam call, she grew ___ of unknown numbers."],
+["nominal",["huge","yearly","token; very small","refundable","required"],2,"Nominal here = tiny, in name only.",3,"Members pay only a ___ fee to reserve a meeting room."],
+["impending",["distant","mild","passing","imagined","approaching soon"],4,"Impending = about to happen.",2,"Dark clouds warned of an ___ storm."],
+["brazen",["timid","bold and shameless","brief","polite","hidden"],1,"Brazen = boldly, without shame.",3,"He told a ___ lie even as the evidence sat on the table."],
+["prudent",["reckless","generous","sensible and careful","unusual","lucky"],2,"Prudent = showing good sense about the future.",1,"It was ___ of them to set aside part of every paycheck."],
+["meager",["scanty; far too little","spoiled","frozen","costly","shared"],0,"Meager = lacking in quantity.",3,"The crew survived on ___ rations for a week."],
+["sanction",["forbid","postpone","review","officially approve","ignore"],3,"To sanction (verb) = authorize; but 'sanctions' (noun) are penalties. Context decides.",3,"After long debate, the board voted to ___ the merger."],
+["listless",["restless","energetic","cheerful","angry","drained of energy and interest"],4,"Listless = with no spark or drive.",2,"By the third hour the students had turned ___ and quiet."],
+["gregarious",["shy","tidy","sociable; fond of company","strict","calm"],2,"Gregarious people are energized by a crowd.",3,"A ___ host, she knew everyone's name within minutes."],
+["reluctant",["eager","unwilling; holding back","sudden","friendly","final"],1,"Reluctant = not wanting to.",1,"She gave a ___ nod, still unconvinced."],
+["tepid",["boiling","freezing","lukewarm; unenthusiastic","sudden","bright"],2,"Tepid = only slightly warm, or half-hearted.",3,"The audience gave a ___ round of applause and headed for the doors."],
+["",["maps","meals","muscles","metals","melodies"],0,"A cartographer makes and studies maps.",2,"A cartographer works chiefly with"],
+["",["planets and stars","insects","rivers","rocks","coins"],1,"An entomologist studies insects.",3,"An entomologist studies"],
+["",["stamps","stems","storms","spices","statues"],0,"A philatelist collects stamps.",3,"A philatelist collects"],
+["",["rainbows","earthquakes","manners","poems","bridges"],1,"A seismologist studies earthquakes.",3,"A seismologist studies"],
+["",["weather","wiring","wine","wages","wallpaper"],2,"A sommelier advises diners about wine.",3,"A sommelier advises guests about"],
+["",["a collection","a courtroom","a coastline","a currency","a crop"],0,"A curator looks after a collection.",2,"A curator is responsible for"],
+["",["tides","trains","trees","textiles","tempos"],2,"An arborist cares for trees.",2,"An arborist works mainly with"],
+["",["budgets","buildings","ballots","bacteria","ballads"],1,"An architect designs buildings.",1,"An architect chiefly designs"]
+];
+
+/* ================================================================
+   DATA — READING-COMPREHENSION PASSAGES (starter bank)
+   ================================================================ */
+const PASSAGES = [
+{
+  id:"p_vaccine", domain:"Science", title:"How a Vaccine Trains the Immune System",
+  text:
+"The human immune system learns from experience. When a virus or bacterium enters the body for the first time, the immune system needs several days to identify the invader, build defenses against it, and bring those defenses to full strength. During that delay the pathogen multiplies freely, and the person often becomes ill. If the body survives the encounter, it keeps a molecular memory of the intruder. A second exposure to the same pathogen triggers a response that is faster and stronger, and the person may notice no symptoms at all.\n\n"+
+"A vaccine takes advantage of this memory without requiring a dangerous first infection. Most vaccines introduce a harmless piece or version of a pathogen: a weakened virus, a killed bacterium, a single surface protein, or a set of instructions that tells the body's own cells to make that protein briefly. None of these can cause the disease, but each carries the distinctive molecular shapes, called antigens, that the immune system uses for recognition. Specialized cells engulf the material, display its fragments, and present them to roving white blood cells. The white cells that happen to match the antigen begin to multiply.\n\n"+
+"Two products of that response matter most. Antibodies, which circulate in the blood and stick to a specific antigen, can block a pathogen from entering cells and can flag it for destruction. Memory cells, which can persist for years, stand ready to launch antibody production quickly if the real pathogen ever appears. The first vaccine dose produces a modest, short-lived reaction; booster doses, spaced weeks or months apart, push the memory response to a higher and more durable level. This is why many vaccine schedules call for more than one shot.\n\n"+
+"Protection is rarely total. Some vaccinated people still catch the target disease, though usually in milder form, and immunity can fade as antibody levels drop. Pathogens that mutate rapidly, such as influenza viruses, force scientists to redesign vaccines almost every year. Even imperfect vaccines, however, change the mathematics of an outbreak. When a large share of a population carries some immunity, each infected person passes the pathogen to fewer others, and chains of transmission break down. The unvaccinated then benefit indirectly from the immunity of those around them, an effect known as herd immunity.",
+  questions:[
+    {type:"main-idea", q:"The passage is mainly about",
+     c:["why some vaccines require booster doses","how vaccines use the immune system's memory to create protection","the differences between viruses and bacteria","how herd immunity completely eliminates diseases","why influenza vaccines must be redesigned every year"],
+     a:1, n:"The whole passage explains how a vaccine harnesses immune memory; the other choices are supporting details or side points."},
+    {type:"detail", q:"According to the passage, memory cells",
+     c:["circulate in the blood and stick directly to antigens","are found only in people who have had a natural infection","can persist for years and speed up later antibody production","are produced only after a booster dose","keep a pathogen from mutating"],
+     a:2, n:"Paragraph 3: memory cells 'can persist for years' and stand ready to 'launch antibody production quickly.'"},
+    {type:"vocab-in-context", q:"As used in the final paragraph, \"mathematics\" most nearly means",
+     c:["the formal study of numbers","the pattern of how the disease spreads","the cost of medical treatment","a laboratory measurement","a written proof"],
+     a:1, n:"'Change the mathematics of an outbreak' refers to changing how transmission adds up — the spread pattern."},
+    {type:"inference", q:"The passage suggests that a person who receives only the first dose of a two-dose vaccine will most likely",
+     c:["be fully protected for life","have weaker and shorter-lasting protection than someone who gets both doses","develop the disease from the vaccine itself","never form any memory cells","spread the pathogen to more people than an unvaccinated person"],
+     a:1, n:"The text says the first dose gives 'a modest, short-lived reaction'; boosters raise immunity 'higher and more durable.'"},
+    {type:"tone", q:"The author's approach to the subject is best described as",
+     c:["explanatory and measured","alarmed and urgent","skeptical and dismissive","admiring and celebratory","uncertain and hesitant"],
+     a:0, n:"The passage calmly explains a process and openly notes limits ('Protection is rarely total'), without emotional language."},
+    {type:"detail", q:"The passage says vaccines may introduce all of the following EXCEPT",
+     c:["a weakened virus","a killed bacterium","a single surface protein","instructions for cells to make a protein briefly","a full-strength, disease-causing pathogen"],
+     a:4, n:"Paragraph 2 lists the first four and stresses 'None of these can cause the disease.'"}
+  ]
+},
+{
+  id:"p_bystander", domain:"Social Science", title:"The Bystander Effect",
+  text:
+"In 1964 the killing of a woman outside her apartment building in New York, reportedly witnessed by numerous neighbors who did not call for help, prompted psychologists to ask a hard question: does the presence of other people make an individual less likely to assist someone in trouble? Early news coverage of the case was later shown to be exaggerated, but the research it inspired has held up well.\n\n"+
+"In a series of experiments, John Darley and Bibb Latane placed volunteers in situations that seemed to call for help: smoke curling from a vent, a stranger crying out as if injured, a staged seizure heard over an intercom. The researchers varied one thing — how many other people the volunteer believed were present. The result was consistent. A person who thought they were the only witness usually acted, and acted quickly. A person who believed several others were also aware of the emergency was slower to respond, and often did nothing.\n\n"+
+"Darley and Latane explained the pattern with two ideas. The first is diffusion of responsibility: when others are available to act, each individual feels a smaller personal share of the duty to intervene, and assumes someone else will. The second is pluralistic ignorance: people look to those around them to decide whether a situation is truly an emergency, and if everyone is staying calm and waiting, each observer concludes that nothing serious is happening. The two forces reinforce each other, and the larger the group, the stronger their combined pull.\n\n"+
+"Later work has refined the picture. The effect weakens when the need for help is unmistakable, when the victim and bystander share a group identity, and when at least one person breaks from the crowd and takes visible action. Training also helps: people who have learned about the bystander effect are measurably more likely to step forward. That last finding is the practical payoff of the research. Knowing that the presence of a crowd can quietly suppress your impulse to help makes it easier to recognize the hesitation for what it is, and to act anyway.",
+  questions:[
+    {type:"main-idea", q:"The main point of the passage is that",
+     c:["the 1964 New York case was misreported by journalists","people in groups are often slower to help in an emergency, for reasons researchers can explain","Darley and Latane were the first psychologists to study helping behavior","most people will not help a stranger under any circumstances","emergencies are usually less serious than bystanders assume"],
+     a:1, n:"The passage introduces the effect, explains its causes, and notes what reduces it; choice b captures that arc."},
+    {type:"detail", q:"In the experiments described, the researchers deliberately varied",
+     c:["the type of emergency presented","the age of the volunteers","the number of other people the volunteer thought were present","whether the volunteer had first-aid training","the time of day the test was run"],
+     a:2, n:"'The researchers varied one thing — how many other people the volunteer believed were present.'"},
+    {type:"vocab-in-context", q:"As used in the passage, \"diffusion\" most nearly means",
+     c:["confusion","spreading out or sharing among many","a firm refusal","slow disappearance","careful study"],
+     a:1, n:"Diffusion of responsibility = the felt duty is spread thin across the group."},
+    {type:"inference", q:"The passage implies that a person is MOST likely to receive help from a bystander when",
+     c:["the street is crowded with people","the other bystanders are calmly waiting","it is unclear whether help is really needed","only one other person is present and the emergency is obvious","the bystander has never heard of the bystander effect"],
+     a:3, n:"The effect is strongest in large, ambiguous situations; it weakens when need is 'unmistakable' and the group is small."},
+    {type:"tone", q:"The author's purpose in the final paragraph is chiefly to",
+     c:["cast doubt on the earlier experiments","explain how understanding the effect can help people overcome it","criticize bystanders who fail to act","call for laws that require people to help","summarize the history of social psychology"],
+     a:1, n:"The paragraph lists conditions that weaken the effect and ends on the 'practical payoff': awareness makes action easier."},
+    {type:"detail", q:"The passage indicates that early news coverage of the 1964 case was",
+     c:["accurate in every respect","later shown to be exaggerated","ignored by researchers","written by Darley and Latane","the only evidence for the bystander effect"],
+     a:1, n:"'Early news coverage of the case was later shown to be exaggerated, but the research it inspired has held up well.'"}
+  ]
+},
+{
+  id:"p_perspective", domain:"Humanities", title:"Learning to Paint Depth",
+  text:
+"For most of the Middle Ages, European painters showed space in ways that look, to modern eyes, slightly wrong. Figures stood on tilted floors. Buildings in the background loomed as large as those in front. Objects were sized according to their importance rather than their distance, so a saint might tower over the city behind him. These were not mistakes in the ordinary sense. Medieval painters were following a different set of rules, in which a picture was a symbolic arrangement rather than a window onto a scene.\n\n"+
+"In early fifteenth-century Florence, that changed. The architect Filippo Brunelleschi worked out a geometric method for representing depth on a flat surface, and the painter Masaccio applied it to a wall. The method, known as linear perspective, rests on a simple observation: parallel lines running away from the viewer appear to converge, and if extended they would meet at a single point on the horizon, the vanishing point. Floor tiles, ceiling beams, and the edges of buildings could all be drawn toward that point. Figures and objects were then reduced in size at a steady rate as they receded. The result was a painted space that behaved, more or less, like the space people actually saw.\n\n"+
+"The new technique spread quickly, carried by written treatises that laid out the geometry step by step. Leon Battista Alberti's short book of 1435 told painters to imagine the picture surface as a pane of glass through which the scene was viewed, and to build everything behind that pane according to measured proportion. Within a generation, perspective construction was a standard part of a painter's training across Italy, and later across Europe.\n\n"+
+"Perspective was powerful, but it came at a price. It fixed the viewer at one spot, looking in one direction, at one instant. It suited grand architectural scenes and dramatic storytelling, but it could make a painting feel rigid, and it discouraged the flatter, more decorative compositions that other traditions prized. Centuries later, modern painters would deliberately break perspective's rules to recover some of that lost freedom. The fifteenth-century achievement was still decisive: it gave Western art a shared language for depth that lasted five hundred years.",
+  questions:[
+    {type:"main-idea", q:"The passage is primarily concerned with",
+     c:["the life of Filippo Brunelleschi","the development and impact of linear perspective in Western painting","why medieval painters were unable to draw","the rules of geometry used by architects","a rivalry between Italian and northern European artists"],
+     a:1, n:"The passage traces where perspective came from, how it spread, and what it cost — its development and impact."},
+    {type:"detail", q:"According to the passage, medieval painters often sized objects according to",
+     c:["their distance from the viewer","their color","their importance","the vanishing point","rules set out by Alberti"],
+     a:2, n:"'Objects were sized according to their importance rather than their distance.'"},
+    {type:"vocab-in-context", q:"As used in the passage, \"converge\" most nearly means",
+     c:["come together","grow brighter","fade from view","bend sharply downward","change color"],
+     a:0, n:"Parallel lines 'appear to converge' and 'would meet at a single point.'"},
+    {type:"inference", q:"The passage suggests that a painter who wanted a flat, decorative composition would find linear perspective",
+     c:["essential","easy to combine with any style","limiting","impossible to learn","required by law"],
+     a:2, n:"The last paragraph says perspective 'discouraged the flatter, more decorative compositions that other traditions prized.'"},
+    {type:"tone", q:"The author presents the invention of perspective as",
+     c:["a total loss for art","a major achievement that also carried trade-offs","an accident with no lasting effect","a purely mathematical curiosity","a technique that was quickly abandoned"],
+     a:1, n:"'Powerful, but it came at a price' — yet still 'decisive,' lasting five hundred years."},
+    {type:"detail", q:"Alberti's book of 1435 advised painters to",
+     c:["ignore geometry and paint from feeling","treat the picture surface as a pane of glass showing the scene","make background buildings as large as foreground ones","size figures by their importance","avoid architectural subjects"],
+     a:1, n:"He told painters 'to imagine the picture surface as a pane of glass through which the scene was viewed.'"}
+  ]
+},
+{
+  id:"p_tardigrade", domain:"Science", title:"Life on Pause: The Tardigrade",
+  text:
+"Tardigrades, sometimes called water bears, are among the toughest animals known. They are also tiny: most are less than a millimeter long, with eight stubby legs and a slow, lumbering walk that earned them their nickname. They live almost everywhere there is a film of water, from ocean sediment to mountain glaciers, but the place most people meet them is a cushion of damp moss on a garden wall.\n\n"+
+"What makes tardigrades remarkable is not where they live but what they can survive. When their surroundings dry out, a tardigrade does not die. Instead it pulls in its legs, forces most of the water from its body, and curls into a barrel-shaped form called a tun. In this state its metabolism falls to less than one percent of normal, sometimes so low that it cannot be measured at all. The animal is not quite alive in the usual sense, and not dead. Biologists call the condition cryptobiosis, meaning hidden life.\n\n"+
+"A tardigrade in a tun can endure conditions that would destroy almost any active organism. Laboratory tests have exposed tuns to temperatures near absolute zero and above the boiling point of water, to pressures far greater than those in the deepest ocean trench, and to doses of radiation hundreds of times higher than a person could survive. In one experiment, tardigrades were carried outside a spacecraft and exposed to the vacuum and ultraviolet glare of open space for ten days. Many revived once they were back on Earth and given water.\n\n"+
+"The protection seems to come partly from special molecules that take the place of lost water and hold the animal's cell structures in position, forming a kind of glassy scaffold inside each cell. When water returns, the scaffold dissolves, the machinery of the cell restarts, and within hours the tardigrade is walking and feeding again. A tun may remain able to revive for years, and there are disputed reports of much longer spans.\n\n"+
+"None of this makes tardigrades indestructible. In their active, watery state they are as fragile as any other small animal, and easily killed. Their gift is narrower and stranger: the ability to switch themselves off, wait out the bad times, and switch back on.",
+  questions:[
+    {type:"main-idea", q:"The passage is mainly about",
+     c:["the tardigrade's ability to survive extreme conditions by shutting down its metabolism","the eight-legged body plan of the tardigrade","experiments that send animals into outer space","why moss is a good habitat for small animals","the discovery of cryptobiosis"],
+     a:0, n:"Most of the passage describes how, and how well, tardigrades survive by entering the tun state."},
+    {type:"detail", q:"In the tun state, a tardigrade's metabolism falls to",
+     c:["about half of normal","less than one percent of normal","about ten percent of normal","exactly zero in every case","a level higher than normal"],
+     a:1, n:"'Its metabolism falls to less than one percent of normal, sometimes so low that it cannot be measured.'"},
+    {type:"vocab-in-context", q:"In the phrase \"a tun may remain able to revive for years,\" \"revive\" most nearly means",
+     c:["become visible","gain value","return to active life","move faster","freeze solid"],
+     a:2, n:"The tun can later be brought back to feeding and walking — restored to active life."},
+    {type:"inference", q:"The passage suggests that a tardigrade is most vulnerable when it is",
+     c:["curled into a tun","exposed to radiation","kept in a vacuum","active and surrounded by water","chilled toward absolute zero"],
+     a:3, n:"The last paragraph: 'In their active, watery state they are as fragile as any other small animal.'"},
+    {type:"tone", q:"The author's attitude toward the tardigrade is best described as",
+     c:["fearful","dismissive","sentimental","openly alarmed","intrigued and precise"],
+     a:4, n:"The writer conveys clear interest ('remarkable,' 'stranger') while sticking to careful, measured description."},
+    {type:"detail", q:"According to the passage, cells are protected during drying mainly by",
+     c:["special molecules that form a glassy scaffold inside the cells","a thick outer shell","a rise in body temperature","the animal's eight legs","a store of oxygen"],
+     a:0, n:"Paragraph 4: molecules 'take the place of lost water and hold the animal's cell structures in position, forming a kind of glassy scaffold.'"}
+  ]
+},
+{
+  id:"p_leaves", domain:"Science", title:"Why Leaves Turn",
+  text:
+"A green leaf is a solar factory. Inside it are millions of tiny structures packed with chlorophyll, the pigment that captures sunlight and drives the chemistry that feeds the tree. Chlorophyll is abundant through the growing season, and its strong green masks the other pigments that are also present in the leaf.\n\n"+
+"Those other pigments fall into two main groups. Carotenoids produce yellow and orange; they sit in the leaf all summer, quietly helping to gather light, but they are hidden by the green. Anthocyanins are different. Most trees make them only in late summer and autumn, and in many species they are not present until the days shorten.\n\n"+
+"The turn begins with light and temperature, not with cold snaps alone. As nights lengthen, a tree registers the change and starts to prepare for winter. It grows a thin layer of cells, the abscission layer, across the base of each leaf stalk. This layer gradually seals the leaf off from the tree's plumbing. With the supply lines closing, the leaf stops making new chlorophyll, and the chlorophyll already there breaks down. The green fades, and the yellows and oranges of the carotenoids show through at last.\n\n"+
+"Red and purple are a later story. When sugars made in the leaf can no longer flow back into the tree, they build up, and in bright light some trees convert those trapped sugars into red anthocyanins. This is why a cold, sunny autumn tends to produce the most vivid reds, while a warm, cloudy one leaves the display muted. A wet growing season, an early frost, or a windy storm can each cut the show short.\n\n"+
+"Eventually the abscission layer finishes its work. The leaf, now dry and brightly colored, breaks free and falls. What looks like decoration is really the visible trace of a tree taking apart its own food factory and pulling the valuable parts back inside before the cold arrives.",
+  questions:[
+    {type:"main-idea", q:"The central idea of the passage is that",
+     c:["chlorophyll is the only pigment in a summer leaf","autumn color is a by-product of a tree shutting its leaves down for winter","red leaves are more common than yellow leaves","frost is the single cause of leaf color","leaves fall mainly because of strong autumn winds"],
+     a:1, n:"The passage frames the color change as the visible result of the tree sealing off and reclaiming its leaves."},
+    {type:"detail", q:"According to the passage, carotenoids are",
+     c:["made only after the first frost","responsible for red and purple colors","present in the leaf all summer but hidden by the green","produced inside the abscission layer","absent from most trees"],
+     a:2, n:"'They sit in the leaf all summer... but they are hidden by the green.'"},
+    {type:"detail", q:"The passage links the most vivid red displays to",
+     c:["warm, cloudy autumns","early frosts","heavy rain during the growing season","cold, sunny autumns","strong autumn winds"],
+     a:3, n:"'A cold, sunny autumn tends to produce the most vivid reds.'"},
+    {type:"vocab-in-context", q:"As used in the passage, \"plumbing\" most nearly refers to",
+     c:["the roots alone","household water pipes","the abscission layer","the leaf's outer surface","the tree's internal system for moving water and nutrients"],
+     a:4, n:"The abscission layer 'seals the leaf off from the tree's plumbing' — its transport system."},
+    {type:"inference", q:"The passage implies that a leaf that turns pure yellow, with no red, most likely",
+     c:["did not convert its trapped sugars into anthocyanins","was torn by wind","never contained any carotenoids","fell before the abscission layer formed","had unusually high chlorophyll"],
+     a:0, n:"Red requires converting trapped sugars to anthocyanins; a yellow-only leaf skipped that step (many species never make anthocyanins)."},
+    {type:"tone", q:"The final paragraph mainly serves to",
+     c:["warn readers about the dangers of frost","recast a familiar sight as evidence of a hidden process","argue that autumn is the best season","list the trees with the brightest leaves","question whether leaves really fall"],
+     a:1, n:"It reframes 'decoration' as 'the visible trace of a tree taking apart its own food factory.'"}
+  ]
+},
+{
+  id:"p_anc", domain:"Science", title:"Quiet by Design",
+  text:
+"Sound is a pattern of pressure moving through the air: regions where molecules bunch together, followed by regions where they spread apart, repeating many times a second. A microphone turns that pattern into a matching electrical wave. A speaker does the reverse, pushing air back and forth to recreate the pattern in a listener's ear.\n\n"+
+"Active noise cancellation uses both. A small microphone on the outside of each earcup samples the sound arriving from the surroundings. A processor inspects that wave and generates a second wave that is its mirror image: wherever the incoming wave pushes, the new wave pulls, and wherever the incoming wave pulls, the new wave pushes. The earcup's speaker plays this mirror wave. When the two waves meet in the space near the eardrum, their opposite pressures add up to something close to zero. Engineers call this destructive interference. The physical noise has not been blocked so much as canceled by an equal and opposite sound.\n\n"+
+"The technique works best on steady, low-pitched drones: the roar of a jet engine, the hum of a train, the rumble of a ventilation system. These sounds change slowly, which gives the processor time to track them and keep its mirror wave lined up. Sudden, high-pitched sounds are much harder. A short clap or a burst of speech shifts too quickly for the system to follow, and the cancellation lags behind the target. This is why noise-cancelling headphones dull the background of a plane cabin but do little to hide a nearby conversation.\n\n"+
+"Most headphones pair the electronics with ordinary physical blocking. Dense foam and a snug seal around the ear stop many high frequencies on their own, while the active system handles the low ones that foam cannot. The result is a division of labor: passive materials for the treble, electronic cancellation for the bass. Neither approach is complete, but together they can take the edge off a noisy world.",
+  questions:[
+    {type:"main-idea", q:"The passage is primarily an explanation of",
+     c:["how microphones are manufactured","why airplanes are so loud","how active noise cancellation reduces unwanted sound","the history of the headphone","the difference between treble and bass"],
+     a:2, n:"The body of the passage lays out the mechanism of active noise cancellation step by step."},
+    {type:"detail", q:"The \"mirror wave\" produced by the processor is designed to",
+     c:["amplify the incoming sound","match the incoming wave exactly","block high frequencies with foam","push where the incoming wave pulls, and pull where it pushes","travel faster than the incoming sound"],
+     a:3, n:"'Wherever the incoming wave pushes, the new wave pulls...'"},
+    {type:"vocab-in-context", q:"As used in the passage, \"destructive\" most nearly means",
+     c:["violent","permanent","harmful to the ear","costly","canceling out"],
+     a:4, n:"'Destructive interference' here means the two waves cancel — pressures 'add up to something close to zero.'"},
+    {type:"detail", q:"According to the passage, active cancellation works best against",
+     c:["steady, low-pitched drones","sudden claps","nearby speech","high-pitched whistles","complete silence"],
+     a:0, n:"'The technique works best on steady, low-pitched drones.'"},
+    {type:"inference", q:"The passage suggests that removing the foam and ear seal from a pair of these headphones would",
+     c:["make them cancel all sound perfectly","cost them much of their ability to reduce high-pitched noise","improve their performance on jet-engine noise","end their need for a microphone","make them completely silent inside"],
+     a:1, n:"Foam and the seal handle high frequencies; the electronics handle low ones. Remove the foam and the treble blocking goes."},
+    {type:"tone", q:"The author presents noise cancellation as",
+     c:["a flawless solution","a passing fad","a clever but partial technique","an idea unlikely to work","a danger to hearing"],
+     a:2, n:"'Neither approach is complete, but together they can take the edge off.'"}
+  ]
+},
+{
+  id:"p_biolum", domain:"Science", title:"Light in the Dark Ocean",
+  text:
+"Below about a thousand meters, the ocean is effectively without sunlight. Yet this dark zone is not lightless. A large share of the animals that live there make their own light, a chemical glow called bioluminescence. On many nights it is the most common source of light in the sea.\n\n"+
+"The chemistry is simple in outline. A molecule generally called luciferin reacts with oxygen, helped along by a protein, and releases energy as light rather than heat. The light is usually blue-green, the color that travels farthest through seawater. Because almost none of the energy is lost as warmth, biologists sometimes describe it as cold light. Some animals produce the ingredients themselves; others host colonies of glowing bacteria in special pouches and switch the light on and off by covering or exposing them.\n\n"+
+"The uses are varied, and often work against one another. A deep-sea anglerfish dangles a glowing lure in front of its jaws to draw prey close. Many small shrimp do the opposite, spitting a cloud of luminous fluid to dazzle a predator while they escape into the dark. Countless mid-water animals use a trick called counterillumination: they cover their undersides with faint light that matches the dim glow filtering down from the surface, erasing the silhouette a predator below would otherwise see. Others flash to find mates, or to warn that they taste foul.\n\n"+
+"Studying these signals is difficult. Bright ship lights and the disturbance of a net destroy the very behavior researchers want to observe, and most glows are too faint to record with ordinary cameras. Newer approaches use dim red light, which most deep-sea animals cannot see, along with extremely sensitive sensors lowered quietly into the water. The picture that is emerging is of an environment where light is less a steady background, as it is on land, than a language: brief, purposeful, and spoken by almost everyone present.",
+  questions:[
+    {type:"main-idea", q:"The passage is mainly about",
+     c:["why sunlight cannot reach the deep ocean","the design of underwater cameras","the diet of the anglerfish","how and why deep-sea animals produce their own light","the color of seawater"],
+     a:3, n:"The passage explains the chemistry of bioluminescence and the many purposes it serves."},
+    {type:"detail", q:"The passage describes bioluminescent light as \"cold light\" because",
+     c:["it is only made in cold water","it feels cold to the touch","it is always blue","it comes from ice","almost none of the energy is released as heat"],
+     a:4, n:"'Because almost none of the energy is lost as warmth, biologists sometimes describe it as cold light.'"},
+    {type:"detail", q:"Counterillumination helps an animal by",
+     c:["hiding its silhouette from predators below","drawing prey toward its mouth","blinding a predator with a bright flash","signaling to a mate","warning that it is poisonous"],
+     a:0, n:"They match the faint downwelling light so a predator below sees no dark outline."},
+    {type:"vocab-in-context", q:"As used in the final sentence, \"language\" most nearly means",
+     c:["a written record","a system of signals that carry meaning","a spoken accent","a set of grammar rules","a foreign tongue"],
+     a:1, n:"The passage calls the light 'brief, purposeful, and spoken by almost everyone' — a signaling system."},
+    {type:"inference", q:"Researchers use dim red light in the deep sea mainly because",
+     c:["red light is brighter than blue","red light travels farthest in water","most deep-sea animals cannot see red, so it does not disturb them","it is cheaper to produce","it helps ordinary cameras focus"],
+     a:2, n:"Red light lets them observe without triggering or scaring off the animals."},
+    {type:"tone", q:"The author's treatment of the subject is best described as",
+     c:["skeptical and doubtful","urgent and worried","impatient","explanatory, with a note of wonder","mournful"],
+     a:3, n:"Careful explanation, closing on the evocative image of light as 'a language... spoken by almost everyone present.'"}
+  ]
+},
+{
+  id:"p_library", domain:"Humanities", title:"The Public's Library",
+  text:
+"The idea that anyone may walk into a building, borrow a book, and take it home for free is younger than it seems. For most of the history of libraries, collections were private or semi-private. Monasteries chained their manuscripts to the shelves. Universities lent only to scholars. Subscription libraries, popular in the seventeenth and eighteenth centuries, charged a yearly fee that put them out of reach of working people.\n\n"+
+"The free public library, paid for by taxes and open to all, took shape in the nineteenth century. Reformers argued that a republic depended on an informed population, and that a person who could not afford books should still be able to read widely. In Britain, a law of 1850 let towns levy a small tax to fund libraries. In the United States, the city of Boston opened a large tax-supported library in 1854, and the model spread quickly. Late in the century the industrialist Andrew Carnegie paid for the construction of more than 2,500 library buildings around the world, on the condition that local governments agree to stock and staff them.\n\n"+
+"Early public libraries were not always as open as their supporters claimed. Some limited who could enter, kept the most-requested books behind a counter, or arranged their halls to discourage the poor from lingering. Over time, the profession pushed against these limits. Open shelves, which let readers browse and choose for themselves, became standard. Children's rooms, once rare, became central. Branch libraries carried the service into neighborhoods far from downtown.\n\n"+
+"The mission has kept widening. A modern public library lends films and tools, offers internet access and tax help, runs story hours and job workshops, and provides one of the few indoor public spaces a person can use all day without being asked to buy anything. Librarians describe this as a natural extension of the founding promise. Critics sometimes argue that the institution has drifted from its purpose. Its defenders answer that the purpose was never only books; it was access, and access takes whatever form the moment requires.",
+  questions:[
+    {type:"main-idea", q:"The passage traces",
+     c:["the life of Andrew Carnegie","the invention of the printed book","the decline of subscription libraries","the architecture of library buildings","how the free public library developed and how its role has widened"],
+     a:4, n:"It moves from early private collections to the tax-funded library and its expanding modern mission."},
+    {type:"detail", q:"According to the passage, subscription libraries",
+     c:["charged a yearly fee","were funded entirely by taxes","were open to all without cost","were run by monasteries","lent only to children"],
+     a:0, n:"They 'charged a yearly fee that put them out of reach of working people.'"},
+    {type:"detail", q:"Carnegie paid for library buildings on the condition that",
+     c:["they be named after him","local governments agree to stock and staff them","they charge a small entry fee","they hold only works of history","they be built downtown"],
+     a:1, n:"The gift covered construction only; localities had to fund books and staff."},
+    {type:"vocab-in-context", q:"As used in the passage, \"levy\" most nearly means",
+     c:["to lower","to borrow","to impose and collect (a tax)","to forbid","to build"],
+     a:2, n:"'Let towns levy a small tax to fund libraries' — impose and collect it."},
+    {type:"inference", q:"The passage suggests that open shelves mattered because they",
+     c:["reduced the number of books libraries owned","made libraries cheaper to build","kept the poor from lingering","gave readers direct control over what they browsed and borrowed","ended the need for librarians"],
+     a:3, n:"Open shelves 'let readers browse and choose for themselves,' unlike books kept behind a counter."},
+    {type:"tone", q:"In the final paragraph, the author handles the debate over the library's mission by",
+     c:["siding openly with the critics","dismissing the question as unimportant","showing anger at modern librarians","refusing to take the subject seriously","giving both views and letting the defenders' answer close the passage"],
+     a:4, n:"Critics' view is stated, then answered: 'the purpose was never only books; it was access.'"}
+  ]
+},
+{
+  id:"p_translation", domain:"Humanities", title:"The Trouble with Translation",
+  text:
+"To translate is to carry a meaning from one language into another, and the word itself, from Latin, means to carry across. The difficulty is that meaning is not a single object that can be lifted intact. It is bound up with the sound, structure, and history of the language that holds it.\n\n"+
+"Some losses are obvious. A pun depends on two meanings sharing one set of sounds; move to another language and the sounds, and the joke, fall apart. Poetry that leans on rhyme and meter cannot keep both its music and its literal sense in a new tongue, and the translator must decide which to sacrifice. Other losses are quieter. Many languages carry information in places where English does not. A single verb may state whether the speaker witnessed an event or only heard of it. A pronoun may mark respect or intimacy. Rendered in plain English, these shadings simply vanish unless the translator adds words the original never needed.\n\n"+
+"There are also gains, or at least trades. A skilled translator may find an image that the first author would have loved but never reached, or may clear up a passage that was tangled in the original. Translations age, too, in a way originals do not: each generation tends to want a new version in its own idiom, which is why long-admired works are translated again and again.\n\n"+
+"Because a perfect copy is impossible, translators work from principles rather than rules. Some aim to keep the reader comfortable, smoothing the text until it reads as though written in the new language from the start. Others deliberately leave a foreign texture in place, believing that a translation should remind you it came from somewhere else. Neither choice is simply right. Each decides what to carry across and what, of necessity, to leave on the far bank.",
+  questions:[
+    {type:"main-idea", q:"The main idea of the passage is that",
+     c:["meaning cannot be moved between languages without loss and change","translation is easy for skilled professionals","translation always improves on the original","only poetry is difficult to translate","English is harder to translate than other languages"],
+     a:0, n:"The passage catalogs what is lost, gained, and traded whenever a text crosses languages."},
+    {type:"detail", q:"The passage says a pun is hard to translate because",
+     c:["puns are considered rude in most languages","a pun depends on two meanings sharing the same sounds","translators are not allowed to use humor","puns carry no meaning at all","puns rely on rhyme and meter"],
+     a:1, n:"'A pun depends on two meanings sharing one set of sounds.'"},
+    {type:"detail", q:"According to the passage, admired works are translated again by each generation because",
+     c:["the original texts are lost","earlier translators made frequent errors","readers want a version in their own idiom","languages stop changing over time","publishers are required to by law"],
+     a:2, n:"'Each generation tends to want a new version in its own idiom.'"},
+    {type:"vocab-in-context", q:"As used in the passage, \"shadings\" most nearly means",
+     c:["dark patches","pencil drawings","grammatical mistakes","subtle differences in meaning","loud noises"],
+     a:3, n:"The 'shadings' are fine distinctions — whether a speaker witnessed an event, marks of respect, and the like."},
+    {type:"inference", q:"The two approaches described in the last paragraph differ mainly over",
+     c:["whether translation is worth doing at all","how many words a translation should contain","which languages may be translated","how quickly a translation should be finished","whether a translation should feel native or keep a foreign texture"],
+     a:4, n:"One smooths the text to read as native; the other keeps a deliberate foreign texture."},
+    {type:"tone", q:"The phrase \"leave on the far bank\" in the final sentence is",
+     c:["an image that extends the passage's opening metaphor","a technical term from linguistics","a direct quotation from a translator","a factual error","an abrupt change of subject"],
+     a:0, n:"It echoes 'carry across' — the river-crossing metaphor from the first paragraph."}
+  ]
+},
+{
+  id:"p_graphicnovel", domain:"Humanities", title:"Pictures That Read as Books",
+  text:
+"For much of the twentieth century, comics were treated as a children's medium, or worse. In the 1950s a wave of alarm in the United States linked comic books to youth crime, and the industry adopted a strict code that kept its content mild for decades. The form was widely seen as simple by nature: bright pictures, short words, nothing that asked much of a reader.\n\n"+
+"That view has largely collapsed. The turning point is often placed in the 1980s and 1990s, when several long, serious works in comics form reached a wide adult audience and drew reviews in the same pages as prose fiction. One, a memoir of a father's survival of the Holocaust told with animals standing in for people, won a major literary prize in 1992. Bookstores began shelving such works together under the label graphic novel, a term that had circulated for years but now stuck.\n\n"+
+"Critics who study the form argue that its supposed simplicity is nothing of the kind. A comics page asks the reader to do a particular kind of work: to move through a grid of still images, to supply the motion and time that pass in the white gaps between panels, and to hold picture and text in mind at once. A skilled cartoonist controls pace through panel size and spacing, hides information at the turn of a page, and lets a drawing carry a feeling that the words on the same panel deny.\n\n"+
+"None of this means the old audience went away. Superhero series still sell, and plenty of comics are made purely to entertain. What changed is the ceiling. A form once assumed to be incapable of seriousness is now used for reporting, history, biography, and criticism, and is taught in universities. The pictures were never the limitation. The assumption was.",
+  questions:[
+    {type:"main-idea", q:"The passage is chiefly concerned with",
+     c:["the sales figures of superhero comics","how comics came to be recognized as a form capable of serious work","the 1950s campaign against comic books","the biography of one cartoonist","the wording of the industry code"],
+     a:1, n:"It tracks the shift from comics as children's fare to comics as a form used for serious work."},
+    {type:"detail", q:"The work described as winning a major literary prize in 1992 was",
+     c:["a superhero series","a history of the comics code","a memoir about surviving the Holocaust, told with animals in place of people","a collection of newspaper strips","a children's picture book"],
+     a:2, n:"'A memoir of a father's survival of the Holocaust told with animals standing in for people.'"},
+    {type:"detail", q:"According to critics cited in the passage, reading a comics page requires the reader to",
+     c:["ignore the pictures and focus on the words","read the panels in any order","memorize each image before moving on","supply the motion and time that pass between panels","read the whole page aloud"],
+     a:3, n:"The reader supplies 'the motion and time that pass in the white gaps between panels.'"},
+    {type:"vocab-in-context", q:"As used in the passage, \"ceiling\" most nearly means",
+     c:["the top of a room","a fixed price","a hiding place","a written rule","an upper limit on what the form can do"],
+     a:4, n:"'What changed is the ceiling' — the limit on how ambitious or serious comics could be."},
+    {type:"inference", q:"The passage implies that before the 1980s, serious literary reviews",
+     c:["rarely treated comics as worth reviewing","covered comics more often than prose fiction","had formally banned any mention of comics","were written mainly by cartoonists","focused only on superhero titles"],
+     a:0, n:"The change is marked by works that 'drew reviews in the same pages as prose fiction' — implying that was new."},
+    {type:"tone", q:"The last two sentences (\"The pictures were never the limitation. The assumption was.\") mainly serve to",
+     c:["state the passage's point sharply and place blame on old attitudes","express regret that comics have changed","introduce a new topic","cast doubt on the works just described","pose a question to the reader"],
+     a:0, n:"They deliver the thesis in blunt form and locate the old barrier in assumption, not in the medium."}
+  ]
+},
+{
+  id:"p_jazz", domain:"Humanities", title:"Making It Up, Together",
+  text:
+"To an outsider, a jazz solo can sound like pure invention, a musician playing whatever comes to mind. It is closer to a conversation held under rules that everyone in the band already knows.\n\n"+
+"Most jazz performances are built on a tune's underlying structure: a fixed sequence of chords, a set number of measures, and a steady pulse. The melody stated at the top is only the starting point. Once it has been played, the musicians take turns improvising new melodies over that same chord sequence, which cycles again and again. A soloist is free to invent, but the invention has to fit the harmony passing beneath it and land in time with the rest of the group. Freedom and constraint operate at once.\n\n"+
+"Improvisers do not begin from nothing. Over years of practice they absorb a vocabulary of short melodic phrases, rhythmic figures, and ways of moving from one chord to the next. In performance they draw on this store, reshaping and combining fragments to suit the moment, much as a fluent speaker builds fresh sentences from familiar words without planning each one in advance. Skilled players also listen closely and answer one another, so a phrase from the piano may be echoed, a beat later, by the horn.\n\n"+
+"The tradition has argued with itself about how far the rules should bind. In the 1940s, players stretched the harmony with rapid, angular lines. In the late 1950s, some replaced the busy chord sequences with a single scale held for long stretches, giving the soloist more room. A few years later, others set aside fixed structure almost entirely. Each step was praised by some listeners as liberation and dismissed by others as noise. What held across the changes was the basic bargain of the music: a shared framework, agreed on in advance, inside which the details are made up on the spot.",
+  questions:[
+    {type:"main-idea", q:"The passage mainly argues that jazz improvisation is",
+     c:["pure invention with no structure","too difficult for most musicians to learn","creation that takes place within a shared, agreed framework","a style that ended in the 1950s","mostly written out in advance"],
+     a:2, n:"'A shared framework, agreed on in advance, inside which the details are made up on the spot.'"},
+    {type:"detail", q:"After the opening melody is stated, the musicians typically",
+     c:["stop playing entirely","repeat the melody note for note","change to a completely different tune","improvise new melodies over the same chord sequence","each play in a different key"],
+     a:3, n:"'The musicians take turns improvising new melodies over that same chord sequence, which cycles again and again.'"},
+    {type:"vocab-in-context", q:"As used in the passage, \"vocabulary\" most nearly means",
+     c:["a list of word definitions","the names of the musical notes","the lyrics of a song","a foreign language","a stock of musical phrases and figures a player can draw on"],
+     a:4, n:"Players 'absorb a vocabulary of short melodic phrases, rhythmic figures' and recombine them like words."},
+    {type:"inference", q:"The comparison to \"a fluent speaker\" is used to suggest that improvisers",
+     c:["combine familiar elements freshly, without planning each one in advance","talk out loud while they play","rely on memorized, complete solos","cannot perform without sheet music","prefer slow tempos"],
+     a:0, n:"Like a speaker building new sentences from known words, improvisers recombine learned fragments on the fly."},
+    {type:"detail", q:"The passage says that in the late 1950s some players",
+     c:["abandoned melody altogether","replaced the busy chord sequences with a single scale held for long stretches","returned to fully written-out music","stopped improvising","performed only ballads"],
+     a:1, n:"They gave the soloist more room by holding one scale in place of a fast chord sequence."},
+    {type:"tone", q:"The passage treats the disputes within the tradition as",
+     c:["proof that the music failed","evidence that rules do not matter","a recurring argument that left the music's basic bargain intact","unimportant and best ignored","a sign that jazz is not really music"],
+     a:2, n:"'What held across the changes was the basic bargain of the music.'"}
+  ]
+},
+{
+  id:"p_heatisland", domain:"Social Science", title:"The Warm Patch on the Map",
+  text:
+"On a still summer night, the air in the center of a large city can be several degrees warmer than the air over nearby fields. The gap is called the urban heat island, and it is one of the most consistent findings in the study of city climates.\n\n"+
+"Several features of a built-up area combine to produce it. Dark roofs and asphalt absorb sunlight through the day and release the stored heat slowly after dark, so the city cools down less at night than open land does. Tall buildings crowd the sky, trapping heat that would otherwise radiate away and blocking wind that would carry it off. Hard surfaces shed rainwater into drains rather than holding it, so little moisture is left to evaporate, and evaporation is one of the main ways a landscape cools itself. Engines, air conditioners, and machinery add their own waste heat directly to the air.\n\n"+
+"The effect is not spread evenly. It is strongest where buildings are dense and greenery is scarce, and weakest in parks and along tree-lined streets, where shade and moisture from leaves hold temperatures down. Studies in many cities have found that lower-income neighborhoods tend to have fewer trees and more paved surface, and so bear more of the heat. During a heat wave, those same blocks report more illness and more deaths.\n\n"+
+"Cities have a set of practical responses. Painting roofs white or planting them with vegetation lowers the amount of heat a building takes in. Adding street trees and small parks brings shade and evaporation back into the hottest districts. Lighter-colored pavement reflects more sunlight than black asphalt. None of these measures is dramatic on its own, and none removes the heat island. Taken together, and aimed first at the neighborhoods that suffer most, they can shave a few degrees off a summer night, which in a severe heat wave is enough to matter.",
+  questions:[
+    {type:"main-idea", q:"The passage is mainly about",
+     c:["why cities are colder than the countryside","the design of white roofs","how rainwater drains from city streets","what causes the urban heat island and what can reduce it","the health effects of cold weather"],
+     a:3, n:"It explains the causes of the heat island, its uneven burden, and the measures that ease it."},
+    {type:"detail", q:"According to the passage, hard city surfaces raise temperatures partly because they",
+     c:["hold rainwater for long periods","reflect almost all sunlight","release heat only during the day","keep engines from adding heat","shed rainwater into drains, leaving little moisture to evaporate"],
+     a:4, n:"With the water gone, 'evaporation, one of the main ways a landscape cools itself,' cannot happen."},
+    {type:"detail", q:"The passage says that within a city the heat island is weakest",
+     c:["in parks and along tree-lined streets","on dark roofs","right next to tall buildings","over open asphalt","near banks of air conditioners"],
+     a:0, n:"'Weakest in parks and along tree-lined streets, where shade and moisture from leaves hold temperatures down.'"},
+    {type:"vocab-in-context", q:"As used in the passage, \"shave\" most nearly means",
+     c:["to cut hair","to reduce by a small amount","to smooth a rough surface","to measure precisely","to spread evenly"],
+     a:1, n:"'Shave a few degrees off a summer night' — trim a small amount."},
+    {type:"inference", q:"The passage implies that heat-reduction efforts will do the most good if they are",
+     c:["spread equally across every neighborhood","limited to downtown business districts","focused first on dense, low-income areas with few trees","delayed until a heat wave has begun","applied only inside parks"],
+     a:2, n:"Those blocks have the least tree cover, the most pavement, and the worst heat-wave outcomes; the passage says to aim there 'first.'"},
+    {type:"tone", q:"The author's assessment of the individual heat-reduction measures is",
+     c:["enthusiastic, treating each one as a full solution","measured, calling them modest but worthwhile together","dismissive, seeing no value in any of them","alarmed and pessimistic","unsure whether the heat island is real"],
+     a:1, n:"'None... is dramatic on its own... Taken together... enough to matter.'"}
+  ]
+},
+{
+  id:"p_tipping", domain:"Social Science", title:"The Economics of the Tip",
+  text:
+"Tipping looks like a simple reward for good service, but as an economic arrangement it is unusual. The customer pays a sum they are not legally required to pay, after the service is already finished, for a benefit they have already received. Standard models of self-interested behavior predict that a purely rational customer would leave nothing. Most people tip anyway.\n\n"+
+"Researchers who have studied restaurant tipping report only a weak link between the size of a tip and the quality of the service. Diners say service quality drives the amount, yet measured tips vary far more with the size of the bill, and with social factors: whether the group is large, whether the customer expects to return, whether a server briefly touches a shoulder or writes a small thank-you on the check. The custom seems to run more on social pressure and habit than on careful evaluation.\n\n"+
+"Tipping also shifts risk and cost in ways that are easy to miss. Part of a server's pay comes from customers rather than the employer, so the restaurant's labor cost falls when a table is quiet and rises when it is busy. In several countries the practice barely exists; the price on the menu is the price paid, and staff are paid a fixed wage. Where tipping is entrenched, attempts by individual restaurants to drop it and raise menu prices have often failed, because customers read the higher listed prices as expensive even when the total is unchanged.\n\n"+
+"Critics argue that tipping ties a worker's income to things they do not control, including the biases of customers, and that it lets published prices understate the true cost of a meal. Defenders say it rewards effort and gives workers a chance to earn more than a flat wage would pay. The debate continues in part because the custom is held in place less by argument than by the awkwardness, felt on both sides of the table, of being the one who breaks it.",
+  questions:[
+    {type:"main-idea", q:"The passage is mainly about",
+     c:["how to calculate the correct tip","the history of the restaurant menu","which countries have the best service","how employers set wages","why tipping is an unusual economic arrangement that is hard to change"],
+     a:4, n:"It examines what makes tipping odd in economic terms and why it resists reform."},
+    {type:"detail", q:"Research described in the passage found that tip size varies most with",
+     c:["the size of the bill and social factors","the measured quality of the service","the time of day","the age of the server","the type of food ordered"],
+     a:0, n:"'Measured tips vary far more with the size of the bill, and with social factors.'"},
+    {type:"detail", q:"When individual restaurants dropped tipping and raised menu prices, the change often",
+     c:["succeeded right away","failed, because customers read the listed prices as expensive","had no measurable effect on customers","was blocked by law","lowered the total that customers paid"],
+     a:1, n:"'Customers read the higher listed prices as expensive even when the total is unchanged.'"},
+    {type:"vocab-in-context", q:"As used in the passage, \"entrenched\" most nearly means",
+     c:["newly introduced","hidden from view","firmly established","against the law","briefly fashionable"],
+     a:2, n:"'Where tipping is entrenched' — deeply rooted and hard to dislodge."},
+    {type:"inference", q:"The passage suggests that a restaurant's labor cost under a tipping system",
+     c:["stays exactly the same every night","is paid entirely by the employer","is set by the government","rises on busy nights and falls on slow ones","does not depend on how many customers come in"],
+     a:3, n:"Because part of pay 'comes from customers rather than the employer,' cost tracks how busy the tables are."},
+    {type:"tone", q:"The final sentence attributes the survival of tipping mainly to",
+     c:["laws that require it","careful economic reasoning by customers","the high quality of service it produces","pressure from restaurant owners","the social awkwardness of being the first to stop"],
+     a:4, n:"'The awkwardness, felt on both sides of the table, of being the one who breaks it.'"}
+  ]
+},
+{
+  id:"p_census", domain:"Social Science", title:"Counting for Power",
+  text:
+"Every ten years the United States attempts to count every person living in the country. The exercise is expensive and difficult, and its results reshape political power for the decade that follows.\n\n"+
+"The Constitution ties the count to representation. The 435 seats in the House of Representatives are divided among the states in proportion to population, so a state that grows faster than the national average tends to gain seats after a census, while a slower-growing state loses them. The same figures guide the drawing of district boundaries within each state, and they steer the yearly distribution of a large sum of federal money for roads, schools, hospitals, and other programs. A count that misses people in a given area quietly reduces that area's representation and its funding for years.\n\n"+
+"Certain groups are consistently harder to count. People who move often, who do not speak English at home, who distrust the government, or who live in irregular housing are more likely to be missed. Historically, this has meant undercounts of renters, young children, and residents of remote rural areas, along with members of some minority groups, while homeowners and older adults are counted more completely. Because the missed and the counted are not spread evenly across the map, the errors translate into shifts of political weight between communities.\n\n"+
+"The Census Bureau uses several methods to close the gap: hiring local workers who know a neighborhood, offering the form in many languages, and following up in person at addresses that do not respond. After the count, statisticians compare it against independent estimates to gauge how large the undercount was and where it fell. The number will never be exact. What matters, officials argue, is that the error be small and, as far as possible, even, since an uneven undercount does not merely misstate the population. It moves representation and resources from one group of people to another.",
+  questions:[
+    {type:"main-idea", q:"The central point of the passage is that",
+     c:["errors in the census shift political representation and funding between communities","the census is too costly to be worth conducting","the census fixes the exact population of every town","most Americans refuse to answer the census","the House should have more than 435 seats"],
+     a:0, n:"The passage stresses that who is missed, and where, changes the balance of power and money."},
+    {type:"detail", q:"According to the passage, House seats are divided among the states",
+     c:["equally, ten per state","in proportion to each state's population","by the age of each state","according to land area","by a vote in Congress"],
+     a:1, n:"'Divided among the states in proportion to population.'"},
+    {type:"detail", q:"The passage names all of the following as harder to count EXCEPT",
+     c:["people who move often","people who do not speak English at home","older homeowners","young children","residents of remote rural areas"],
+     a:2, n:"'Homeowners and older adults are counted more completely' — they are the exception."},
+    {type:"vocab-in-context", q:"As used in the passage, \"steer\" most nearly means",
+     c:["to drive a vehicle","to slow something down","to count carefully","to guide or direct","to argue against"],
+     a:3, n:"The figures 'steer the yearly distribution of... federal money' — direct where it goes."},
+    {type:"inference", q:"The passage implies that an undercount that was large but perfectly even across all groups would be considered",
+     c:["worse than an uneven undercount","a reason to cancel the census","impossible to detect","identical in effect to an uneven one","less damaging than an uneven undercount of the same size"],
+     a:4, n:"'What matters... is that the error be small and, as far as possible, even'; evenness limits the transfer of power."},
+    {type:"tone", q:"The passage presents the census as",
+     c:["a routine task with few real consequences","a flawed but consequential process that officials work to improve","a hopeless effort that should be abandoned","a purely scientific exercise with no political effect","above all a threat to individual privacy"],
+     a:1, n:"It acknowledges the undercount while describing the Bureau's efforts to measure and reduce it."}
+  ]
+},
+{
+  id:"p_langshift", domain:"Social Science", title:"How a Language Wins",
+  text:
+"Languages do not spread because they are beautiful or logical. They spread because of what speaking them lets a person do.\n\n"+
+"When two language communities come into sustained contact, through trade, conquest, migration, or schooling, one language often becomes the shared medium for wider life: government, commerce, higher education, entertainment that reaches beyond the region. Parents notice. A family that wants its children to have access to those opportunities may raise them in the wider language, using the local one less at home with each generation. The local language is not banned or forgotten in a single step. It is simply spoken in fewer situations, by fewer people, until a generation grows up understanding it but not speaking it, and then a generation that does neither.\n\n"+
+"Researchers describe the process as a shift in domains. A language may hold on for a long time in the home, in religious practice, in songs and jokes, even after it has disappeared from work and the marketplace. Its survival then depends on whether those remaining domains are enough to carry it to the next generation. A language used only for holidays and greetings, and never for arguing, bargaining, or teaching, tends to thin out into a set of fixed phrases. Once children stop learning a language as a first language, its long-term prospects are poor, whatever its official status.\n\n"+
+"The trend is not fixed. Communities have reversed language shift by building schools that teach in the local language, producing media and books in it, and giving it a role in local government, so that speaking it again connects to opportunity rather than only to the past. These efforts succeed most clearly where they restore the language to everyday, practical use, and least where they treat it as a museum piece. The pattern points the same way in both directions. A language grows or fades with the range of things its speakers can do in it.",
+  questions:[
+    {type:"main-idea", q:"The passage argues that whether a language spreads or declines depends chiefly on",
+     c:["how beautiful or logical the language is","the range of useful things its speakers can do in it","the number of letters in its alphabet","how old the language is","whether linguists have studied it"],
+     a:1, n:"The opening and closing both tie a language's fortunes to what speaking it lets a person do."},
+    {type:"detail", q:"According to the passage, when a local language begins to lose ground, it typically",
+     c:["is banned outright by the government","disappears within a single year","is spoken in fewer and fewer situations over several generations","becomes the language of commerce","gains new speakers abroad"],
+     a:2, n:"'Spoken in fewer situations, by fewer people,' across generations."},
+    {type:"vocab-in-context", q:"As used in the passage, \"domains\" most nearly means",
+     c:["territories held by a ruler","internet addresses","rules of grammar","areas of life in which a language is used","families of related languages"],
+     a:3, n:"'A shift in domains' — the home, religion, and song versus work and the marketplace."},
+    {type:"detail", q:"The passage says a language's long-term prospects become poor once",
+     c:["it is first written down","adults stop using it at work","it loses its official status","it starts being taught in schools","children stop learning it as a first language"],
+     a:4, n:"'Once children stop learning a language as a first language, its long-term prospects are poor.'"},
+    {type:"inference", q:"The passage implies that a revival effort is LEAST likely to succeed if it",
+     c:["treats the language mainly as a heritage object to be preserved","creates media and books in the language","gives the language a role in local government","teaches school subjects in the language","links the language to job opportunities"],
+     a:0, n:"Efforts succeed 'least where they treat it as a museum piece' rather than restoring practical use."},
+    {type:"tone", q:"The final two sentences function to",
+     c:["restate the passage's thesis and apply it to both growth and decline","introduce an unrelated example","express doubt that revival is ever possible","criticize parents who change languages","shift the discussion to written language"],
+     a:0, n:"'The pattern points the same way in both directions. A language grows or fades with the range of things its speakers can do in it.'"}
+  ]
+}
+];
+
+/* ================================================================
+   DATA — READING-RATE PASSAGE
+   ================================================================ */
+const RATE_TEXT =
+"A foraging honeybee may fly several kilometers from the hive, visit dozens of flowers, and then return in a nearly straight line to a hole a few centimeters wide. For an animal with a brain smaller than a grain of rice, this is a remarkable feat of navigation, and biologists have spent decades working out how it is done. "+
+"The bee's most important tool is the sun. A bee can read the sun's position in the sky and use it as a compass, holding a steady angle between its flight path and the sun's direction. Because the sun moves across the sky during the day, the bee must correct for that drift, and it does. A bee held inside a dark hive for several hours will leave and fly in the correct compass direction, as though it had kept track of time and adjusted its internal map. "+
+"On cloudy days the sun may be hidden, but the sky still carries a clue. Sunlight scattered by the atmosphere forms patterns of polarized light, invisible to humans but detectable by a special region at the top of the bee's eye. From even a small patch of blue sky, a bee can work out where the sun must be and hold its bearings. "+
+"Closer to home, bees rely on landmarks. A bee learns the shapes, colors, and positions of trees, rocks, and buildings near the hive and along familiar routes. On its first flights, a young bee performs slow backward loops in front of the entrance, turning to face the hive and memorizing how it looks from outside. Experiments that shift local landmarks a short distance will send returning bees to search in the wrong place. "+
+"Distance is measured in a different way. As a bee flies, the visual world streams past its eyes, and the speed of that flow gives an estimate of how far it has traveled. A bee flown through a narrow tunnel with patterned walls, where the world rushes past quickly, will overestimate the distance it covered. "+
+"All of this information comes together in the waggle dance. A returning forager walks a straight line on the vertical comb while shaking its body, then circles back and repeats. The angle of the straight run, measured against vertical, matches the angle of the food relative to the sun. The length of the run signals the distance. Nestmates follow closely, reading the dance in the darkness of the hive, and then fly out to search the direction and distance it described. "+
+"None of these systems is perfect on its own. Together they let a small insect leave home, wander a wide and changing landscape, and come back with food, again and again, through a summer.";
+
+/* ================================================================
+   CONFIG
+   ================================================================ */
+const TEST_DATE = new Date(2026,8,21,8,0,0); // Sep 21, 2026
+const SIM_VOCAB_TIME = 15*60;
+const SIM_COMP_TIME  = 20*60;
+const RATE_TIME      = 60;
+const SIM_VOCAB_COUNT = 80;
+const SIM_PASSAGE_COUNT = 6;
+const KEY = "ndrt_prep_v1";
+
+const TYPE_LABEL = {
+  vocab:"Vocabulary", "main-idea":"Main idea", detail:"Detail",
+  inference:"Inference", "vocab-in-context":"Vocabulary in context", tone:"Tone / purpose"
+};
+const MODE_LABEL = { sim:"Full simulation", vocab:"Vocabulary drill", comp:"Comprehension drill", rate:"Reading rate" };
+
+/* ================================================================
+   STORAGE
+   ================================================================ */
+function load(){
+  try{
+    const r = JSON.parse(localStorage.getItem(KEY));
+    if(r && typeof r==="object") return Object.assign({targetGrade:9, sessions:[], weak:[]}, r);
+  }catch(e){}
+  return {targetGrade:9, sessions:[], weak:[]};
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){} }
+let store = load();
+
+/* ================================================================
+   HELPERS
+   ================================================================ */
+function el(tag, attrs){
+  const n = document.createElement(tag);
+  if(attrs) for(const k in attrs){
+    const v = attrs[k];
+    if(v==null) continue;
+    if(k==="class") n.className=v;
+    else if(k==="text") n.textContent=v;
+    else if(k.slice(0,2)==="on" && typeof v==="function") n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v);
+  }
+  for(let i=2;i<arguments.length;i++){
+    let kid = arguments[i];
+    if(kid==null || kid===false) continue;
+    if(Array.isArray(kid)){ kid.forEach(function(k){ if(k!=null&&k!==false) n.appendChild(typeof k==="string"?document.createTextNode(k):k); }); }
+    else n.appendChild(typeof kid==="string"?document.createTextNode(kid):kid);
+  }
+  return n;
+}
+function fmtTime(s){
+  s = Math.max(0, Math.round(s));
+  const m = Math.floor(s/60), r = s%60;
+  return m+":"+(r<10?"0":"")+r;
+}
+function shuffle(a){
+  a = a.slice();
+  for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; }
+  return a;
+}
+function sample(a,n){ const s = shuffle(a); return n>=s.length ? s : s.slice(0,n); }
+function chunk(a,size){ const out=[]; for(let i=0;i<a.length;i+=size) out.push(a.slice(i,i+size)); return out; }
+function clamp(v,lo,hi){ return Math.max(lo, Math.min(hi, v)); }
+function pct(c,t){ return t ? Math.round(100*c/t)+"%" : "—"; }
+function daysLeft(){ return Math.ceil((TEST_DATE - Date.now())/86400000); }
+
+/* ---- normalize vocab ---- */
+function normVocab(t, i){
+  return {
+    id:"v"+i, type:"vocab",
+    stem:t[0], choices:t[1], answer:t[2], note:t[3],
+    d:t[4]||2, frame:t[5]||null
+  };
+}
+function allVocabItems(){ return VOCAB_RAW.map(normVocab); }
+function vocabPromptNode(item){
+  if(item.frame && item.frame.indexOf("___")>=0){
+    const parts = item.frame.split("___");
+    return el("div",{class:"qtext"}, parts[0], el("b",{class:"vstem"}, item.stem), parts[1]);
+  }
+  if(item.frame){ // association style
+    return el("div",{class:"qtext"}, item.frame);
+  }
+  return el("div",{class:"qtext"}, el("b",{class:"vstem"}, item.stem), " most nearly means:");
+}
+
+/* ---- normalize comprehension ---- */
+function normComp(passages){
+  const out = [];
+  passages.forEach(function(p){
+    p.questions.forEach(function(q,k){
+      out.push({
+        id:p.id+"_q"+k, type:q.type, q:q.q, choices:q.c, answer:q.a, note:q.n,
+        passageId:p.id, passage:p
+      });
+    });
+  });
+  return out;
+}
+function passageCard(p){
+  const c = el("div",{class:"card passage"});
+  c.appendChild(el("h3",{text:p.title}));
+  c.appendChild(el("div",{class:"domain", text:p.domain}));
+  p.text.split("\n\n").forEach(function(para){ c.appendChild(el("p",{text:para})); });
+  return c;
+}
+
+/* ---- weak words ---- */
+function weakFind(stem){ return store.weak.find(function(w){ return w.stem===stem; }); }
+function addWeak(item){
+  if(!item || item.type!=="vocab") return;
+  const key = item.stem || item.frame || item.id;
+  let w = store.weak.find(function(x){ return (x.stem||x.frame||x.id)===key; });
+  if(w){ w.misses = (w.misses||0)+1; w.hits = 0; }
+  else{
+    store.weak.push({stem:item.stem, frame:item.frame, choices:item.choices, answer:item.answer, note:item.note, d:item.d, misses:1, hits:0});
+    if(store.weak.length>250) store.weak.shift();
+  }
+  save();
+}
+function weakHit(item){
+  const key = item.stem || item.frame || item.id;
+  const idx = store.weak.findIndex(function(x){ return (x.stem||x.frame||x.id)===key; });
+  if(idx<0) return;
+  store.weak[idx].hits = (store.weak[idx].hits||0)+1;
+  if(store.weak[idx].hits>=2) store.weak.splice(idx,1);
+  save();
+}
+function weakAsItems(){
+  return store.weak.map(function(w,i){
+    return {id:"w"+i, type:"vocab", stem:w.stem, choices:w.choices, answer:w.answer, note:w.note, d:w.d||2, frame:w.frame||null};
+  });
+}
+
+/* ---- sessions ---- */
+function recordSession(sess){
+  sess.ts = Date.now();
+  store.sessions.push(sess);
+  if(store.sessions.length>60) store.sessions.shift();
+  save();
+}
+function aggAccuracy(section){
+  let c=0,t=0;
+  store.sessions.forEach(function(s){
+    if(s.sections && s.sections[section]){ c+=s.sections[section].c; t+=s.sections[section].t; }
+  });
+  return {c:c,t:t};
+}
+function avgWpm(){
+  const xs = store.sessions.filter(function(s){ return s.wpm; }).map(function(s){ return s.wpm; });
+  if(!xs.length) return null;
+  return Math.round(xs.reduce(function(a,b){return a+b;},0)/xs.length);
+}
+
+/* ---- reading-level band (rough proxy only) ---- */
+function estimateBand(vAcc, cAcc, wpm){
+  const parts=[], weights=[];
+  if(cAcc!=null){ parts.push(cAcc); weights.push(0.50); }
+  if(vAcc!=null){ parts.push(vAcc); weights.push(0.35); }
+  if(wpm!=null){ parts.push(clamp((wpm-140)/(320-140),0,1)); weights.push(0.15); }
+  if(!parts.length) return null;
+  const wsum = weights.reduce(function(a,b){return a+b;},0);
+  let score = 0;
+  parts.forEach(function(p,i){ score += p*weights[i]; });
+  score = score/wsum;
+  const table = [[0.90,13,"College level"],[0.80,12,"Grade 12"],[0.70,11,"Grade 11"],[0.60,10,"Grade 10"],[0.50,9,"Grade 9"],[0.40,8,"Grade 8"],[0,7,"Below Grade 8"]];
+  const row = table.find(function(r){ return score>=r[0]; });
+  return {score:score, grade:row[1], label:row[2]};
+}
+
+/* ================================================================
+   TIMERS  (all tracked so the router can stop them)
+   ================================================================ */
+let activeTimers = [];
+function makeTimer(seconds, onExpire){
+  const node = el("span",{class:"timer", text:fmtTime(seconds)});
+  let iv=null, end=0;
+  function tick(){
+    const rem = (end - Date.now())/1000;
+    node.textContent = fmtTime(rem);
+    node.classList.toggle("warn", rem<=300 && rem>60);
+    node.classList.toggle("danger", rem<=60);
+    if(rem<=0){ stop(); if(onExpire) onExpire(); }
+  }
+  function start(){ end = Date.now()+seconds*1000; tick(); iv=setInterval(tick,250); activeTimers.push(stop); }
+  function stop(){ if(iv){ clearInterval(iv); iv=null; } }
+  function remaining(){ return Math.max(0,(end-Date.now())/1000); }
+  return {node:node, start:start, stop:stop, remaining:remaining};
+}
+function makeStopwatch(){
+  const node = el("span",{class:"timer", text:"0:00"});
+  let iv=null, t0=0;
+  function start(){ t0=Date.now(); iv=setInterval(function(){ node.textContent=fmtTime((Date.now()-t0)/1000); },500); activeTimers.push(stop); }
+  function stop(){ if(iv){ clearInterval(iv); iv=null; } }
+  function elapsed(){ return (Date.now()-t0)/1000; }
+  return {node:node, start:start, stop:stop, elapsed:elapsed};
+}
+function stopAllTimers(){ activeTimers.forEach(function(fn){ try{fn();}catch(e){} }); activeTimers = []; }
+
+/* ================================================================
+   ROUTER
+   ================================================================ */
+let simState = null;
+let rateState = null;
+let current = null;
+
+function armUnloadGuard(on){
+  window.onbeforeunload = on ? function(e){ e.preventDefault(); e.returnValue = "Leaving now will end your timed test."; return e.returnValue; } : null;
+}
+function go(name, params){
+  stopAllTimers();
+  current = {name:name, params:params||{}};
+  const app = document.getElementById("app");
+  while(app.firstChild) app.removeChild(app.firstChild);
+  (SCREENS[name]||SCREENS.home)(params||{});
+  updateTopRight();
+  window.scrollTo(0,0);
+}
+function updateTopRight(){
+  const d = daysLeft();
+  document.getElementById("topRight").textContent =
+    d>0 ? ("Sep 21, 2026 · "+d+" day"+(d===1?"":"s")+" left") : "Test date has passed";
+}
+document.getElementById("brandBtn").addEventListener("click", function(){
+  if(simState){ if(!confirm("Leave the simulation? Your progress will not be saved.")) return; simState=null; armUnloadGuard(false); }
+  go("home");
+});
+
+/* ================================================================
+   SCREEN: HOME
+   ================================================================ */
+function renderHome(){
+  const app = document.getElementById("app");
+  const d = daysLeft();
+
+  const cd = el("div",{class:"card"});
+  cd.appendChild(el("div",{class:"count"},
+    el("span",{class:"num", text: d>0 ? String(d) : "0"}),
+    el("div",{},
+      el("div",{text: d>0 ? "days until the Nelson-Denny Reading Test" : "Test day has passed"}),
+      el("div",{class:"muted small", text:"Test date: September 21, 2026"})
+    )
+  ));
+  const gradeWrap = el("div",{class:"field"});
+  gradeWrap.appendChild(el("label",{text:"Target reading grade level", for:"gradeSel"}));
+  const sel = el("select",{class:"grade", id:"gradeSel", onchange:function(){ store.targetGrade = parseInt(this.value,10); save(); }});
+  [9,10,11,12].forEach(function(g){
+    const o = el("option",{value:String(g), text:"Grade "+g+(g===9?" (PA statutory floor)":"")});
+    if(g===store.targetGrade) o.setAttribute("selected","selected");
+    sel.appendChild(o);
+  });
+  gradeWrap.appendChild(sel);
+  gradeWrap.appendChild(el("div",{class:"muted small", text:"PA MPOETC requires a 9th-grade level; some departments set a higher cutoff."}));
+  cd.appendChild(gradeWrap);
+  app.appendChild(cd);
+
+  // stats
+  const v = aggAccuracy("vocab"), c = aggAccuracy("comp"), w = avgWpm();
+  const stats = el("div",{class:"stats"});
+  [["Sessions", String(store.sessions.length)],
+   ["Vocab accuracy", pct(v.c,v.t)],
+   ["Comp accuracy", pct(c.c,c.t)],
+   ["Avg WPM", w?String(w):"—"],
+   ["Weak words", String(store.weak.length)]
+  ].forEach(function(s){
+    stats.appendChild(el("div",{class:"stat"}, el("div",{class:"n", text:s[1]}), el("div",{class:"l", text:s[0]})));
+  });
+  app.appendChild(el("div",{class:"card"}, el("h3",{text:"Your progress"}), stats));
+
+  // modes
+  const modes = el("div",{class:"modes"});
+  function modeBtn(title, desc, fn){ return el("button",{class:"mode", onclick:fn}, el("h3",{text:title}), el("p",{text:desc})); }
+  modes.appendChild(modeBtn("Full Simulation", "Vocabulary 15:00, then Comprehension 20:00. Timed, no going back between sections.", function(){ go("simIntro"); }));
+  modes.appendChild(modeBtn("Vocabulary Drill", "Practice vocab items with instant feedback. Untimed or self-timed.", function(){ go("vsetup"); }));
+  modes.appendChild(modeBtn("Comprehension Drill", "Work through passages with instant feedback and explanations.", function(){ go("csetup"); }));
+  modes.appendChild(modeBtn("Reading Rate", "Read for one minute, mark your spot, get a words-per-minute figure.", function(){ go("rate"); }));
+  modes.appendChild(modeBtn("Review / Weak Spots", "Accuracy by question type, plus your running list of words to relearn.", function(){ go("review"); }));
+  app.appendChild(el("h2",{text:"Practice modes"}));
+  app.appendChild(modes);
+
+  app.appendChild(el("div",{class:"foot", text:
+    "All vocabulary and passages here are original practice material written to match the test's format — they are not items from the actual copyrighted Nelson-Denny test. Progress is saved only in this browser, on this device."}));
+}
+
+/* ================================================================
+   SCREEN: VOCAB SETUP
+   ================================================================ */
+function renderVocabSetup(){
+  const app = document.getElementById("app");
+  app.appendChild(el("h1",{text:"Vocabulary Drill"}));
+  let count = 20, useWeak = store.weak.length>0, timed = false;
+
+  const card = el("div",{class:"card"});
+
+  const cf = el("div",{class:"field"});
+  cf.appendChild(el("label",{text:"How many items?"}));
+  const seg = el("div",{class:"seg"});
+  [10,20,40].forEach(function(nn){
+    const b = el("button",{text:String(nn), onclick:function(){ count=nn; seg.querySelectorAll("button").forEach(function(x){x.classList.remove("on");}); this.classList.add("on"); }});
+    if(nn===count) b.classList.add("on");
+    seg.appendChild(b);
+  });
+  cf.appendChild(seg);
+  card.appendChild(cf);
+
+  const t1 = el("label",{class:"toggle"});
+  const cb1 = el("input",{type:"checkbox"}); cb1.checked = useWeak;
+  cb1.addEventListener("change", function(){ useWeak = this.checked; });
+  t1.appendChild(cb1); t1.appendChild(document.createTextNode("Start with my weak words ("+store.weak.length+" saved)"));
+  card.appendChild(t1);
+
+  const t2 = el("label",{class:"toggle"});
+  const cb2 = el("input",{type:"checkbox"});
+  cb2.addEventListener("change", function(){ timed = this.checked; });
+  t2.appendChild(cb2); t2.appendChild(document.createTextNode("Show a self-timer (count up, no limit)"));
+  card.appendChild(t2);
+
+  if(store.targetGrade>=11){
+    card.appendChild(el("div",{class:"muted small", text:"Target is Grade "+store.targetGrade+": harder items are weighted in."}));
+  }
+
+  card.appendChild(el("div",{class:"btn-row", style:"margin-top:12px"},
+    el("button",{class:"btn btn-primary", onclick:function(){
+      const items = buildVocabDrill(count, useWeak);
+      go("drill", {kind:"vocab", items:items, title:"Vocabulary Drill", timed:timed});
+    }, text:"Start drill"}),
+    el("button",{class:"btn", onclick:function(){ go("home"); }, text:"Back"})
+  ));
+  app.appendChild(card);
+}
+function buildVocabDrill(n, useWeak){
+  let weakItems = [];
+  if(useWeak && store.weak.length){
+    weakItems = shuffle(weakAsItems()).slice(0, Math.min(store.weak.length, Math.floor(n*0.4)));
+  }
+  const usedKeys = {};
+  weakItems.forEach(function(it){ usedKeys[it.stem||it.frame||it.id]=1; });
+  let pool = allVocabItems().filter(function(it){ return !usedKeys[it.stem||it.frame||it.id]; });
+  if(store.targetGrade>=12) pool.sort(function(a,b){ return (b.d-a.d) + (Math.random()-0.5); });
+  else if(store.targetGrade>=11){ const hard = pool.filter(function(it){return it.d>=2;}); pool = shuffle(hard.length>=(n) ? hard : pool); }
+  else pool = shuffle(pool);
+  const chosen = pool.slice(0, Math.max(0, n - weakItems.length));
+  return shuffle(weakItems.concat(chosen));
+}
+
+/* ================================================================
+   SCREEN: COMPREHENSION SETUP
+   ================================================================ */
+function renderCompSetup(){
+  const app = document.getElementById("app");
+  app.appendChild(el("h1",{text:"Comprehension Drill"}));
+  let picked = {}, randCount = 1, timed = false;
+
+  const card = el("div",{class:"card"});
+  card.appendChild(el("p",{class:"muted small", text:"Pick 1–3 passages, or leave all unchecked for random."}));
+  PASSAGES.forEach(function(p){
+    const row = el("label",{class:"toggle"});
+    const cb = el("input",{type:"checkbox"});
+    cb.addEventListener("change", function(){ if(this.checked) picked[p.id]=p; else delete picked[p.id]; });
+    row.appendChild(cb);
+    row.appendChild(document.createTextNode(p.title+"  —  "+p.domain+" · "+p.questions.length+" Q"));
+    card.appendChild(row);
+  });
+
+  const rf = el("div",{class:"field"});
+  rf.appendChild(el("label",{text:"If none checked: how many random passages?"}));
+  const seg = el("div",{class:"seg"});
+  [1,2,3].forEach(function(nn){
+    const b = el("button",{text:String(nn), onclick:function(){ randCount=nn; seg.querySelectorAll("button").forEach(function(x){x.classList.remove("on");}); this.classList.add("on"); }});
+    if(nn===randCount) b.classList.add("on");
+    seg.appendChild(b);
+  });
+  rf.appendChild(seg);
+  card.appendChild(rf);
+
+  const t2 = el("label",{class:"toggle"});
+  const cb2 = el("input",{type:"checkbox"});
+  cb2.addEventListener("change", function(){ timed = this.checked; });
+  t2.appendChild(cb2); t2.appendChild(document.createTextNode("Show a self-timer (count up, no limit)"));
+  card.appendChild(t2);
+
+  card.appendChild(el("div",{class:"btn-row", style:"margin-top:12px"},
+    el("button",{class:"btn btn-primary", text:"Start drill", onclick:function(){
+      let list = Object.keys(picked).map(function(k){ return picked[k]; });
+      if(list.length===0) list = sample(PASSAGES, Math.min(randCount, PASSAGES.length));
+      else if(list.length>3) list = list.slice(0,3);
+      go("drill", {kind:"comp", items:normComp(list), title:"Comprehension Drill", timed:timed});
+    }}),
+    el("button",{class:"btn", text:"Back", onclick:function(){ go("home"); }})
+  ));
+  app.appendChild(card);
+}
+
+/* ================================================================
+   SCREEN: DRILL  (vocab or comp, instant feedback)
+   ================================================================ */
+function renderDrill(params){
+  const app = document.getElementById("app");
+  const items = params.items;
+  if(!items.length){ app.appendChild(el("div",{class:"card"}, el("p",{text:"Nothing to practice here yet."}), el("button",{class:"btn", text:"Back", onclick:function(){ go("home"); }}))); return; }
+  let i = 0;
+  const picks = new Array(items.length).fill(null);
+  let correct = 0;
+
+  app.appendChild(el("h1",{text:params.title}));
+  let sw = null;
+  if(params.timed){
+    sw = makeStopwatch();
+    app.appendChild(el("div",{class:"timerbar"}, el("span",{class:"muted small", text:"Elapsed"}), sw.node));
+    sw.start();
+  }
+  const prog = el("div",{class:"prog"}, el("i",{style:"width:0%"}));
+  app.appendChild(prog);
+  const host = el("div",{}); app.appendChild(host);
+
+  function renderQ(){
+    while(host.firstChild) host.removeChild(host.firstChild);
+    prog.firstChild.style.width = Math.round(100*i/items.length)+"%";
+    const it = items[i];
+
+    if(params.kind==="comp" && (i===0 || items[i-1].passageId!==it.passageId)){
+      host.appendChild(passageCard(it.passage));
+    }
+    const card = el("div",{class:"card"});
+    card.appendChild(el("div",{class:"qhead"},
+      el("span",{class:"qnum", text:"Question "+(i+1)+" of "+items.length}),
+      el("span",{class:"tag", text:TYPE_LABEL[it.type]||it.type})
+    ));
+    card.appendChild(params.kind==="vocab" ? vocabPromptNode(it) : el("div",{class:"qtext", text:it.q}));
+
+    const choices = el("div",{class:"choices"});
+    const btns = [];
+    it.choices.forEach(function(ch, idx){
+      const b = el("button",{class:"choice"},
+        el("span",{class:"k", text:"ABCDE"[idx]}), el("span",{text:ch}));
+      b.addEventListener("click", function(){ if(picks[i]!=null) return; answer(idx, btns, card); });
+      btns.push(b); choices.appendChild(b);
+    });
+    card.appendChild(choices);
+    host.appendChild(card);
+  }
+  function answer(idx, btns, card){
+    picks[i] = idx;
+    const it = items[i];
+    const right = idx===it.answer;
+    if(right) correct++;
+    btns.forEach(function(b,k){
+      b.setAttribute("disabled","disabled");
+      if(k===it.answer) b.classList.add("correct");
+      if(k===idx && !right) b.classList.add("wrong");
+    });
+    if(params.kind==="vocab"){ if(right) weakHit(it); else addWeak(it); }
+    card.appendChild(el("div",{class:"feedback "+(right?"ok":"no")},
+      right ? "Correct" : "Not quite",
+      el("div",{class:"explain", text:it.note})
+    ));
+    card.appendChild(el("div",{class:"btn-row", style:"margin-top:12px"},
+      el("button",{class:"btn btn-primary", text: i+1<items.length ? "Next" : "See results", onclick:function(){
+        i++; if(i<items.length) renderQ(); else finish();
+      }})
+    ));
+  }
+  function finish(){
+    if(sw) sw.stop();
+    const byType = {};
+    items.forEach(function(it,k){
+      const T = byType[it.type] || (byType[it.type]={c:0,t:0});
+      T.t++; if(picks[k]===it.answer) T.c++;
+    });
+    const sect = params.kind==="vocab" ? {vocab:{c:correct,t:items.length}} : {comp:{c:correct,t:items.length}};
+    const session = {mode:params.kind, sections:sect, byType:byType, wpm:null};
+    const vAcc = sect.vocab ? sect.vocab.c/sect.vocab.t : null;
+    const cAcc = sect.comp ? sect.comp.c/sect.comp.t : null;
+    session.band = estimateBand(vAcc, cAcc, null);
+    recordSession(session);
+    go("results", {session:session, items:items, picks:picks, origin:{name:"drill", kind:params.kind}});
+  }
+
+  app.appendChild(el("div",{class:"btn-row", style:"margin-top:6px"},
+    el("button",{class:"link", text:"Quit to home", onclick:function(){ if(confirm("Quit this drill? It will not be saved.")) go("home"); }})
+  ));
+  renderQ();
+}
+
+/* ================================================================
+   SCREEN: SIMULATION INTRO
+   ================================================================ */
+function renderSimIntro(){
+  const app = document.getElementById("app");
+  app.appendChild(el("h1",{text:"Full Simulation"}));
+  const card = el("div",{class:"card"});
+  card.appendChild(el("p",{text:"This mirrors proctored test conditions:"}));
+  const ul = el("ul");
+  [ "Vocabulary section: "+Math.min(SIM_VOCAB_COUNT, VOCAB_RAW.length)+" items, 15:00.",
+    "Comprehension section: "+Math.min(SIM_PASSAGE_COUNT, PASSAGES.length)+" passages, 20:00.",
+    "The timer auto-submits each section when it runs out.",
+    "You can move freely among questions within a section, but you cannot return to a section once its time ends.",
+    "No pausing. Leaving the page ends the test.",
+    "All items are original practice material, not real test questions."
+  ].forEach(function(s){ ul.appendChild(el("li",{text:s})); });
+  card.appendChild(ul);
+  card.appendChild(el("div",{class:"btn-row", style:"margin-top:12px"},
+    el("button",{class:"btn btn-primary", text:"Begin simulation", onclick:startSim}),
+    el("button",{class:"btn", text:"Back", onclick:function(){ go("home"); }})
+  ));
+  app.appendChild(card);
+}
+function startSim(){
+  const vItems = sample(allVocabItems(), Math.min(SIM_VOCAB_COUNT, VOCAB_RAW.length));
+  const pas = sample(PASSAGES, Math.min(SIM_PASSAGE_COUNT, PASSAGES.length));
+  const cItems = normComp(pas);
+  simState = {
+    phase:"vocab",
+    vocab:{ items:vItems, picks:new Array(vItems.length).fill(null), idx:0 },
+    comp:{ items:cItems, picks:new Array(cItems.length).fill(null), idx:0 }
+  };
+  armUnloadGuard(true);
+  go("sim", {});
+}
+
+/* ================================================================
+   SCREEN: SIMULATION (runner)
+   ================================================================ */
+function renderSim(){
+  if(!simState){ go("home"); return; }
+  const app = document.getElementById("app");
+  const phase = simState.phase;
+  const sec = simState[phase];
+  const isVocab = phase==="vocab";
+
+  app.appendChild(el("h1",{text: isVocab ? "Simulation — Vocabulary" : "Simulation — Comprehension"}));
+
+  const timer = makeTimer(isVocab?SIM_VOCAB_TIME:SIM_COMP_TIME, function(){ endPhase(true); });
+  const bar = el("div",{class:"timerbar"},
+    el("span",{class:"muted small", text:(isVocab?"Section 1 of 2":"Section 2 of 2")+" — time left"}),
+    timer.node
+  );
+  app.appendChild(bar);
+  timer.start();
+
+  const host = el("div",{}); app.appendChild(host);
+  const nav = el("div",{class:"navgrid"});
+  const navWrap = el("div",{class:"card"}, el("div",{class:"muted small", text:"Question map"}), nav);
+
+  function refreshNav(){
+    while(nav.firstChild) nav.removeChild(nav.firstChild);
+    sec.items.forEach(function(it,k){
+      const b = el("button",{text:String(k+1), onclick:function(){ sec.idx=k; renderItem(); }});
+      if(sec.picks[k]!=null) b.classList.add("on");
+      if(k===sec.idx) b.classList.add("cur");
+      nav.appendChild(b);
+    });
+  }
+  function renderItem(){
+    while(host.firstChild) host.removeChild(host.firstChild);
+    const it = sec.items[sec.idx];
+    if(!isVocab) host.appendChild(passageCard(it.passage));
+    const card = el("div",{class:"card"});
+    card.appendChild(el("div",{class:"qhead"},
+      el("span",{class:"qnum", text:"Question "+(sec.idx+1)+" of "+sec.items.length}),
+      el("span",{class:"tag", text:TYPE_LABEL[it.type]||it.type})
+    ));
+    card.appendChild(isVocab ? vocabPromptNode(it) : el("div",{class:"qtext", text:it.q}));
+    const choices = el("div",{class:"choices"});
+    it.choices.forEach(function(ch, idx){
+      const b = el("button",{class:"choice"+(sec.picks[sec.idx]===idx?" sel":"")},
+        el("span",{class:"k", text:"ABCDE"[idx]}), el("span",{text:ch}));
+      b.addEventListener("click", function(){ sec.picks[sec.idx]=idx; renderItem(); refreshNav(); });
+      choices.appendChild(b);
+    });
+    card.appendChild(choices);
+    const rowBtns = el("div",{class:"btn-row", style:"margin-top:12px"});
+    rowBtns.appendChild(el("button",{class:"btn", text:"Previous", onclick:function(){ if(sec.idx>0){ sec.idx--; renderItem(); refreshNav(); } }}));
+    if(sec.idx+1<sec.items.length) rowBtns.appendChild(el("button",{class:"btn btn-primary", text:"Next", onclick:function(){ sec.idx++; renderItem(); refreshNav(); }}));
+    card.appendChild(rowBtns);
+    host.appendChild(card);
+    host.appendChild(navWrap);
+    host.appendChild(el("div",{class:"btn-row", style:"margin-top:6px"},
+      el("button",{class:"link", text: isVocab ? "End Vocabulary section early" : "End test now", onclick:function(){
+        if(confirm(isVocab ? "End the Vocabulary section now and move to Comprehension? You cannot come back." : "End the test now?")) endPhase(false);
+      }}),
+      el("button",{class:"link", text:"Abandon simulation", onclick:function(){
+        if(confirm("Abandon the simulation? Nothing will be saved.")){ timer.stop(); simState=null; armUnloadGuard(false); go("home"); }
+      }})
+    ));
+    refreshNav();
+  }
+  function endPhase(expired){
+    timer.stop();
+    if(isVocab){ simState.phase="comp"; go("sim",{}); return; }
+    endSim();
+  }
+  renderItem();
+}
+function endSim(){
+  armUnloadGuard(false);
+  const V = simState.vocab, C = simState.comp;
+  let vc=0; V.items.forEach(function(it,k){ if(V.picks[k]===it.answer) vc++; else addWeak(it); });
+  let cc=0; const byType={};
+  C.items.forEach(function(it,k){
+    const T = byType[it.type] || (byType[it.type]={c:0,t:0});
+    T.t++;
+    if(C.picks[k]===it.answer){ cc++; T.c++; }
+  });
+  byType.vocab = {c:vc, t:V.items.length};
+  const sections = {vocab:{c:vc,t:V.items.length}, comp:{c:cc,t:C.items.length}};
+  const band = estimateBand(vc/V.items.length, cc/C.items.length, null);
+  const session = {mode:"sim", sections:sections, byType:byType, wpm:null, band:band};
+  recordSession(session);
+  const items = V.items.concat(C.items);
+  const picks = V.picks.concat(C.picks);
+  simState = null;
+  go("results", {session:session, items:items, picks:picks, origin:{name:"sim"}});
+}
+
+/* ================================================================
+   SCREEN: READING RATE
+   ================================================================ */
+function renderRate(){
+  const app = document.getElementById("app");
+  app.appendChild(el("h1",{text:"Reading Rate"}));
+
+  if(!rateState){
+    const card = el("div",{class:"card"});
+    card.appendChild(el("p",{text:"When you press start, a passage appears with a 60-second timer. Read at your normal, comfortable pace for understanding. When time is called, click the last line you finished. Your words-per-minute figure is the running total of words up to that line."}));
+    card.appendChild(el("div",{class:"disclaimer", text:"On the real test, reading rate is a minor, optional score that some agencies skip entirely. Comprehension accuracy matters far more — do not sacrifice it for speed."}));
+    card.appendChild(el("div",{class:"btn-row"},
+      el("button",{class:"btn btn-primary", text:"Start the 1-minute timer", onclick:function(){ rateState={started:true, picked:null, awaiting:false}; go("rate",{}); }}),
+      el("button",{class:"btn", text:"Back", onclick:function(){ go("home"); }})
+    ));
+    app.appendChild(card);
+    return;
+  }
+
+  const words = RATE_TEXT.split(/\s+/);
+  const lines = chunk(words, 11);
+  const cum = []; let run=0;
+  lines.forEach(function(ln){ run += ln.length; cum.push(run); });
+
+  const timer = makeTimer(RATE_TIME, function(){
+    rateState.awaiting = true;
+    banner.hidden = false;
+    doneBtn.hidden = false;
+  });
+  app.appendChild(el("div",{class:"timerbar"}, el("span",{class:"muted small", text:"Reading time"}), timer.node));
+  const startAt = Date.now();
+  timer.start();
+
+  const banner = el("div",{class:"banner", text:"Time! Click the last line you finished, then press Done."}); banner.hidden = true;
+  app.appendChild(banner);
+
+  const box = el("div",{class:"ratelines"});
+  lines.forEach(function(ln, idx){
+    const b = el("button",{class:"rateline"},
+      el("span",{class:"ln", text:(idx+1)+"."}), " "+ln.join(" "));
+    b.addEventListener("click", function(){
+      rateState.picked = idx;
+      box.querySelectorAll(".rateline").forEach(function(x,k){
+        x.classList.toggle("picked", k===idx);
+        x.classList.toggle("after", k>idx);
+      });
+      doneBtn.hidden = false;
+    });
+    box.appendChild(b);
+  });
+  app.appendChild(box);
+
+  function finishRate(){
+    if(rateState.picked==null){ alert("Click the last line you reached first."); return; }
+    const actual = (Date.now()-startAt)/1000;
+    if(!rateState.awaiting && actual < 20){
+      alert("That was too quick to measure. Read at your normal pace and mark the line where the minute ends.");
+      return;
+    }
+    timer.stop();
+    const elapsed = rateState.awaiting ? RATE_TIME : Math.min(RATE_TIME, actual);
+    const wordCount = cum[rateState.picked];
+    const wpm = Math.round(wordCount/(elapsed/60));
+    recordSession({mode:"rate", sections:{}, byType:{}, wpm:wpm, band:null});
+    rateState = null;
+    renderRateResult(wpm, wordCount, elapsed);
+  }
+
+  const doneBtn = el("button",{class:"btn btn-primary", text:"Done — I marked my line", onclick:finishRate});
+  doneBtn.hidden = true;
+  const earlyBtn = el("button",{class:"btn", text:"I read to the end before time", onclick:function(){
+    if(rateState.picked==null) rateState.picked = lines.length-1;
+    box.querySelectorAll(".rateline").forEach(function(x,k){ x.classList.toggle("picked", k===rateState.picked); x.classList.toggle("after", k>rateState.picked); });
+    finishRate();
+  }});
+  app.appendChild(el("div",{class:"btn-row", style:"margin-top:10px"}, doneBtn, earlyBtn,
+    el("button",{class:"link", text:"Cancel", onclick:function(){ timer.stop(); rateState=null; go("home"); }})
+  ));
+}
+function renderRateResult(wpm, wordCount, elapsed){
+  const app = document.getElementById("app");
+  while(app.firstChild) app.removeChild(app.firstChild);
+  app.appendChild(el("h1",{text:"Reading Rate — Result"}));
+  const card = el("div",{class:"card"});
+  card.appendChild(el("div",{class:"scoreline", text:wpm+" words per minute"}));
+  card.appendChild(el("p",{class:"muted", text:"About "+wordCount+" words in "+Math.round(elapsed)+" seconds."}));
+  let band = "typical adult reading speed";
+  if(wpm<150) band = "below the typical adult range — slow and careful";
+  else if(wpm<=250) band = "typical adult reading speed";
+  else if(wpm<=350) band = "faster than average";
+  else band = "very fast — make sure comprehension holds up at this pace";
+  card.appendChild(el("p",{text:"That is "+band+"."}));
+  card.appendChild(el("div",{class:"disclaimer", text:"Rough figure from one short passage. Reading rate is a small part of the Nelson-Denny and is optional for many agencies; comprehension accuracy is what carries weight."}));
+  card.appendChild(el("div",{class:"btn-row"},
+    el("button",{class:"btn btn-primary", text:"Home", onclick:function(){ go("home"); }}),
+    el("button",{class:"btn", text:"Try again", onclick:function(){ rateState={started:true,picked:null,awaiting:false}; go("rate",{}); }})
+  ));
+  app.appendChild(card);
+  updateTopRight();
+}
+
+/* ================================================================
+   SCREEN: RESULTS
+   ================================================================ */
+function renderResults(params){
+  const app = document.getElementById("app");
+  const s = params.session;
+  app.appendChild(el("h1",{text:(MODE_LABEL[s.mode]||"Session")+" — Results"}));
+
+  let totC=0, totT=0;
+  ["vocab","comp"].forEach(function(k){ if(s.sections[k]){ totC+=s.sections[k].c; totT+=s.sections[k].t; } });
+
+  const top = el("div",{class:"card"});
+  top.appendChild(el("div",{class:"scoreline", text:totC+" / "+totT+" correct"}));
+  top.appendChild(el("div",{class:"muted", text:pct(totC,totT)+" overall"}));
+  const sr = el("div",{class:"stats", style:"margin-top:8px"});
+  if(s.sections.vocab) sr.appendChild(el("div",{class:"stat"}, el("div",{class:"n", text:pct(s.sections.vocab.c,s.sections.vocab.t)}), el("div",{class:"l", text:"Vocabulary"})));
+  if(s.sections.comp) sr.appendChild(el("div",{class:"stat"}, el("div",{class:"n", text:pct(s.sections.comp.c,s.sections.comp.t)}), el("div",{class:"l", text:"Comprehension"})));
+  if(s.wpm) sr.appendChild(el("div",{class:"stat"}, el("div",{class:"n", text:String(s.wpm)}), el("div",{class:"l", text:"WPM"})));
+  top.appendChild(sr);
+  app.appendChild(top);
+
+  // by type
+  const types = Object.keys(s.byType||{}).filter(function(k){ return s.byType[k].t>0; });
+  if(types.length){
+    const tbl = el("table",{class:"tbl"});
+    tbl.appendChild(el("tr",{}, el("th",{text:"Question type"}), el("th",{class:"r", text:"Correct"}), el("th",{class:"r", text:"Accuracy"})));
+    types.forEach(function(k){
+      const T = s.byType[k];
+      tbl.appendChild(el("tr",{}, el("td",{text:TYPE_LABEL[k]||k}), el("td",{class:"r", text:T.c+"/"+T.t}), el("td",{class:"r", text:pct(T.c,T.t)})));
+    });
+    app.appendChild(el("div",{class:"card"}, el("h3",{text:"By question type"}), tbl));
+  }
+
+  // band
+  if(s.band){
+    const t = store.targetGrade;
+    const meets = s.band.grade>=t;
+    const bc = el("div",{class:"card"});
+    bc.appendChild(el("h3",{text:"Estimated reading-level band"}));
+    bc.appendChild(el("div",{style:"font-size:22px;font-weight:800;margin:4px 0"}, s.band.label,
+      " ", el("span",{class:"pill "+(meets?"ok":"no"), text: meets ? "at or above your Grade "+t+" target" : "below your Grade "+t+" target"})));
+    bc.appendChild(el("div",{class:"disclaimer", text:
+      "Rough self-check only. This band blends your vocabulary accuracy, comprehension accuracy, and (when available) reading rate into one number so you can watch it move over time. It is NOT the official Nelson-Denny grade-equivalent score — those norm tables are proprietary and unpublished. Treat it as a training signal, not a prediction of your result."}));
+    app.appendChild(bc);
+  }
+
+  // per-question review
+  if(params.items && params.picks){
+    const det = el("details");
+    det.appendChild(el("summary",{text:"Review every question"}));
+    params.items.forEach(function(it,k){
+      const mine = params.picks[k];
+      const right = mine===it.answer;
+      const promptText = it.type==="vocab" ? (it.frame ? it.frame.replace("___", it.stem) : it.stem) : it.q;
+      const row = el("div",{class:"rev-item"});
+      row.appendChild(el("div",{}, el("b",{text:(k+1)+". "}), promptText, "  ", el("span",{class:"tag", text:TYPE_LABEL[it.type]||it.type})));
+      row.appendChild(el("div",{class:"rev-yours "+(right?"good":"bad"), text:"Your answer: "+(mine==null?"(blank)":it.choices[mine])+(right?"  ✓":"")}));
+      if(!right) row.appendChild(el("div",{class:"good rev-yours", text:"Correct: "+it.choices[it.answer]}));
+      row.appendChild(el("div",{class:"muted small", text:it.note}));
+      det.appendChild(row);
+    });
+    app.appendChild(det);
+  }
+
+  const row = el("div",{class:"btn-row", style:"margin-top:14px"});
+  row.appendChild(el("button",{class:"btn btn-primary", text:"Home", onclick:function(){ go("home"); }}));
+  row.appendChild(el("button",{class:"btn", text:"Review / weak spots", onclick:function(){ go("review"); }}));
+  if(params.origin && params.origin.name==="drill"){
+    row.appendChild(el("button",{class:"btn", text:"Another drill", onclick:function(){ go(params.origin.kind==="vocab"?"vsetup":"csetup"); }}));
+  }
+  app.appendChild(row);
+}
+
+/* ================================================================
+   SCREEN: REVIEW / WEAK SPOTS
+   ================================================================ */
+function renderReview(){
+  const app = document.getElementById("app");
+  app.appendChild(el("h1",{text:"Review / Weak Spots"}));
+
+  // aggregate by type
+  const agg = {};
+  store.sessions.forEach(function(s){
+    if(!s.byType) return;
+    Object.keys(s.byType).forEach(function(k){
+      const A = agg[k] || (agg[k]={c:0,t:0});
+      A.c += s.byType[k].c; A.t += s.byType[k].t;
+    });
+  });
+  const keys = Object.keys(agg);
+  if(keys.length){
+    const tbl = el("table",{class:"tbl"});
+    tbl.appendChild(el("tr",{}, el("th",{text:"Question type"}), el("th",{class:"r", text:"Attempted"}), el("th",{class:"r", text:"Accuracy"})));
+    keys.sort(function(a,b){ return (agg[a].c/Math.max(1,agg[a].t)) - (agg[b].c/Math.max(1,agg[b].t)); });
+    keys.forEach(function(k){
+      tbl.appendChild(el("tr",{}, el("td",{text:TYPE_LABEL[k]||k}), el("td",{class:"r", text:String(agg[k].t)}), el("td",{class:"r", text:pct(agg[k].c,agg[k].t)})));
+    });
+    app.appendChild(el("div",{class:"card"}, el("h3",{text:"Accuracy by question type (all sessions)"}), tbl,
+      el("div",{class:"muted small", text:"Lowest accuracy is listed first — that is where to spend practice time."})));
+  } else {
+    app.appendChild(el("div",{class:"card"}, el("p",{class:"muted", text:"No sessions yet. Finish a drill or simulation and this fills in."})));
+  }
+
+  // weak words
+  const wc = el("div",{class:"card"});
+  wc.appendChild(el("h3",{text:"Words to relearn ("+store.weak.length+")"}));
+  if(store.weak.length){
+    const sorted = store.weak.slice().sort(function(a,b){ return (b.misses||0)-(a.misses||0); });
+    const tbl = el("table",{class:"tbl"});
+    tbl.appendChild(el("tr",{}, el("th",{text:"Item"}), el("th",{text:"Closest meaning"}), el("th",{class:"r", text:"Missed"})));
+    sorted.forEach(function(w){
+      const label = w.stem || (w.frame ? w.frame.replace("___","___") : "(item)");
+      tbl.appendChild(el("tr",{}, el("td",{text:label}), el("td",{text:w.choices?w.choices[w.answer]:""}), el("td",{class:"r", text:String(w.misses||1)})));
+    });
+    wc.appendChild(tbl);
+    wc.appendChild(el("div",{class:"btn-row", style:"margin-top:10px"},
+      el("button",{class:"btn btn-primary", text:"Drill these words", onclick:function(){
+        go("drill", {kind:"vocab", items:shuffle(weakAsItems()), title:"Weak-word drill", timed:false});
+      }}),
+      el("button",{class:"btn btn-danger", text:"Clear list", onclick:function(){ if(confirm("Clear the weak-word list?")){ store.weak=[]; save(); go("review"); } }})
+    ));
+    wc.appendChild(el("div",{class:"muted small", text:"An item leaves this list after you get it right twice in later drills. Weak words are also mixed into new Vocabulary Drills."}));
+  } else {
+    wc.appendChild(el("p",{class:"muted", text:"Empty. Missed vocabulary items land here automatically."}));
+  }
+  app.appendChild(wc);
+
+  // history
+  if(store.sessions.length){
+    const hs = store.sessions.slice(-12).reverse();
+    const tbl = el("table",{class:"tbl"});
+    tbl.appendChild(el("tr",{}, el("th",{text:"When"}), el("th",{text:"Mode"}), el("th",{class:"r", text:"Result"})));
+    hs.forEach(function(s){
+      let res = "";
+      if(s.wpm) res = s.wpm+" WPM";
+      else{
+        let c=0,t=0; ["vocab","comp"].forEach(function(k){ if(s.sections&&s.sections[k]){ c+=s.sections[k].c; t+=s.sections[k].t; } });
+        res = c+"/"+t;
+      }
+      const dt = new Date(s.ts);
+      tbl.appendChild(el("tr",{}, el("td",{text:(dt.getMonth()+1)+"/"+dt.getDate()+" "+dt.getHours()+":"+(dt.getMinutes()<10?"0":"")+dt.getMinutes()}), el("td",{text:MODE_LABEL[s.mode]||s.mode}), el("td",{class:"r", text:res})));
+    });
+    app.appendChild(el("div",{class:"card"}, el("h3",{text:"Recent sessions"}), tbl));
+  }
+
+  app.appendChild(el("button",{class:"btn", text:"Home", onclick:function(){ go("home"); }}));
+}
+
+/* ================================================================
+   BOOT
+   ================================================================ */
+const SCREENS = {
+  home:renderHome, vsetup:renderVocabSetup, csetup:renderCompSetup, drill:renderDrill,
+  simIntro:renderSimIntro, sim:renderSim, rate:renderRate, review:renderReview, results:renderResults
+};
+
+function selftest(){
+  let problems = 0;
+  VOCAB_RAW.forEach(function(t,i){
+    if(!Array.isArray(t[1]) || t[1].length!==5){ console.warn("vocab["+i+"] "+t[0]+" not 5 choices"); problems++; }
+    if(typeof t[2]!=="number" || t[2]<0 || t[2]>4){ console.warn("vocab["+i+"] "+t[0]+" bad answer index"); problems++; }
+    if(!t[3]){ console.warn("vocab["+i+"] "+t[0]+" missing note"); problems++; }
+  });
+  PASSAGES.forEach(function(p){
+    const wc = p.text.split(/\s+/).length;
+    if(wc<250 || wc>500) console.warn("passage "+p.id+" word count "+wc+" (target 300-450)");
+    p.questions.forEach(function(q,k){
+      if(!q.c || q.c.length!==5){ console.warn(p.id+" q"+k+" not 5 choices"); problems++; }
+      if(q.a<0 || q.a>4){ console.warn(p.id+" q"+k+" bad answer"); problems++; }
+      if(!TYPE_LABEL[q.type]){ console.warn(p.id+" q"+k+" unknown type "+q.type); problems++; }
+      if(!q.n){ console.warn(p.id+" q"+k+" missing explanation"); problems++; }
+    });
+  });
+  console.log("NDRT self-test: "+(problems?problems+" problem(s)":"OK")+" — "+VOCAB_RAW.length+" vocab, "+PASSAGES.length+" passages");
+}
+selftest();
+go("home");
+
+})();
+</script>
+</body>
+</html>

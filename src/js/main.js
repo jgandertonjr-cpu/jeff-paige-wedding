@@ -1,0 +1,700 @@
+/* =============================================================
+   Jeff & Paige Wedding — main.js
+   ============================================================= */
+
+(function () {
+  'use strict';
+
+  /* ── Utility ─────────────────────────────────────────────── */
+  function qs(sel, ctx) { return (ctx || document).querySelector(sel); }
+  function qsa(sel, ctx) { return Array.from((ctx || document).querySelectorAll(sel)); }
+
+  /* =============================================================
+     1. SMOOTH SCROLL FOR ANCHOR LINKS
+     ============================================================= */
+  function initSmoothScroll() {
+    document.addEventListener('click', function (e) {
+      var link = e.target.closest('a[href^="#"]');
+      if (!link) return;
+      var hash = link.getAttribute('href');
+      if (hash === '#') return;
+      var target = document.querySelector(hash);
+      if (!target) return;
+      e.preventDefault();
+      var headerHeight = parseInt(
+        getComputedStyle(document.documentElement)
+          .getPropertyValue('--header-height') || '72', 10
+      );
+      var top = target.getBoundingClientRect().top + window.scrollY - headerHeight - 16;
+      window.scrollTo({ top: top, behavior: 'smooth' });
+    });
+  }
+
+  /* =============================================================
+     2. INTERSECTION OBSERVER — SCROLL REVEAL
+     ============================================================= */
+  function initScrollReveal() {
+    if (!('IntersectionObserver' in window)) {
+      qsa('.reveal').forEach(function (el) { el.classList.add('visible'); });
+      return;
+    }
+
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, {
+      rootMargin: '0px 0px -60px 0px',
+      threshold: 0.1
+    });
+
+    qsa('.reveal').forEach(function (el) { observer.observe(el); });
+  }
+
+  /* =============================================================
+     3. MOBILE HAMBURGER MENU
+     ============================================================= */
+  function initHamburger() {
+    var hamburger = qs('.hamburger');
+    var mobileNav = qs('.mobile-nav');
+    var header    = qs('.site-header');
+    if (!hamburger || !mobileNav) return;
+
+    hamburger.addEventListener('click', function () {
+      var isOpen = hamburger.getAttribute('aria-expanded') === 'true';
+      hamburger.setAttribute('aria-expanded', String(!isOpen));
+      mobileNav.classList.toggle('open', !isOpen);
+      if (header) header.classList.toggle('menu-open', !isOpen);
+      document.body.style.overflow = isOpen ? '' : 'hidden';
+    });
+
+    qsa('.mobile-nav__link', mobileNav).forEach(function (link) {
+      link.addEventListener('click', function () {
+        hamburger.setAttribute('aria-expanded', 'false');
+        mobileNav.classList.remove('open');
+        if (header) header.classList.remove('menu-open');
+        document.body.style.overflow = '';
+      });
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && mobileNav.classList.contains('open')) {
+        hamburger.setAttribute('aria-expanded', 'false');
+        mobileNav.classList.remove('open');
+        if (header) header.classList.remove('menu-open');
+        document.body.style.overflow = '';
+        hamburger.focus();
+      }
+    });
+  }
+
+  /* =============================================================
+     4. HEADER SCROLL STATE
+     ============================================================= */
+  function initHeaderScroll() {
+    var header = qs('.site-header');
+    if (!header) return;
+
+    function update() {
+      header.classList.toggle('scrolled', window.scrollY > 6);
+    }
+
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+  }
+
+  /* =============================================================
+     5. COUNTDOWN TIMER — counts to the start of Aug 5, 2028 (Eastern);
+        ceremony time is still TBD
+     ============================================================= */
+  function initCountdown() {
+    var containers = qsa('[data-countdown]');
+    if (!containers.length) return;
+
+    var target = new Date('2028-08-05T00:00:00-04:00').getTime();
+
+    function pad(n) { return n < 10 ? '0' + n : String(n); }
+
+    function set(el, sel, value) {
+      var node = qs(sel, el);
+      if (!node || node.textContent === value) return;
+      node.textContent = value;
+      node.classList.remove('tick');
+      void node.offsetWidth;
+      node.classList.add('tick');
+    }
+
+    function update() {
+      var diff = target - Date.now();
+      containers.forEach(function (el) {
+        if (diff <= 0) {
+          el.innerHTML = '<p class="countdown__message">Today\'s the day!</p>';
+          return;
+        }
+        set(el, '[data-days]',    String(Math.floor(diff / 86400000)));
+        set(el, '[data-hours]',   pad(Math.floor(diff / 3600000) % 24));
+        set(el, '[data-minutes]', pad(Math.floor(diff / 60000) % 60));
+        set(el, '[data-seconds]', pad(Math.floor(diff / 1000) % 60));
+      });
+      if (diff <= 0) clearInterval(timer);
+    }
+
+    var timer = setInterval(update, 1000);
+    update();
+  }
+
+  /* =============================================================
+     6. LIGHTBOX GALLERY — open / close / prev / next / keyboard
+     ============================================================= */
+  function initLightbox() {
+    var lightbox  = qs('.lightbox');
+    var lightImg  = qs('.lightbox__img');
+    var closeBtn  = qs('.lightbox__close');
+    var prevBtn   = qs('.lightbox__prev');
+    var nextBtn   = qs('.lightbox__next');
+    var items     = qsa('.gallery-item[data-src]');
+    var current   = 0;
+
+    if (!lightbox) return;
+
+    /* "3 / 15" photo counter */
+    var countEl = document.createElement('div');
+    countEl.className = 'lightbox__count';
+    countEl.setAttribute('aria-hidden', 'true');
+    lightbox.appendChild(countEl);
+
+    function openLightbox(index) {
+      current = index;
+      var item = items[current];
+      if (!item) return;
+      if (lightImg) {
+        lightImg.src = item.dataset.src;
+        lightImg.alt = item.dataset.alt || '';
+      }
+      countEl.textContent = (current + 1) + ' / ' + items.length;
+      lightbox.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      updateNavButtons();
+      if (closeBtn) closeBtn.focus();
+    }
+
+    function closeLightbox() {
+      lightbox.classList.remove('open');
+      document.body.style.overflow = '';
+      if (lightImg) { lightImg.src = ''; lightImg.alt = ''; }
+      var opener = items[current];
+      if (opener) opener.focus();
+    }
+
+    function showPrev() {
+      if (current > 0) openLightbox(current - 1);
+    }
+
+    function showNext() {
+      if (current < items.length - 1) openLightbox(current + 1);
+    }
+
+    function updateNavButtons() {
+      if (prevBtn) prevBtn.setAttribute('aria-disabled', current === 0 ? 'true' : 'false');
+      if (nextBtn) nextBtn.setAttribute('aria-disabled', current === items.length - 1 ? 'true' : 'false');
+    }
+
+    items.forEach(function (item, idx) {
+      item.setAttribute('tabindex', '0');
+      item.setAttribute('role', 'button');
+      item.setAttribute('aria-label', (item.dataset.alt || 'Photo ' + (idx + 1)) + ' — click to enlarge');
+
+      item.addEventListener('click', function () { openLightbox(idx); });
+      item.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openLightbox(idx);
+        }
+      });
+    });
+
+    if (closeBtn) closeBtn.addEventListener('click', closeLightbox);
+    if (prevBtn)  prevBtn.addEventListener('click', showPrev);
+    if (nextBtn)  nextBtn.addEventListener('click', showNext);
+
+    lightbox.addEventListener('click', function (e) {
+      if (e.target === lightbox) closeLightbox();
+    });
+
+    document.addEventListener('keydown', function (e) {
+      if (!lightbox.classList.contains('open')) return;
+      if (e.key === 'Escape')      closeLightbox();
+      if (e.key === 'ArrowLeft')  { e.preventDefault(); showPrev(); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); showNext(); }
+      if (e.key === 'Tab') {
+        /* Trap focus inside the dialog while it's open */
+        var focusable = qsa('button:not([aria-disabled="true"])', lightbox);
+        if (!focusable.length) return;
+        var first = focusable[0];
+        var last  = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault(); last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault(); first.focus();
+        } else if (!lightbox.contains(document.activeElement)) {
+          e.preventDefault(); first.focus();
+        }
+      }
+    });
+  }
+
+  /* =============================================================
+     7. FAQ ACCORDION
+     ============================================================= */
+  function initAccordion() {
+    var items = qsa('.accordion__item');
+    if (!items.length) return;
+
+    items.forEach(function (item) {
+      var trigger = qs('.accordion__trigger', item);
+      var body    = qs('.accordion__body', item);
+      if (!trigger || !body) return;
+
+      trigger.setAttribute('aria-expanded', 'false');
+      var answerId = 'acc-' + Math.random().toString(36).slice(2, 7);
+      body.id = answerId;
+      trigger.setAttribute('aria-controls', answerId);
+
+      trigger.addEventListener('click', function () {
+        var isOpen = item.classList.contains('open');
+
+        items.forEach(function (other) {
+          if (other !== item && other.classList.contains('open')) {
+            other.classList.remove('open');
+            qs('.accordion__trigger', other).setAttribute('aria-expanded', 'false');
+          }
+        });
+
+        item.classList.toggle('open', !isOpen);
+        trigger.setAttribute('aria-expanded', String(!isOpen));
+      });
+    });
+  }
+
+  /* =============================================================
+     8. RSVP FORM — fetch() submission for Netlify (no page reload)
+     ============================================================= */
+  function initRsvpForm() {
+    var form      = qs('form[name="rsvp"]');
+    var wrapper   = qs('#rsvp-form-wrapper');
+    var successEl = qs('#rsvp-success');
+    if (!form) return;
+
+    function encode(data) {
+      return Object.keys(data)
+        .map(function (key) {
+          return encodeURIComponent(key) + '=' + encodeURIComponent(data[key]);
+        })
+        .join('&');
+    }
+
+    function showError(field, msg) {
+      field.classList.add('error');
+      var errEl = form.querySelector('[data-error-for="' + field.id + '"]');
+      if (errEl) { errEl.textContent = msg; errEl.classList.add('visible'); }
+    }
+
+    function clearError(field) {
+      field.classList.remove('error');
+      var errEl = form.querySelector('[data-error-for="' + field.id + '"]');
+      if (errEl) { errEl.textContent = ''; errEl.classList.remove('visible'); }
+    }
+
+    function validateEmail(val) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
+    }
+
+    qsa('.form-input, .form-select, .form-textarea', form).forEach(function (field) {
+      field.addEventListener('blur', function () {
+        if (field.required && !field.value.trim()) {
+          showError(field, 'This field is required.');
+        } else if (field.type === 'email' && field.value && !validateEmail(field.value)) {
+          showError(field, 'Please enter a valid email address.');
+        } else {
+          clearError(field);
+        }
+      });
+      field.addEventListener('input', function () {
+        if (field.classList.contains('error')) {
+          if (field.required && field.value.trim()) clearError(field);
+          if (field.type === 'email' && validateEmail(field.value)) clearError(field);
+        }
+      });
+    });
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var valid = true;
+
+      var nameField = qs('#rsvp-name', form);
+      if (nameField && !nameField.value.trim()) {
+        showError(nameField, 'Please enter your full name.');
+        valid = false;
+      }
+
+      var emailField = qs('#rsvp-email', form);
+      if (emailField) {
+        if (!emailField.value.trim()) {
+          showError(emailField, 'Please enter your email address.');
+          valid = false;
+        } else if (!validateEmail(emailField.value)) {
+          showError(emailField, 'Please enter a valid email address.');
+          valid = false;
+        }
+      }
+
+      var attendingRadios = qsa('input[name="attending"]', form);
+      if (attendingRadios.length) {
+        var anyChecked = attendingRadios.some(function (r) { return r.checked; });
+        if (!anyChecked) {
+          var radioGroup = qs('.radio-group', form);
+          if (radioGroup) {
+            var errMsg = radioGroup.nextElementSibling;
+            if (errMsg && errMsg.classList.contains('form-error-msg')) {
+              errMsg.textContent = 'Please let us know if you can attend.';
+              errMsg.classList.add('visible');
+            }
+          }
+          valid = false;
+        }
+      }
+
+      if (!valid) {
+        var firstErr = qs('.form-input.error, .form-select.error, .form-textarea.error', form);
+        if (firstErr) { firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' }); firstErr.focus(); }
+        return;
+      }
+
+      var submitBtn = qs('[type="submit"]', form);
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Sending…'; }
+
+      var formData = new FormData(form);
+      var body = encode(Object.fromEntries(formData.entries()));
+
+      fetch('/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body
+      })
+        .then(function (res) {
+          if (!res.ok) throw new Error('Network response was not ok');
+          if (wrapper)   wrapper.style.display = 'none';
+          if (successEl) { successEl.classList.add('visible'); successEl.focus(); }
+        })
+        .catch(function () {
+          if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Send My RSVP'; }
+          var errBanner = qs('#rsvp-submit-error', form);
+          if (!errBanner) {
+            errBanner = document.createElement('p');
+            errBanner.id = 'rsvp-submit-error';
+            errBanner.style.cssText = 'color:var(--color-error);text-align:center;margin-top:var(--space-4);font-size:var(--fs-sm)';
+            form.appendChild(errBanner);
+          }
+          errBanner.textContent = 'Something went wrong. Please try again or email us directly.';
+        });
+    });
+  }
+
+  /* =============================================================
+     9. RSVP GUEST-LIST LOOKUP — autocomplete + conditional +1
+     ============================================================= */
+  function initRsvpLookup() {
+    var nameInput   = qs('#rsvp-name');
+    if (!nameInput) return;
+
+    var listbox     = qs('#rsvp-name-listbox');
+    var statusBar   = qs('#rsvp-lookup-status');
+    var welcomeSpan = qs('#rsvp-lookup-welcome');
+    var resetBtn    = qs('#rsvp-lookup-reset');
+    var guestIdEl   = qs('#rsvp-guest-id');
+    var plusSection = qs('#rsvp-plus-section');
+    var plusNameEl  = qs('#rsvp-guest-name');
+
+    var guests       = window.WEDDING_GUESTS || [];
+    var activeIndex  = -1;
+    var lastResults  = [];
+
+    function norm(s) { return s.toLowerCase().trim().replace(/\s+/g, ' '); }
+
+    function search(q) {
+      var nq = norm(q);
+      if (nq.length < 2) return [];
+      var results = guests.filter(function (g) { return norm(g.name).includes(nq); });
+      results.sort(function (a, b) {
+        return (norm(a.name).startsWith(nq) ? 0 : 1) - (norm(b.name).startsWith(nq) ? 0 : 1);
+      });
+      return results.slice(0, 6);
+    }
+
+    function setActive(items, idx) {
+      activeIndex = idx;
+      items.forEach(function (li, i) {
+        var on = i === activeIndex;
+        li.classList.toggle('guest-suggestion--active', on);
+        li.setAttribute('aria-selected', String(on));
+      });
+      nameInput.setAttribute('aria-activedescendant',
+        activeIndex >= 0 ? ('rsvp-sug-' + activeIndex) : '');
+    }
+
+    function renderSuggestions(results) {
+      lastResults = results;
+      activeIndex = -1;
+      if (!listbox) return;
+      listbox.innerHTML = '';
+      if (!results.length) {
+        listbox.hidden = true;
+        nameInput.setAttribute('aria-expanded', 'false');
+        return;
+      }
+      results.forEach(function (guest, i) {
+        var li = document.createElement('li');
+        li.id = 'rsvp-sug-' + i;
+        li.setAttribute('role', 'option');
+        li.setAttribute('aria-selected', 'false');
+        li.className = 'guest-suggestion';
+        li.textContent = guest.name;
+        li.addEventListener('mousedown', function (e) {
+          e.preventDefault();
+          confirmGuest(guest);
+        });
+        listbox.appendChild(li);
+      });
+      listbox.hidden = false;
+      nameInput.setAttribute('aria-expanded', 'true');
+    }
+
+    function confirmGuest(guest) {
+      nameInput.value    = guest.name;
+      nameInput.readOnly = true;
+      nameInput.classList.add('guest-confirmed');
+      if (guestIdEl)   guestIdEl.value = guest.id;
+      if (listbox)     { listbox.hidden = true; listbox.innerHTML = ''; }
+      nameInput.setAttribute('aria-expanded', 'false');
+
+      if (welcomeSpan) welcomeSpan.textContent = guest.plusOne
+        ? 'Found! Your invitation includes a plus-one.'
+        : 'Found! Your invitation is for 1 guest.';
+      if (statusBar)   statusBar.hidden = false;
+
+      if (plusSection) {
+        if (guest.plusOne) {
+          plusSection.hidden = false;
+          if (plusNameEl && guest.plusOneName) plusNameEl.value = guest.plusOneName;
+        } else {
+          plusSection.hidden = true;
+        }
+      }
+    }
+
+    function resetLookup() {
+      nameInput.value    = '';
+      nameInput.readOnly = false;
+      nameInput.classList.remove('guest-confirmed');
+      if (guestIdEl)   guestIdEl.value = '';
+      if (statusBar)   statusBar.hidden = true;
+      if (plusSection) plusSection.hidden = true;
+      if (plusNameEl)  plusNameEl.value = '';
+      var guestMealEl = qs('#rsvp-guest-meal');
+      if (guestMealEl) guestMealEl.selectedIndex = 0;
+      nameInput.focus();
+    }
+
+    nameInput.addEventListener('input', function () {
+      if (nameInput.readOnly) return;
+      renderSuggestions(search(nameInput.value));
+    });
+
+    nameInput.addEventListener('keydown', function (e) {
+      if (!listbox || listbox.hidden) return;
+      var items = qsa('li', listbox);
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setActive(items, Math.min(activeIndex + 1, items.length - 1));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setActive(items, Math.max(activeIndex - 1, -1));
+      } else if (e.key === 'Enter' && activeIndex >= 0) {
+        e.preventDefault();
+        if (lastResults[activeIndex]) confirmGuest(lastResults[activeIndex]);
+      } else if (e.key === 'Escape') {
+        listbox.hidden = true;
+        listbox.innerHTML = '';
+        nameInput.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    nameInput.addEventListener('blur', function () {
+      setTimeout(function () {
+        if (!listbox) return;
+        listbox.hidden = true;
+        listbox.innerHTML = '';
+        nameInput.setAttribute('aria-expanded', 'false');
+      }, 160);
+    });
+
+    if (resetBtn) resetBtn.addEventListener('click', resetLookup);
+  }
+
+  /* =============================================================
+     10. ACTIVE NAV LINK
+     ============================================================= */
+  function initActiveNav() {
+    /* Normalize any path or href down to a bare slug, so matching works
+       whether links are "details.html", "/details", or "/details/".
+       Netlify's Pretty URLs processing rewrites "*.html" links to extension-less
+       paths on deploy, so the JS must not assume a ".html" ending. */
+    function slug(value) {
+      if (!value) return 'index';
+      value = value.split('#')[0].split('?')[0];        // drop hash + query
+      var last = value.replace(/\/+$/, '').split('/').pop(); // last path segment
+      last = last.replace(/\.html$/, '');                // drop .html if present
+      return last || 'index';                            // "" (root) => index
+    }
+
+    var currentSlug = slug(window.location.pathname);
+
+    qsa('.site-nav__link, .mobile-nav__link, .footer__nav-link').forEach(function (link) {
+      var href = link.getAttribute('href');
+      if (!href) return;
+      if (slug(href) === currentSlug) {
+        link.classList.add('active');
+        link.setAttribute('aria-current', 'page');
+      }
+    });
+  }
+
+  /* =============================================================
+     11. SCROLL PROGRESS — gold hairline along the top edge
+     ============================================================= */
+  function initScrollProgress() {
+    var bar = document.createElement('div');
+    bar.className = 'scroll-progress';
+    bar.setAttribute('aria-hidden', 'true');
+    /* Anchor inside the sticky header — see .scroll-progress in styles.css */
+    (qs('.site-header') || document.body).appendChild(bar);
+
+    var ticking = false;
+    function update() {
+      var max = document.documentElement.scrollHeight - window.innerHeight;
+      var pct = max > 0 ? (window.scrollY / max) * 100 : 0;
+      bar.style.width = pct + '%';
+      ticking = false;
+    }
+
+    window.addEventListener('scroll', function () {
+      if (!ticking) { ticking = true; requestAnimationFrame(update); }
+    }, { passive: true });
+    update();
+  }
+
+  /* =============================================================
+     12. FLOATING RSVP BAR — mobile companion, appears on scroll
+     ============================================================= */
+  function initRsvpBar() {
+    /* Not on the RSVP page itself, or the Details page it links to */
+    if (qs('form[name="rsvp"]')) return;
+    if (/\/details(\.html)?$/.test(location.pathname)) return;
+    if (!qs('.site-footer')) return;
+
+    var bar = document.createElement('div');
+    bar.className = 'rsvp-bar';
+    bar.innerHTML =
+      '<span class="rsvp-bar__text">Jeff &amp; Paige &middot; 8.5.2028</span>' +
+      '<a href="details.html" class="rsvp-bar__btn">Details</a>';
+    document.body.appendChild(bar);
+
+    var ticking = false;
+    function update() {
+      var nearBottom = window.innerHeight + window.scrollY >
+                       document.documentElement.scrollHeight - 260;
+      bar.classList.toggle('visible', window.scrollY > 520 && !nearBottom);
+      ticking = false;
+    }
+
+    window.addEventListener('scroll', function () {
+      if (!ticking) { ticking = true; requestAnimationFrame(update); }
+    }, { passive: true });
+    update();
+  }
+
+  /* =============================================================
+     13. iOS SAFARI VIEWPORT FIX — after the on-screen keyboard is
+     dismissed, iOS 26 Safari can leave the visual viewport offset
+     from the layout viewport, which renders position:fixed elements
+     (the header) away from the screen edge. A 1px scroll nudge
+     forces Safari to re-anchor. (WebKit bug 297779)
+     ============================================================= */
+  function initViewportFix() {
+    var vv = window.visualViewport;
+    if (!vv) return;
+
+    /* Keep the header glued to the VISIBLE top edge. When Safari offsets
+       the layout viewport (minimized toolbar, keyboard, pinch-zoom pan),
+       vv.offsetTop reports how far the visible top sits from where
+       sticky/fixed elements are anchored — shift the header to match.
+       offsetTop is 0 in normal scrolling, so this is a no-op elsewhere. */
+    var header = qs('.site-header');
+    var lastY  = null;
+
+    function pin() {
+      if (!header) return;
+      var y = Math.round(vv.offsetTop);
+      if (y === lastY) return;
+      lastY = y;
+      header.style.transform = y !== 0 ? 'translateY(' + y + 'px)' : '';
+    }
+
+    vv.addEventListener('resize', pin);
+    vv.addEventListener('scroll', pin);
+    window.addEventListener('scroll', pin, { passive: true });
+    pin();
+
+    /* After the on-screen keyboard closes, iOS 26 Safari can leave the
+       viewport offset stuck (WebKit bug 297779) — a 1px scroll nudge
+       forces it to re-anchor. */
+    document.addEventListener('focusout', function () {
+      setTimeout(function () {
+        if (vv.scale === 1 && vv.offsetTop > 0) {
+          window.scrollTo(window.scrollX, window.scrollY + 1);
+          window.scrollTo(window.scrollX, window.scrollY - 1);
+        }
+        pin();
+      }, 250);
+    });
+  }
+
+  /* =============================================================
+     INIT
+     ============================================================= */
+  function init() {
+    initSmoothScroll();
+    initScrollReveal();
+    initHamburger();
+    initHeaderScroll();
+    initCountdown();
+    initLightbox();
+    initAccordion();
+    initRsvpForm();
+    initRsvpLookup();
+    initActiveNav();
+    initScrollProgress();
+    initRsvpBar();
+    initViewportFix();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+})();

@@ -1,0 +1,2 @@
+# Exam-prep app at /study: send its inner pages (e.g. /study/learn) to the app. Existing files are served as usual.
+/study/*    /study/index.html    200

@@ -1,0 +1,1727 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PD Tracker</title>
+<meta name="description" content="Track police department applications, sponsorships, and hiring steps.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#13294b">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PD Tracker">
+<style>
+:root {
+  --bg: #e8ecf1;
+  --surface: #ffffff;
+  --surface-2: #f2f4f7;
+  --text: #0b1726;
+  --muted: #3f4d5e;
+  --border: #c3ccd7;
+  --border-strong: #8592a3;
+  --navy: #13294b;
+  --accent: #1a4a99;
+  --primary: #13294b;
+  --primary-ink: #ffffff;
+  --focus: #2f6fde;
+  --danger: #a3221b;
+  --danger-bg: #fdeceb;
+  --warn-bg: #fff3d1;
+  --warn-border: #b77c00;
+  --warn-text: #4d3300;
+  --ok: #1e6b3a;
+  --input-bg: #ffffff;
+  --tab-h: 64px;
+  --radius: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a111c;
+    --surface: #131c2b;
+    --surface-2: #1a2538;
+    --text: #eef2f7;
+    --muted: #b0bccb;
+    --border: #2f3d52;
+    --border-strong: #6a7a90;
+    --navy: #0e1d36;
+    --accent: #a8c6ff;
+    --primary: #a8c6ff;
+    --primary-ink: #06101f;
+    --focus: #a8c6ff;
+    --danger: #ff8a80;
+    --danger-bg: #3a1513;
+    --warn-bg: #3a2c06;
+    --warn-border: #e0aa1f;
+    --warn-text: #ffe6a1;
+    --ok: #7fd49c;
+    --input-bg: #0e1625;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 17px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+a { color: var(--accent); }
+h1, h2, h3 { line-height: 1.2; margin: 0; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* Top bar */
+.topbar {
+  position: sticky; top: 0; z-index: 20;
+  background: var(--navy); color: #fff;
+  padding: calc(env(safe-area-inset-top) + 8px) 16px 8px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.topbar .brand { font-size: 19px; font-weight: 750; letter-spacing: .2px; color: #fff; text-decoration: none; }
+.topbar .data-link {
+  color: #fff; min-height: 44px; display: inline-flex; align-items: center; gap: 6px;
+  padding: 0 14px; border: 1.5px solid rgba(255,255,255,.6); border-radius: 10px;
+  text-decoration: none; font-weight: 650; font-size: 15px;
+}
+.topbar .data-link[aria-current="page"] { background: #fff; color: #13294b; }
+.topbar .data-link svg { width: 18px; height: 18px; }
+
+main {
+  max-width: 760px; margin: 0 auto;
+  padding: 16px 16px calc(var(--tab-h) + env(safe-area-inset-bottom) + 28px);
+}
+
+/* Bottom tab bar */
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  display: flex; background: var(--surface);
+  border-top: 1.5px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.tabbar a {
+  flex: 1; position: relative;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  min-height: var(--tab-h); color: var(--muted); text-decoration: none;
+  font-size: 13px; font-weight: 650;
+}
+.tabbar a svg { width: 25px; height: 25px; }
+.tabbar a[aria-current="page"] { color: var(--accent); }
+.tabbar a[aria-current="page"]::before {
+  content: ""; position: absolute; top: 0; left: 22%; right: 22%; height: 3px;
+  background: var(--accent); border-radius: 0 0 3px 3px;
+}
+@media (min-width: 760px) {
+  .tabbar { justify-content: center; }
+  .tabbar a { flex: 0 1 200px; }
+}
+
+/* Generic blocks */
+.page-title { font-size: 24px; font-weight: 780; margin: 4px 0 14px; }
+.card {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px;
+}
+.card > h2, .section-title { font-size: 18px; font-weight: 750; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.count-pill {
+  font-size: 13px; font-weight: 700; background: var(--surface-2); color: var(--muted);
+  border: 1px solid var(--border); border-radius: 999px; padding: 1px 9px;
+}
+.muted { color: var(--muted); }
+.small { font-size: 15px; }
+.empty { color: var(--muted); margin: 6px 0; }
+.stack > * + * { margin-top: 10px; }
+.row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; padding: 0 18px; border-radius: 10px;
+  font: inherit; font-weight: 680; text-decoration: none; cursor: pointer;
+  border: 2px solid var(--border-strong); background: var(--surface); color: var(--text);
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:active { transform: translateY(1px); }
+.btn-primary { background: var(--primary); color: var(--primary-ink); border-color: var(--primary); }
+.btn-danger { color: var(--danger); border-color: var(--danger); background: var(--surface); }
+.btn-danger-solid { background: var(--danger); color: #fff; border-color: var(--danger); }
+@media (prefers-color-scheme: dark) { .btn-danger-solid { color: #1a0402; } }
+.btn-small { min-height: 44px; padding: 0 14px; font-size: 15px; }
+.btn-block { width: 100%; }
+.btn svg { width: 18px; height: 18px; flex: none; }
+.link-btn {
+  background: none; border: 0; padding: 0 4px; min-height: 44px; font: inherit; font-size: 15px;
+  font-weight: 650; color: var(--accent); cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+}
+.link-btn.danger { color: var(--danger); }
+
+/* Forms */
+.fields { display: grid; gap: 14px; }
+@media (min-width: 560px) { .fields { grid-template-columns: 1fr 1fr; } .span2 { grid-column: 1 / -1; } }
+.field label { display: block; font-size: 15px; font-weight: 680; margin-bottom: 5px; }
+.field .req { font-weight: 500; color: var(--muted); }
+input[type=text], input[type=url], input[type=email], input[type=tel], input[type=number],
+input[type=date], input[type=search], select, textarea {
+  display: block; width: 100%; min-width: 0; min-height: 48px;
+  font: inherit; font-size: 17px; color: var(--text);
+  background: var(--input-bg); border: 1.5px solid var(--border-strong); border-radius: 10px;
+  padding: 10px 12px;
+}
+input[type=date] { -webkit-appearance: none; appearance: none; }
+input[type=date]::-webkit-date-and-time-value { text-align: left; }
+textarea { resize: vertical; line-height: 1.4; }
+select { cursor: pointer; }
+.field-error { color: var(--danger); font-size: 15px; font-weight: 650; margin-top: 5px; }
+[aria-invalid="true"] { border-color: var(--danger) !important; border-width: 2px !important; }
+.form-actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+.form-actions .btn { flex: 1 1 140px; }
+fieldset { border: 0; padding: 0; margin: 0; }
+legend { font-size: 18px; font-weight: 750; padding: 0; margin-bottom: 12px; }
+
+/* Status badges */
+.badge {
+  display: inline-block; padding: 3px 10px; border-radius: 999px;
+  font-size: 13.5px; font-weight: 720; line-height: 1.35; color: #fff; white-space: nowrap;
+  border: 1.5px solid transparent;
+}
+.s-researching { background: #56616f; }
+.s-applied { background: #1d4fa3; }
+.s-written-test, .s-pt-test, .s-oral-board { background: #4a3d9e; }
+.s-background, .s-polygraph-psych, .s-medical { background: #8a4600; }
+.s-conditional-offer { background: #0c6b5a; }
+.s-hired { background: #1e6b3a; }
+.s-rejected { background: #a3221b; }
+.s-withdrawn { background: #343c48; }
+.s-on-hold { background: transparent; color: var(--text); border: 1.5px dashed var(--border-strong); }
+@media (prefers-color-scheme: dark) { .s-withdrawn { background: #4b5463; } }
+.dot { width: 12px; height: 12px; border-radius: 50%; flex: none; display: inline-block; }
+.prio { font-size: 14px; font-weight: 720; padding: 2px 9px; border-radius: 6px; border: 1.5px solid; white-space: nowrap; }
+.prio-High { color: var(--danger); border-color: var(--danger); }
+.prio-Med { color: var(--warn-text); border-color: var(--warn-border); }
+.prio-Low { color: var(--muted); border-color: var(--border-strong); }
+
+/* Dashboard */
+.summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+.summary div { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 10px 12px; }
+.summary b { display: block; font-size: 28px; line-height: 1.1; }
+.summary span { font-size: 14px; font-weight: 650; color: var(--muted); }
+.stat-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+@media (min-width: 560px) { .stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.stat {
+  display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 8px 12px;
+  background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 10px;
+  font: inherit; color: var(--text); text-align: left; cursor: pointer; width: 100%;
+}
+.stat { gap: 8px; }
+.stat b { font-size: 22px; min-width: 1.1em; }
+.stat span:last-child { font-size: 14.5px; font-weight: 650; line-height: 1.2; min-width: 0; }
+.backup { border-left: 6px solid var(--ok); }
+.backup.warn { background: var(--warn-bg); border-color: var(--warn-border); border-left-color: var(--warn-border); color: var(--warn-text); }
+.backup.warn .muted { color: var(--warn-text); }
+.backup p { margin: 0 0 10px; }
+.alert-card { border-left: 6px solid var(--danger); }
+.events { list-style: none; margin: 0; padding: 0; }
+.events li + li { border-top: 1px solid var(--border); }
+.event {
+  display: grid; grid-template-columns: 58px 1fr; gap: 12px; align-items: center;
+  padding: 10px 0; min-height: 60px; text-decoration: none; color: var(--text);
+}
+.datebox {
+  background: var(--navy); color: #fff; border-radius: 9px; text-align: center; padding: 5px 0; line-height: 1.1;
+}
+@media (prefers-color-scheme: dark) { .datebox { background: #24375a; } }
+.datebox small { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+.datebox b { font-size: 21px; }
+.datebox.overdue { background: var(--danger); }
+@media (prefers-color-scheme: dark) { .datebox.overdue { background: #8f1d17; } }
+.event-title { font-weight: 720; overflow-wrap: anywhere; }
+.event-sub { font-size: 15px; color: var(--muted); overflow-wrap: anywhere; }
+.event-when { font-weight: 720; }
+.event-when.late { color: var(--danger); }
+
+/* List */
+.controls { display: grid; gap: 10px; margin-bottom: 12px; }
+.controls-row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
+.controls-row label { font-size: 14px; font-weight: 680; display: block; margin-bottom: 4px; }
+details.filters { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); }
+details.filters > summary {
+  list-style: none; cursor: pointer; min-height: 48px; padding: 0 14px;
+  display: flex; align-items: center; justify-content: space-between; font-weight: 700;
+}
+details.filters > summary::-webkit-details-marker { display: none; }
+details.filters > summary::after { content: "Show"; font-size: 14px; color: var(--accent); font-weight: 650; }
+details.filters[open] > summary::after { content: "Hide"; }
+.filters-body { padding: 0 14px 14px; display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+.filters-body .field label { font-size: 14px; }
+.check {
+  display: flex; align-items: center; gap: 12px; min-height: 48px; cursor: pointer; font-weight: 650;
+}
+.check input { width: 26px; height: 26px; margin: 0; flex: none; accent-color: var(--primary); cursor: pointer; }
+.result-line { display: flex; justify-content: space-between; align-items: center; font-size: 15px; color: var(--muted); margin: 4px 2px 8px; min-height: 44px; }
+.dept-card {
+  display: block; text-decoration: none; color: var(--text);
+  background: var(--surface); border: 1.5px solid var(--border); border-left-width: 6px;
+  border-radius: var(--radius); padding: 12px 14px; margin-bottom: 10px;
+}
+.dept-card.p-High { border-left-color: var(--danger); }
+.dept-card.p-Med { border-left-color: var(--warn-border); }
+.dept-card.p-Low { border-left-color: var(--border-strong); }
+.dept-card:active { background: var(--surface-2); }
+.card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.card-top h3 { font-size: 18px; font-weight: 760; overflow-wrap: anywhere; }
+.card-meta { font-size: 15px; color: var(--muted); margin-top: 2px; overflow-wrap: anywhere; }
+.card-next { margin-top: 8px; font-size: 16px; overflow-wrap: anywhere; }
+.card-next .late { color: var(--danger); font-weight: 720; }
+.card-foot { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 8px; font-size: 14px; color: var(--muted); }
+
+/* Detail */
+.back {
+  display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 0 6px 0 0;
+  background: none; border: 0; color: var(--accent); font: inherit; font-weight: 680; cursor: pointer;
+}
+.back svg { width: 20px; height: 20px; }
+.detail-head h1 { font-size: 25px; font-weight: 790; overflow-wrap: anywhere; margin: 2px 0 4px; }
+.detail-head .meta { color: var(--muted); font-size: 15.5px; overflow-wrap: anywhere; }
+.detail-head .row { margin-top: 8px; }
+.progress { height: 8px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 99px; overflow: hidden; margin-top: 10px; }
+.progress span { display: block; height: 100%; background: var(--accent); }
+.quick-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 14px; }
+.quick-actions .btn { flex: 1 1 0; min-width: 96px; }
+.status-select { font-weight: 700; }
+#status-card .field > label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+details.sec { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); margin-bottom: 14px; }
+details.sec > summary {
+  list-style: none; cursor: pointer; min-height: 56px; padding: 10px 16px;
+  display: flex; flex-direction: column; justify-content: center;
+}
+details.sec > summary::-webkit-details-marker { display: none; }
+details.sec > summary .sum-title { font-size: 18px; font-weight: 750; display: flex; justify-content: space-between; gap: 8px; }
+details.sec > summary .sum-title::after { content: "+"; font-size: 22px; line-height: 1; color: var(--accent); font-weight: 600; }
+details.sec[open] > summary .sum-title::after { content: "\2212"; }
+details.sec > summary .sum-sub { font-size: 15px; color: var(--muted); overflow-wrap: anywhere; }
+details.sec > .sec-body { padding: 2px 16px 16px; }
+.note-add textarea { min-height: 88px; }
+.note-add-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: end; margin-top: 10px; }
+.note-add-row label { font-size: 14px; font-weight: 680; display: block; margin-bottom: 4px; }
+.notes { list-style: none; margin: 14px 0 0; padding: 0; }
+.notes > li { border-top: 1px solid var(--border); padding: 10px 0 4px; }
+.note-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14.5px; font-weight: 720; color: var(--muted); }
+.tag { font-size: 12.5px; font-weight: 700; border: 1px solid var(--border-strong); border-radius: 5px; padding: 0 6px; }
+.note-text { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.note-actions { display: flex; gap: 12px; }
+.docs { list-style: none; margin: 0; padding: 0; }
+.docs li { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--border); }
+.docs li:last-child { border-bottom: 0; }
+.docs .check { flex: 1; overflow-wrap: anywhere; }
+.docs .done-label { text-decoration: line-through; color: var(--muted); }
+.doc-add { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; margin-top: 12px; }
+.meta-list { font-size: 15px; color: var(--muted); margin: 0 0 12px; }
+
+/* Data view */
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 15.5px; margin: 0; }
+.kv dt { color: var(--muted); font-weight: 650; }
+.kv dd { margin: 0; }
+
+/* Toast + modal */
+.toast {
+  position: fixed; left: 16px; right: 16px; z-index: 60;
+  bottom: calc(var(--tab-h) + env(safe-area-inset-bottom) + 12px);
+  max-width: 520px; margin: 0 auto; padding: 13px 16px; border-radius: 10px;
+  background: #0b1726; color: #fff; font-weight: 650; box-shadow: 0 6px 24px rgba(0,0,0,.25);
+  opacity: 0; transform: translateY(10px); transition: opacity .18s, transform .18s; pointer-events: none;
+}
+@media (prefers-color-scheme: dark) { .toast { background: #eef2f7; color: #0b1726; } }
+.toast.show { opacity: 1; transform: none; }
+.toast.error { background: var(--danger); color: #fff; }
+@media (prefers-color-scheme: dark) { .toast.error { color: #1a0402; } }
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 70; background: rgba(5, 12, 24, .62);
+  display: flex; align-items: flex-end; justify-content: center; padding: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+}
+@media (min-width: 560px) { .modal-backdrop { align-items: center; } }
+.modal {
+  background: var(--surface); color: var(--text); border-radius: 14px; width: 100%; max-width: 480px;
+  padding: 18px; border: 1.5px solid var(--border); max-height: 85vh; overflow: auto;
+}
+.modal h2 { font-size: 20px; margin-bottom: 8px; }
+.modal .modal-body { margin: 0 0 16px; }
+.modal .modal-body p { margin: 0 0 10px; }
+.modal-actions { display: grid; gap: 10px; }
+body.modal-open { overflow: hidden; }
+body.typing .tabbar { display: none; }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#/dashboard">PD Tracker</a>
+  <a class="data-link" href="#/data" data-tab="data">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>
+    Backup
+  </a>
+</header>
+
+<main id="app" tabindex="-1"></main>
+
+<nav class="tabbar" aria-label="Main">
+  <a href="#/dashboard" data-tab="dashboard">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+    Dashboard
+  </a>
+  <a href="#/list" data-tab="list">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><circle cx="4" cy="6" r="1.3"/><circle cx="4" cy="12" r="1.3"/><circle cx="4" cy="18" r="1.3"/></svg>
+    List
+  </a>
+  <a href="#/add" data-tab="add">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+    Add
+  </a>
+</nav>
+
+<datalist id="county-list">
+  <option value="Montgomery"><option value="Bucks"><option value="Philadelphia"><option value="Delaware">
+  <option value="Chester"><option value="Lehigh"><option value="Northampton"><option value="Berks">
+</datalist>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<div id="modal-root"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- Constants ---------- */
+  var STORAGE_KEY = 'pdtracker.data';
+  var UI_KEY = 'pdtracker.ui';
+  var SCHEMA_VERSION = 1;
+  var PIPELINE = ['Researching', 'Applied', 'Written Test', 'PT Test', 'Oral Board', 'Background', 'Polygraph/Psych', 'Medical', 'Conditional Offer', 'Hired'];
+  var TERMINAL = ['Rejected', 'Withdrawn', 'On Hold'];
+  var STATUSES = PIPELINE.concat(TERMINAL);
+  var CLOSED = ['Rejected', 'Withdrawn'];
+  // Not "active": excluded from overdue/upcoming/stale.
+  var INACTIVE = ['Hired', 'Rejected', 'Withdrawn', 'On Hold'];
+  var TYPES = ['Cadet Sponsorship', 'Entry-Level Hire', 'Civil Service List', 'Other'];
+  var PRIORITIES = ['High', 'Med', 'Low'];
+  var TUITION = ['Unknown', 'Yes', 'No'];
+  var DEFAULT_DOCS = ['Resume', 'Cover letter', 'Transcripts', "Driver's license", 'Birth certificate', 'References', 'PHQ/background packet'];
+  var DAY = 86400000;
+  var STALE_DAYS = 14;
+  var UPCOMING_DAYS = 14;
+  var BACKUP_NUDGE_DAYS = 7;
+
+  var F = {
+    name: { label: 'Department name', type: 'text', required: true, wide: true, placeholder: 'e.g. Warwick Township PD' },
+    municipality: { label: 'Municipality', type: 'text' },
+    county: { label: 'County', type: 'text', list: 'county-list' },
+    url: { label: 'Website / job posting URL', type: 'url', wide: true, placeholder: 'https://', autocap: 'none' },
+    appType: { label: 'Application type', type: 'select', options: TYPES },
+    priority: { label: 'Priority', type: 'select', options: PRIORITIES },
+    status: { label: 'Status', type: 'select', options: STATUSES },
+    dateApplied: { label: 'Date applied', type: 'date' },
+    deadline: { label: 'Application deadline', type: 'date' },
+    nextStepDate: { label: 'Next step date', type: 'date' },
+    nextStepDesc: { label: 'Next step', type: 'text', wide: true, placeholder: 'e.g. Oral board at HQ, 9:00 AM' },
+    'contact.name': { label: 'Contact name', type: 'text', autocomplete: 'off' },
+    'contact.title': { label: 'Title', type: 'text', placeholder: 'e.g. Sgt., Chief, HR' },
+    'contact.phone': { label: 'Phone', type: 'tel' },
+    'contact.email': { label: 'Email', type: 'email', autocap: 'none' },
+    salary: { label: 'Starting salary', type: 'text', placeholder: 'e.g. $62,000' },
+    tuitionCovered: { label: 'Sponsorship covers tuition', type: 'select', options: TUITION },
+    payNotes: { label: 'Pay / benefits notes', type: 'textarea', wide: true },
+    listRank: { label: 'Civil service list rank', type: 'number', placeholder: 'Optional' }
+  };
+
+  var FORM_GROUPS = [
+    { title: 'Department', fields: ['name', 'municipality', 'county', 'url', 'appType', 'priority', 'status'] },
+    { title: 'Key dates', fields: ['dateApplied', 'deadline', 'nextStepDate', 'nextStepDesc'] },
+    { title: 'Contact', fields: ['contact.name', 'contact.title', 'contact.phone', 'contact.email'] },
+    { title: 'Pay & benefits', fields: ['salary', 'tuitionCovered', 'payNotes'] },
+    { title: 'Civil service', fields: ['listRank'] }
+  ];
+
+  var ICONS = {
+    back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>',
+    phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>',
+    mail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
+    link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>'
+  };
+
+  /* ---------- Utilities ---------- */
+  function uid() {
+    if (window.crypto && crypto.randomUUID) { try { return crypto.randomUUID(); } catch (e) { /* insecure context */ } }
+    return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+  }
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function dateToStr(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function todayStr() { return dateToStr(new Date()); }
+  function nowISO() { return new Date().toISOString(); }
+  function isDateStr(s) { return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s); }
+  function parseDate(s) {
+    if (!isDateStr(s)) return null;
+    var p = s.split('-').map(Number);
+    return new Date(p[0], p[1] - 1, p[2]);
+  }
+  function daysUntil(s) {
+    var d = parseDate(s);
+    if (!d) return null;
+    return Math.round((d - parseDate(todayStr())) / DAY);
+  }
+  function daysSince(ts) { return Math.floor((Date.now() - ts) / DAY); }
+  function fmtDate(s, withYear) {
+    var d = parseDate(s);
+    if (!d) return '';
+    var opts = { weekday: 'short', month: 'short', day: 'numeric' };
+    if (withYear || d.getFullYear() !== new Date().getFullYear()) opts.year = 'numeric';
+    return d.toLocaleDateString(undefined, opts);
+  }
+  function fmtTimestamp(iso) {
+    var d = new Date(iso);
+    if (isNaN(d)) return 'unknown';
+    return d.toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+  }
+  function relDays(n) {
+    if (n === null || n === undefined) return '';
+    if (n === 0) return 'Today';
+    if (n === 1) return 'Tomorrow';
+    if (n === -1) return 'Yesterday';
+    return n > 0 ? 'In ' + n + ' days' : Math.abs(n) + ' days ago';
+  }
+  function relAgo(ts) {
+    var n = daysSince(ts);
+    if (n <= 0) return 'today';
+    if (n === 1) return 'yesterday';
+    return n + ' days ago';
+  }
+  function esc(s) {
+    return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function slug(s) { return String(s).toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-|-$/g, ''); }
+  function getPath(o, path) { return path.split('.').reduce(function (a, k) { return a == null ? undefined : a[k]; }, o); }
+  function setPath(o, path, v) {
+    var keys = path.split('.'), last = keys.pop();
+    var t = keys.reduce(function (a, k) { if (a[k] == null || typeof a[k] !== 'object') a[k] = {}; return a[k]; }, o);
+    t[last] = v;
+  }
+  function str(v) { return v === null || v === undefined ? '' : String(v); }
+  function countyLabel(c) {
+    c = str(c).trim();
+    if (!c) return '';
+    return /county|co\.?$/i.test(c) || /^philadelphia$/i.test(c) ? c : c + ' County';
+  }
+  function prioRank(p) { var i = PRIORITIES.indexOf(p); return i < 0 ? 9 : i; }
+  function statusBadge(s) { return '<span class="badge s-' + slug(s) + '">' + esc(s) + '</span>'; }
+  function prioBadge(p) { return '<span class="prio prio-' + esc(p) + '">' + esc(p) + ' priority</span>'; }
+  function isActive(d) { return INACTIVE.indexOf(d.status) === -1; }
+
+  /* ---------- Data model ---------- */
+  function makeDoc(label, custom) { return { id: uid(), label: label, done: false, custom: !!custom }; }
+  function makeNote(date, text, auto) {
+    var t = nowISO();
+    return { id: uid(), date: isDateStr(date) ? date : todayStr(), text: text, auto: !!auto, createdAt: t, updatedAt: t };
+  }
+  function blankDept() {
+    var t = nowISO();
+    return {
+      id: uid(), name: '', municipality: '', county: '', url: '',
+      appType: 'Cadet Sponsorship', status: 'Researching', priority: 'Med',
+      dateApplied: '', deadline: '', nextStepDate: '', nextStepDesc: '',
+      contact: { name: '', title: '', phone: '', email: '' },
+      salary: '', tuitionCovered: 'Unknown', payNotes: '', listRank: '',
+      documents: DEFAULT_DOCS.map(function (l) { return makeDoc(l, false); }),
+      notes: [], createdAt: t, updatedAt: t
+    };
+  }
+  // Fill in any missing/invalid fields without discarding unknown ones (keeps data from newer versions intact).
+  function normalizeDept(raw) {
+    var b = blankDept();
+    var d = Object.assign({}, b, raw && typeof raw === 'object' ? raw : {});
+    d.contact = Object.assign({}, b.contact, raw && raw.contact && typeof raw.contact === 'object' ? raw.contact : {});
+    if (!d.id) d.id = uid();
+    ['name', 'municipality', 'county', 'url', 'nextStepDesc', 'salary', 'payNotes'].forEach(function (k) { d[k] = str(d[k]); });
+    ['name', 'title', 'phone', 'email'].forEach(function (k) { d.contact[k] = str(d.contact[k]); });
+    ['dateApplied', 'deadline', 'nextStepDate'].forEach(function (k) { if (!isDateStr(d[k])) d[k] = ''; });
+    if (STATUSES.indexOf(d.status) === -1) d.status = 'Researching';
+    if (TYPES.indexOf(d.appType) === -1) d.appType = 'Other';
+    if (PRIORITIES.indexOf(d.priority) === -1) d.priority = 'Med';
+    if (TUITION.indexOf(d.tuitionCovered) === -1) d.tuitionCovered = 'Unknown';
+    var rank = Number(d.listRank);
+    d.listRank = d.listRank === '' || d.listRank == null || !Number.isFinite(rank) ? '' : rank;
+    d.documents = Array.isArray(raw && raw.documents)
+      ? raw.documents.filter(function (x) { return x && str(x.label).trim(); }).map(function (x) {
+          return { id: x.id || uid(), label: str(x.label).trim(), done: !!x.done, custom: !!x.custom };
+        })
+      : b.documents;
+    d.notes = Array.isArray(raw && raw.notes)
+      ? raw.notes.filter(function (n) { return n && typeof n.text === 'string'; }).map(function (n) {
+          var c = n.createdAt || n.updatedAt || nowISO();
+          return {
+            id: n.id || uid(), date: isDateStr(n.date) ? n.date : dateToStr(new Date(c)),
+            text: n.text, auto: !!n.auto, createdAt: c, updatedAt: n.updatedAt || c
+          };
+        })
+      : [];
+    if (isNaN(new Date(d.createdAt))) d.createdAt = nowISO();
+    if (isNaN(new Date(d.updatedAt))) d.updatedAt = d.createdAt;
+    return d;
+  }
+
+  // Each migration takes data at version N and returns data at version N+1.
+  // To change the schema later: bump SCHEMA_VERSION and add MIGRATIONS[oldVersion].
+  var MIGRATIONS = {
+    0: function (raw) {
+      // v0: an unversioned bare array of department records.
+      return { departments: Array.isArray(raw) ? raw : (raw && raw.departments) || [], meta: (raw && raw.meta) || {} };
+    }
+  };
+  function schemaVersionOf(raw) { return Array.isArray(raw) ? 0 : Number(raw && raw.schemaVersion) || 0; }
+  function migrate(raw) {
+    var v = schemaVersionOf(raw);
+    if (v > SCHEMA_VERSION) {
+      throw new Error('This data was saved by a newer version of the app (schema ' + v + '). Update the app first.');
+    }
+    var data = raw;
+    while (v < SCHEMA_VERSION) {
+      if (!MIGRATIONS[v]) throw new Error('No migration from schema ' + v + '.');
+      data = MIGRATIONS[v](data);
+      v++;
+      data.schemaVersion = v;
+    }
+    if (!Array.isArray(data.departments)) throw new Error('No departments list found.');
+    return {
+      schemaVersion: SCHEMA_VERSION,
+      departments: data.departments.map(normalizeDept),
+      meta: Object.assign({ lastBackup: null, seeded: false, createdAt: nowISO() }, data.meta || {})
+    };
+  }
+  function seedData() {
+    var d = blankDept();
+    Object.assign(d, {
+      name: 'Warwick Township PD', municipality: 'Warwick Township', county: 'Bucks',
+      appType: 'Cadet Sponsorship', status: 'Applied', priority: 'High'
+    });
+    d.notes.push(makeNote(todayStr(), 'Department reached out; phone call scheduled (Oct 2026).', false));
+    return { schemaVersion: SCHEMA_VERSION, departments: [d], meta: { lastBackup: null, seeded: true, createdAt: nowISO() } };
+  }
+
+  /* ---------- Storage ---------- */
+  var data = null;
+  var loadError = null;
+  var rawStored = null;
+
+  function load() {
+    try {
+      rawStored = localStorage.getItem(STORAGE_KEY);
+    } catch (e) {
+      loadError = 'This browser is blocking local storage, so nothing can be saved. Turn off private browsing or allow site data.';
+      data = seedData();
+      return;
+    }
+    if (rawStored === null) { data = seedData(); save(); return; }
+    try {
+      var parsed = JSON.parse(rawStored);
+      var before = schemaVersionOf(parsed);
+      data = migrate(parsed);
+      if (before < SCHEMA_VERSION) {
+        // Keep the pre-migration copy so an upgrade can never lose data.
+        try { localStorage.setItem(STORAGE_KEY + '.pre-v' + SCHEMA_VERSION, rawStored); } catch (e) { /* ignore */ }
+        save();
+      }
+    } catch (e) {
+      loadError = 'Saved data could not be read: ' + e.message;
+      data = null;
+    }
+  }
+  function save() {
+    if (!data) return false;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      return true;
+    } catch (e) {
+      toast('Could not save. Device storage may be full. Download a backup now.', true);
+      return false;
+    }
+  }
+  function touch(d) { d.updatedAt = nowISO(); }
+  function getDept(id) { return data.departments.find(function (d) { return d.id === id; }); }
+  function lastActivity(d) {
+    var t = new Date(d.updatedAt).getTime() || 0;
+    d.notes.forEach(function (n) {
+      var nd = parseDate(n.date);
+      if (nd && nd.getTime() > t) t = nd.getTime();
+    });
+    return t;
+  }
+  function sortedNotes(d) {
+    return d.notes.slice().sort(function (a, b) {
+      return b.date.localeCompare(a.date) || str(b.createdAt).localeCompare(str(a.createdAt));
+    });
+  }
+  function changeStatus(d, to) {
+    var from = d.status;
+    if (from === to) return { changed: false };
+    d.status = to;
+    var autoApplied = false;
+    if (to === 'Applied' && !d.dateApplied) { d.dateApplied = todayStr(); autoApplied = true; }
+    d.notes.push(makeNote(todayStr(), 'Status: ' + from + ' → ' + to, true));
+    touch(d);
+    return { changed: true, autoApplied: autoApplied };
+  }
+
+  /* ---------- UI prefs (per device) ---------- */
+  var UI_DEFAULTS = { q: '', status: '', type: '', county: '', priority: '', sort: 'next', hideClosed: true };
+  var ui = Object.assign({}, UI_DEFAULTS);
+  try { Object.assign(ui, JSON.parse(localStorage.getItem(UI_KEY) || '{}')); } catch (e) { /* ignore */ }
+  function saveUI() { try { localStorage.setItem(UI_KEY, JSON.stringify(ui)); } catch (e) { /* ignore */ } }
+
+  // Unsent note text per department, so a half-typed note survives the phone closing the app.
+  var DRAFTS_KEY = 'pdtracker.drafts';
+  function readDrafts() { try { return JSON.parse(localStorage.getItem(DRAFTS_KEY) || '{}') || {}; } catch (e) { return {}; } }
+  function getDraft(id) { var v = readDrafts()[id]; return typeof v === 'string' ? v : ''; }
+  function setDraft(id, text) {
+    var all = readDrafts();
+    if (text) all[id] = text; else delete all[id];
+    try { localStorage.setItem(DRAFTS_KEY, JSON.stringify(all)); } catch (e) { /* ignore */ }
+  }
+
+  /* ---------- Toast + modal ---------- */
+  var toastTimer;
+  function toast(msg, isError) {
+    var el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'toast show' + (isError ? ' error' : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.className = 'toast' + (isError ? ' error' : ''); }, isError ? 4500 : 2200);
+  }
+  // buttons: [{label, value, kind: 'primary'|'danger'|''}]
+  var closeOpenModal = null;
+  function dismissModal() { if (closeOpenModal) closeOpenModal(null); }
+  function modal(opts) {
+    dismissModal();
+    return new Promise(function (resolve) {
+      var root = document.getElementById('modal-root');
+      var prevFocus = document.activeElement;
+      root.innerHTML =
+        '<div class="modal-backdrop" data-modal-backdrop>' +
+          '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">' +
+            '<h2 id="modal-title">' + esc(opts.title) + '</h2>' +
+            '<div class="modal-body">' + opts.body + '</div>' +
+            '<div class="modal-actions">' +
+              opts.buttons.map(function (b, i) {
+                var cls = b.kind === 'primary' ? 'btn-primary' : b.kind === 'danger' ? 'btn-danger-solid' : '';
+                return '<button type="button" class="btn ' + cls + '" data-modal-btn="' + i + '">' + esc(b.label) + '</button>';
+              }).join('') +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      var backdrop = root.firstChild;
+      function done(v) {
+        if (closeOpenModal !== done) return;
+        closeOpenModal = null;
+        document.removeEventListener('keydown', onKey, true);
+        document.body.classList.remove('modal-open');
+        root.innerHTML = '';
+        if (prevFocus && prevFocus.focus && document.contains(prevFocus)) prevFocus.focus();
+        resolve(v);
+      }
+      function onKey(e) {
+        if (e.key === 'Escape') { e.preventDefault(); done(null); }
+        if (e.key === 'Tab') {
+          var btns = backdrop.querySelectorAll('button');
+          var first = btns[0], last = btns[btns.length - 1];
+          if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+          else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+        }
+      }
+      backdrop.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-modal-btn]');
+        if (b) done(opts.buttons[Number(b.dataset.modalBtn)].value);
+        else if (e.target === backdrop) done(null);
+      });
+      document.addEventListener('keydown', onKey, true);
+      document.body.classList.add('modal-open');
+      closeOpenModal = done;
+      backdrop.querySelector('button').focus();
+    });
+  }
+  function confirmModal(title, body, okLabel, danger) {
+    return modal({
+      title: title, body: body,
+      buttons: [{ label: okLabel, value: true, kind: danger ? 'danger' : 'primary' }, { label: 'Cancel', value: false }]
+    }).then(function (v) { return v === true; });
+  }
+
+  /* ---------- Routing ---------- */
+  var app = document.getElementById('app');
+  var state = { view: '', id: null, editingNote: null, openSecs: {}, listScroll: 0, navCount: 0, formDirty: false, saving: false, renderDay: '', pendingInline: null };
+
+  function parseHash() {
+    var parts = location.hash.replace(/^#\/?/, '').split('/');
+    var id = null;
+    try { id = parts[1] ? decodeURIComponent(parts[1]) : null; } catch (e) { /* malformed link */ }
+    return { view: parts[0] || 'dashboard', id: id };
+  }
+  // replace=true swaps the current history entry, so Back skips a submitted form or a deleted department.
+  function go(hash, replace) {
+    if (location.hash === hash) return route();
+    if (replace) location.replace(hash); else location.hash = hash;
+  }
+  // Save a detail field the user is still typing in (it would otherwise be lost on Back or app switch).
+  function flushActiveField() {
+    var el = state.pendingInline;
+    state.pendingInline = null;
+    if (data && state.view === 'dept' && el && document.contains(el)) onInlineChange(el, true);
+  }
+  function route() {
+    flushActiveField();
+    dismissModal();
+    var r = parseHash();
+    var prevView = state.view;
+    if (prevView === 'list') state.listScroll = window.scrollY;
+    if (r.view !== 'dept' || r.id !== state.id) state.editingNote = null;
+    state.view = r.view; state.id = r.id; state.navCount++;
+    state.formDirty = false; state.saving = false;
+    var tab = r.view === 'dept' || r.view === 'edit' ? 'list' : r.view;
+    document.querySelectorAll('[data-tab]').forEach(function (a) {
+      if (a.dataset.tab === tab) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    });
+    render();
+    if (r.view === 'list' && prevView !== 'list') window.scrollTo(0, state.listScroll);
+    else if (prevView !== r.view || r.view === 'dept') window.scrollTo(0, 0);
+  }
+  function render() {
+    state.renderDay = todayStr();
+    // Some browsers skip focusout when the focused field is removed; never leave the tab bar hidden.
+    document.body.classList.remove('typing');
+    if (!data) return renderLoadError();
+    switch (state.view) {
+      case 'list': return renderList();
+      case 'add': return renderForm(null);
+      case 'edit': return renderForm(state.id);
+      case 'dept': return renderDetail();
+      case 'data': return renderData();
+      default: state.view = 'dashboard'; return renderDashboard();
+    }
+  }
+
+  /* ---------- Dashboard ---------- */
+  function collectEvents() {
+    var ev = [];
+    data.departments.filter(isActive).forEach(function (d) {
+      if (d.nextStepDate) ev.push({ d: d, kind: 'next', date: d.nextStepDate, n: daysUntil(d.nextStepDate), label: d.nextStepDesc || 'Next step (no description)' });
+      // Application deadlines only matter until you've applied.
+      if (d.deadline && d.status === 'Researching') ev.push({ d: d, kind: 'deadline', date: d.deadline, n: daysUntil(d.deadline), label: 'Application deadline' });
+    });
+    return ev;
+  }
+  function eventHTML(e, late) {
+    var dt = parseDate(e.date);
+    return '<li><a class="event" href="#/dept/' + encodeURIComponent(e.d.id) + '">' +
+      '<div class="datebox' + (late ? ' overdue' : '') + '"><small>' + dt.toLocaleDateString(undefined, { month: 'short' }) + '</small><b>' + dt.getDate() + '</b></div>' +
+      '<div><div class="event-title">' + esc(e.d.name) + '</div>' +
+      '<div class="event-sub">' + (e.kind === 'deadline' ? '<strong>' + esc(e.label) + '</strong>' : esc(e.label)) + '</div>' +
+      '<div class="event-sub"><span class="event-when' + (late ? ' late' : '') + '">' + relDays(e.n) + '</span> &middot; ' + esc(fmtDate(e.date)) + '</div></div>' +
+      '</a></li>';
+  }
+  function backupCardHTML() {
+    var lb = data.meta.lastBackup;
+    var days = lb ? daysSince(new Date(lb).getTime()) : null;
+    var warn = !lb || days > BACKUP_NUDGE_DAYS;
+    var msg = !lb ? '<strong>No backup yet.</strong> Your data lives only on this device. Download a backup file and keep it somewhere safe.'
+      : warn ? '<strong>Last backup ' + days + ' days ago</strong> (' + esc(fmtTimestamp(lb)) + '). Time for a fresh one.'
+      : 'Last backup: <strong>' + esc(fmtTimestamp(lb)) + '</strong> (' + relAgo(new Date(lb).getTime()) + ').';
+    return '<section class="card backup' + (warn ? ' warn' : '') + '" aria-label="Backup status">' +
+      '<p>' + msg + '</p>' +
+      '<div class="row"><button class="btn ' + (warn ? 'btn-primary' : 'btn-small') + '" data-action="export-json">Back up now</button>' +
+      '<a class="link-btn" href="#/data">Backup options</a></div></section>';
+  }
+  function renderDashboard() {
+    var depts = data.departments;
+    var active = depts.filter(isActive);
+    var closed = depts.filter(function (d) { return CLOSED.indexOf(d.status) !== -1; });
+    var ev = collectEvents();
+    var overdue = ev.filter(function (e) { return e.n < 0; }).sort(function (a, b) { return a.n - b.n; });
+    var upcoming = ev.filter(function (e) { return e.n >= 0 && e.n <= UPCOMING_DAYS; })
+      .sort(function (a, b) { return a.n - b.n || prioRank(a.d.priority) - prioRank(b.d.priority); });
+    var stale = active.filter(function (d) { return daysSince(lastActivity(d)) >= STALE_DAYS; })
+      .sort(function (a, b) { return lastActivity(a) - lastActivity(b); });
+
+    var counts = {};
+    depts.forEach(function (d) { counts[d.status] = (counts[d.status] || 0) + 1; });
+
+    var h = '<h1 class="page-title">Dashboard</h1>';
+    h += backupCardHTML();
+
+    if (!depts.length) {
+      h += '<section class="card"><h2>No departments yet</h2><p class="muted">Add the first department you are applying to or researching.</p>' +
+        '<a class="btn btn-primary btn-block" href="#/add">Add a department</a></section>';
+      app.innerHTML = h;
+      return;
+    }
+
+    h += '<div class="summary">' +
+      '<div><b>' + active.length + '</b><span>Active</span></div>' +
+      '<div><b>' + ((counts['Conditional Offer'] || 0) + (counts['Hired'] || 0)) + '</b><span>Offers / hired</span></div>' +
+      '<div><b>' + depts.length + '</b><span>Total</span></div></div>';
+
+    if (overdue.length) {
+      h += '<section class="card alert-card"><h2>Overdue <span class="count-pill">' + overdue.length + '</span></h2>' +
+        '<p class="muted small" style="margin:0 0 4px">Date passed and the department is still active. Update the next step or log what happened.</p>' +
+        '<ul class="events">' + overdue.map(function (e) { return eventHTML(e, true); }).join('') + '</ul></section>';
+    }
+
+    h += '<section class="card"><h2>Upcoming <span class="count-pill">' + upcoming.length + '</span></h2>';
+    h += upcoming.length
+      ? '<ul class="events">' + upcoming.map(function (e) { return eventHTML(e, false); }).join('') + '</ul>'
+      : '<p class="empty">Nothing in the next ' + UPCOMING_DAYS + ' days. Set a next step date on a department to see it here.</p>';
+    h += '</section>';
+
+    h += '<section class="card"><h2>Pipeline</h2><div class="stat-grid">' +
+      STATUSES.filter(function (s) { return counts[s]; }).map(function (s) {
+        return '<button type="button" class="stat" data-action="filter-status" data-status="' + esc(s) + '">' +
+          '<span class="dot s-' + slug(s) + '" aria-hidden="true"></span>' +
+          '<b>' + counts[s] + '</b><span>' + esc(s) + '</span></button>';
+      }).join('') + '</div></section>';
+
+    h += '<section class="card"><h2>Stale <span class="count-pill">' + stale.length + '</span></h2>';
+    h += stale.length
+      ? '<p class="muted small" style="margin:0 0 4px">Active, with no note or update in ' + STALE_DAYS + '+ days. Worth a follow-up call or email.</p><ul class="events">' +
+        stale.map(function (d) {
+          var n = daysSince(lastActivity(d));
+          return '<li><a class="event" href="#/dept/' + encodeURIComponent(d.id) + '" style="grid-template-columns:1fr">' +
+            '<div><div class="event-title">' + esc(d.name) + '</div>' +
+            '<div class="event-sub">' + statusBadge(d.status) + ' &nbsp;Last activity ' + n + ' days ago</div></div></a></li>';
+        }).join('') + '</ul>'
+      : '<p class="empty">Every active department has been touched in the last ' + STALE_DAYS + ' days.</p>';
+    h += '</section>';
+
+    app.innerHTML = h;
+  }
+
+  /* ---------- List ---------- */
+  function counties() {
+    var seen = {};
+    data.departments.forEach(function (d) {
+      var c = d.county.trim();
+      if (c && !seen[c.toLowerCase()]) seen[c.toLowerCase()] = c;
+    });
+    return Object.keys(seen).map(function (k) { return seen[k]; }).sort(function (a, b) { return a.localeCompare(b); });
+  }
+  function blankLast(a, b) { return a && b ? a.localeCompare(b) : a ? -1 : b ? 1 : 0; }
+  function byName(a, b) { return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }); }
+  var SORTS = {
+    next: { label: 'Next step date', fn: function (a, b) { return blankLast(a.nextStepDate, b.nextStepDate) || prioRank(a.priority) - prioRank(b.priority) || byName(a, b); } },
+    deadline: { label: 'Deadline', fn: function (a, b) { return blankLast(a.deadline, b.deadline) || byName(a, b); } },
+    priority: { label: 'Priority', fn: function (a, b) { return prioRank(a.priority) - prioRank(b.priority) || blankLast(a.nextStepDate, b.nextStepDate) || byName(a, b); } },
+    name: { label: 'Name (A-Z)', fn: byName },
+    updated: { label: 'Last updated', fn: function (a, b) { return lastActivity(b) - lastActivity(a); } }
+  };
+  function filteredDepts() {
+    var q = ui.q.trim().toLowerCase();
+    var sort = SORTS[ui.sort] || SORTS.next;
+    return data.departments.filter(function (d) {
+      if (ui.hideClosed && CLOSED.indexOf(d.status) !== -1 && ui.status !== d.status) return false;
+      if (ui.status && d.status !== ui.status) return false;
+      if (ui.type && d.appType !== ui.type) return false;
+      if (ui.priority && d.priority !== ui.priority) return false;
+      if (ui.county && d.county.trim().toLowerCase() !== ui.county.toLowerCase()) return false;
+      if (q) {
+        var hay = [d.name, d.municipality, d.county, d.appType, d.status, d.nextStepDesc, d.contact.name, d.contact.title,
+          d.contact.email, d.contact.phone, d.salary, d.payNotes].concat(d.notes.map(function (n) { return n.text; })).join(' \n ').toLowerCase();
+        if (hay.indexOf(q) === -1) return false;
+      }
+      return true;
+    }).sort(sort.fn);
+  }
+  function selectHTML(id, label, key, options, allLabel) {
+    return '<div class="field"><label for="' + id + '">' + label + '</label><select id="' + id + '" data-ui="' + key + '">' +
+      '<option value="">' + allLabel + '</option>' +
+      options.map(function (o) { return '<option value="' + esc(o) + '"' + (ui[key] === o ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') +
+      '</select></div>';
+  }
+  function activeFilterCount() { return ['status', 'type', 'county', 'priority'].filter(function (k) { return ui[k]; }).length; }
+  function renderList() {
+    var cs = counties();
+    if (ui.county && cs.map(function (c) { return c.toLowerCase(); }).indexOf(ui.county.toLowerCase()) === -1) cs.push(ui.county);
+    var n = activeFilterCount();
+    app.innerHTML =
+      '<h1 class="page-title">Departments</h1>' +
+      '<div class="controls">' +
+        '<div><label for="search" class="sr-only">Search</label>' +
+        '<input type="search" id="search" placeholder="Search name, contact, notes..." value="' + esc(ui.q) + '" autocomplete="off" enterkeyhint="search"></div>' +
+        '<div class="controls-row">' +
+          '<div class="field"><label for="sort">Sort by</label><select id="sort" data-ui="sort">' +
+            Object.keys(SORTS).map(function (k) { return '<option value="' + k + '"' + (ui.sort === k ? ' selected' : '') + '>' + SORTS[k].label + '</option>'; }).join('') +
+          '</select></div>' +
+          '<label class="check" style="padding:0 4px"><input type="checkbox" id="hide-closed" data-ui="hideClosed"' + (ui.hideClosed ? ' checked' : '') + '> Hide closed</label>' +
+        '</div>' +
+        '<details class="filters"' + (n ? ' open' : '') + '><summary id="filters-summary">Filters' + (n ? ' (' + n + ' on)' : '') + '</summary>' +
+          '<div class="filters-body">' +
+            selectHTML('f-status', 'Status', 'status', STATUSES, 'All statuses') +
+            selectHTML('f-type', 'Type', 'type', TYPES, 'All types') +
+            selectHTML('f-county', 'County', 'county', cs, 'All counties') +
+            selectHTML('f-priority', 'Priority', 'priority', PRIORITIES, 'All priorities') +
+            '<div class="span2" style="grid-column:1/-1"><button type="button" class="btn btn-small btn-block" data-action="clear-filters">Clear filters and search</button></div>' +
+          '</div></details>' +
+      '</div>' +
+      '<div id="results"></div>';
+    renderListResults();
+  }
+  function cardHTML(d) {
+    var loc = [d.municipality, countyLabel(d.county)].filter(Boolean).join(', ');
+    var next;
+    if (d.nextStepDate || d.nextStepDesc) {
+      var n = daysUntil(d.nextStepDate);
+      var late = n !== null && n < 0 && isActive(d);
+      next = '<strong>Next:</strong> ' + esc(d.nextStepDesc || 'Next step') +
+        (d.nextStepDate ? ' &middot; <span class="' + (late ? 'late' : '') + '">' + esc(fmtDate(d.nextStepDate)) + ' (' + relDays(n) + ')</span>' : '');
+    } else {
+      next = '<span class="muted">No next step set</span>';
+    }
+    if (d.status === 'Researching' && d.deadline) {
+      var dn = daysUntil(d.deadline);
+      next += '<br><strong>Deadline:</strong> <span class="' + (dn < 0 ? 'late' : '') + '">' + esc(fmtDate(d.deadline)) + ' (' + relDays(dn) + ')</span>';
+    }
+    return '<a class="dept-card p-' + esc(d.priority) + '" href="#/dept/' + encodeURIComponent(d.id) + '">' +
+      '<div class="card-top"><h3>' + esc(d.name) + '</h3>' + statusBadge(d.status) + '</div>' +
+      '<div class="card-meta">' + esc([loc, d.appType].filter(Boolean).join(' · ')) + '</div>' +
+      '<div class="card-next">' + next + '</div>' +
+      '<div class="card-foot">' + prioBadge(d.priority) + (d.listRank !== '' ? '<span>List rank #' + esc(d.listRank) + '</span>' : '') +
+      '<span>Updated ' + relAgo(lastActivity(d)) + '</span></div>' +
+      '</a>';
+  }
+  function renderListResults() {
+    var el = document.getElementById('results');
+    if (!el) return;
+    var list = filteredDepts();
+    var total = data.departments.length;
+    var hidden = ui.hideClosed && !ui.status ? data.departments.filter(function (d) { return CLOSED.indexOf(d.status) !== -1; }).length : 0;
+    var line = '<div class="result-line"><span>' + list.length + ' of ' + total + ' shown' + (hidden ? ' (' + hidden + ' closed hidden)' : '') + '</span>' +
+      '<a class="link-btn" href="#/data">Export CSV</a></div>';
+    if (!total) {
+      el.innerHTML = '<div class="card"><p class="empty">No departments yet.</p><a class="btn btn-primary btn-block" href="#/add">Add a department</a></div>';
+      return;
+    }
+    el.innerHTML = line + (list.length ? list.map(cardHTML).join('') :
+      '<div class="card"><p class="empty">No departments match.</p><button type="button" class="btn btn-small" data-action="clear-filters">Clear filters and search</button></div>');
+    var s = document.getElementById('filters-summary');
+    if (s) { var n = activeFilterCount(); s.textContent = 'Filters' + (n ? ' (' + n + ' on)' : ''); }
+  }
+
+  /* ---------- Fields + validation ---------- */
+  function fieldHTML(key, val, inline) {
+    var f = F[key];
+    var id = (inline ? 'i-' : 'f-') + key.replace('.', '-');
+    var attrs = 'id="' + id + '" name="' + key + '" data-field="' + key + '"' + (inline ? ' data-inline' : '') +
+      (f.required ? ' required aria-required="true"' : '') +
+      (f.placeholder ? ' placeholder="' + esc(f.placeholder) + '"' : '') +
+      (f.list ? ' list="' + f.list + '"' : '') +
+      (f.autocap ? ' autocapitalize="none" autocorrect="off" spellcheck="false"' : '') +
+      ' autocomplete="off" aria-describedby="' + id + '-err"';
+    var control;
+    if (f.type === 'select') {
+      control = '<select ' + attrs + (key === 'status' ? ' class="status-select"' : '') + '>' +
+        f.options.map(function (o) { return '<option value="' + esc(o) + '"' + (o === val ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select>';
+    } else if (f.type === 'textarea') {
+      control = '<textarea ' + attrs + ' rows="3">' + esc(val) + '</textarea>';
+    } else {
+      control = '<input type="' + f.type + '" ' + attrs + ' value="' + esc(val) + '"' +
+        (f.type === 'number' ? ' min="1" step="1" inputmode="numeric"' : '') + '>';
+    }
+    return '<div class="field' + (f.wide ? ' span2' : '') + '"><label for="' + id + '">' + esc(f.label) +
+      (f.required ? ' <span class="req">(required)</span>' : '') + '</label>' + control +
+      '<div class="field-error" id="' + id + '-err" hidden></div></div>';
+  }
+  function cleanField(key, raw, el) {
+    var f = F[key];
+    var v = typeof raw === 'string' ? raw.trim() : raw;
+    if (el && el.validity && el.validity.badInput) return { error: f.type === 'date' ? 'Enter a valid date.' : 'Enter a number.' };
+    if (key === 'name' && !v) return { error: 'Department name is required.' };
+    if (key === 'contact.email' && v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return { error: 'Enter a valid email address, or leave it blank.' };
+    if (key === 'url' && v) {
+      if (!/^https?:\/\//i.test(v)) v = 'https://' + v;
+      try { new URL(v); } catch (e) { return { error: 'Enter a valid web address.' }; }
+    }
+    if (key === 'listRank') {
+      if (v === '' || v == null) v = '';
+      else {
+        var n = Number(v);
+        if (!Number.isInteger(n) || n < 1) return { error: 'Rank must be a whole number, 1 or higher.' };
+        v = n;
+      }
+    }
+    if (f.type === 'select' && f.options.indexOf(v) === -1) return { error: 'Choose an option.' };
+    if (f.type === 'date' && v && !isDateStr(v)) return { error: 'Enter a valid date.' };
+    return { value: v };
+  }
+  function setFieldError(el, msg) {
+    var err = document.getElementById(el.id + '-err');
+    if (msg) { el.setAttribute('aria-invalid', 'true'); if (err) { err.textContent = msg; err.hidden = false; } }
+    else { el.removeAttribute('aria-invalid'); if (err) { err.textContent = ''; err.hidden = true; } }
+  }
+
+  /* ---------- Add / Edit form ---------- */
+  function renderForm(id) {
+    var d = id ? getDept(id) : null;
+    if (id && !d) return renderNotFound();
+    var src = d || blankDept();
+    var h = '<h1 class="page-title">' + (d ? 'Edit department' : 'Add department') + '</h1>' +
+      '<form id="dept-form" novalidate data-id="' + (d ? esc(d.id) : '') + '">';
+    FORM_GROUPS.forEach(function (g) {
+      h += '<fieldset class="card"><legend>' + esc(g.title) + '</legend><div class="fields">' +
+        g.fields.map(function (k) { return fieldHTML(k, str(getPath(src, k)), false); }).join('') + '</div></fieldset>';
+    });
+    if (!d) {
+      h += '<fieldset class="card"><legend>First note</legend><div class="field"><label for="f-first-note">Optional. How you heard about it, who you talked to, etc.</label>' +
+        '<textarea id="f-first-note" rows="3"></textarea></div></fieldset>';
+    }
+    h += '<div class="form-actions"><button type="submit" class="btn btn-primary">' + (d ? 'Save changes' : 'Add department') + '</button>' +
+      '<button type="button" class="btn" data-action="cancel-form">Cancel</button></div></form>';
+    app.innerHTML = h;
+    if (!d) document.getElementById('f-name').focus({ preventScroll: true });
+  }
+  function submitForm(form) {
+    if (state.saving) return; // ignore a double tap on Save
+    var id = form.dataset.id;
+    var existing = id ? getDept(id) : null;
+    var values = {}, firstBad = null;
+    form.querySelectorAll('[data-field]').forEach(function (el) {
+      var r = cleanField(el.dataset.field, el.value, el);
+      setFieldError(el, r.error);
+      if (r.error) { if (!firstBad) firstBad = el; } else values[el.dataset.field] = r.value;
+    });
+    if (firstBad) {
+      firstBad.focus();
+      toast('Fix the highlighted field' + (form.querySelectorAll('[aria-invalid="true"]').length > 1 ? 's' : '') + '.', true);
+      return;
+    }
+    var dup = data.departments.find(function (x) { return x.id !== id && x.name.trim().toLowerCase() === values.name.toLowerCase(); });
+    state.saving = true;
+    var p = dup ? confirmModal('Possible duplicate', '<p>You already have a department named <strong>' + esc(dup.name) + '</strong>. Save this one anyway?</p>', 'Save anyway') : Promise.resolve(true);
+    p.then(function (ok) {
+      if (!ok || state.view !== (existing ? 'edit' : 'add')) { state.saving = false; return; }
+      var d = existing || blankDept();
+      var newStatus = values.status;
+      Object.keys(values).forEach(function (k) { if (k !== 'status') setPath(d, k, values[k]); });
+      if (existing) {
+        changeStatus(d, newStatus);
+        touch(d);
+      } else {
+        d.status = newStatus;
+        var first = document.getElementById('f-first-note').value.trim();
+        if (first) d.notes.push(makeNote(todayStr(), first, false));
+        data.departments.push(d);
+      }
+      if (save()) toast(existing ? 'Changes saved' : 'Department added');
+      state.formDirty = false;
+      go('#/dept/' + encodeURIComponent(d.id), true);
+    });
+  }
+  function confirmDiscard() {
+    if (!state.formDirty || (state.view !== 'add' && state.view !== 'edit')) return Promise.resolve(true);
+    return confirmModal('Discard changes?', '<p>This form has changes that have not been saved.</p>', 'Discard changes', true);
+  }
+
+  /* ---------- Detail ---------- */
+  function renderNotFound() {
+    app.innerHTML = '<div class="card"><h2>Department not found</h2><p class="muted">It may have been deleted.</p><a class="btn" href="#/list">Back to list</a></div>';
+  }
+  function detailHeadHTML(d) {
+    var loc = [d.municipality, countyLabel(d.county)].filter(Boolean).join(', ');
+    var idx = PIPELINE.indexOf(d.status);
+    var progress = idx >= 0
+      ? '<div class="small muted" style="margin-top:8px">Stage ' + (idx + 1) + ' of ' + PIPELINE.length + '</div><div class="progress" aria-hidden="true"><span style="width:' + Math.round((idx + 1) / PIPELINE.length * 100) + '%"></span></div>'
+      : '';
+    var qa = '';
+    if (d.contact.phone) qa += '<a class="btn btn-small" href="tel:' + esc(d.contact.phone.replace(/[^\d+]/g, '')) + '">' + ICONS.phone + 'Call</a>';
+    if (d.contact.email) qa += '<a class="btn btn-small" href="mailto:' + esc(d.contact.email) + '">' + ICONS.mail + 'Email</a>';
+    if (/^https?:\/\//i.test(d.url)) qa += '<a class="btn btn-small" href="' + esc(d.url) + '" target="_blank" rel="noopener noreferrer">' + ICONS.link + 'Website</a>';
+    return '<button type="button" class="back" data-action="back">' + ICONS.back + 'Back</button>' +
+      '<h1>' + esc(d.name) + '</h1>' +
+      (loc || d.appType ? '<div class="meta">' + esc([loc, d.appType].filter(Boolean).join(' · ')) + '</div>' : '') +
+      '<div class="row">' + statusBadge(d.status) + prioBadge(d.priority) + (d.listRank !== '' ? '<span class="small muted">List rank #' + esc(d.listRank) + '</span>' : '') + '</div>' +
+      progress +
+      (qa ? '<div class="quick-actions">' + qa + '</div>' : '<div style="height:14px"></div>');
+  }
+  function secHTML(key, title, sub, body) {
+    var open = state.openSecs[key] ? ' open' : '';
+    return '<details class="sec" data-sec="' + key + '"' + open + '><summary><span class="sum-title">' + esc(title) + '</span>' +
+      '<span class="sum-sub" id="sum-' + key + '">' + esc(sub) + '</span></summary><div class="sec-body"><div class="fields">' + body + '</div></div></details>';
+  }
+  function summaries(d) {
+    return {
+      dept: [d.municipality, countyLabel(d.county), d.appType].filter(Boolean).join(' · ') || 'Name, location, type, priority',
+      contact: [d.contact.name, d.contact.title, d.contact.phone, d.contact.email].filter(Boolean).join(' · ') || 'No contact yet',
+      pay: [d.salary, 'Tuition covered: ' + d.tuitionCovered].filter(Boolean).join(' · '),
+      civil: d.listRank !== '' ? 'Rank #' + d.listRank : 'No rank entered'
+    };
+  }
+  function fv(d, k) { return fieldHTML(k, str(getPath(d, k)), true); }
+  function renderDetail() {
+    var d = getDept(state.id);
+    if (!d) return renderNotFound();
+    var s = summaries(d);
+    var h = '<div class="detail-head" id="detail-head">' + detailHeadHTML(d) + '</div>';
+    h += '<section class="card" id="status-card"><h2>Status</h2>' + fv(d, 'status') +
+      '<p class="small muted" style="margin:6px 0 0">Changing status adds a dated entry to the notes log.</p></section>';
+    h += '<section class="card"><h2>Next step &amp; key dates</h2><div class="fields">' +
+      fv(d, 'nextStepDate') + fv(d, 'nextStepDesc') + fv(d, 'deadline') + fv(d, 'dateApplied') + '</div></section>';
+    h += '<section class="card" id="notes-sec">' + notesHTML(d) + '</section>';
+    h += '<section class="card" id="docs-sec">' + docsHTML(d) + '</section>';
+    h += secHTML('dept', 'Department info', s.dept, fv(d, 'name') + fv(d, 'municipality') + fv(d, 'county') + fv(d, 'url') + fv(d, 'appType') + fv(d, 'priority'));
+    h += secHTML('contact', 'Contact', s.contact, fv(d, 'contact.name') + fv(d, 'contact.title') + fv(d, 'contact.phone') + fv(d, 'contact.email'));
+    h += secHTML('pay', 'Pay & benefits', s.pay, fv(d, 'salary') + fv(d, 'tuitionCovered') + fv(d, 'payNotes'));
+    h += secHTML('civil', 'Civil service list', s.civil, fv(d, 'listRank'));
+    h += '<section class="card"><p class="meta-list" id="timestamps">' + timestampsHTML(d) + '</p>' +
+      '<div class="row"><a class="btn btn-small" href="#/edit/' + encodeURIComponent(d.id) + '">Edit in full form</a>' +
+      '<button type="button" class="btn btn-small btn-danger" data-action="delete-dept">Delete department</button></div></section>';
+    app.innerHTML = h;
+    document.getElementById('detail-head').dataset.html = detailHeadHTML(d);
+  }
+  function timestampsHTML(d) { return 'Created ' + esc(fmtTimestamp(d.createdAt)) + '<br>Updated ' + esc(fmtTimestamp(d.updatedAt)); }
+  function refreshDetailChrome(d) {
+    // Only redraw the header when it actually changed: replacing it mid-tap can swallow a tap on Back/Call/Email.
+    var head = document.getElementById('detail-head');
+    var html = detailHeadHTML(d);
+    if (head && head.dataset.html !== html) { head.innerHTML = html; head.dataset.html = html; }
+    var s = summaries(d);
+    Object.keys(s).forEach(function (k) { var el = document.getElementById('sum-' + k); if (el) el.textContent = s[k]; });
+    var ts = document.getElementById('timestamps');
+    if (ts) ts.innerHTML = timestampsHTML(d);
+  }
+  // leaving=true when called because the page is changing: save, but don't redraw the detail view.
+  function onInlineChange(el, leaving) {
+    if (state.pendingInline === el) state.pendingInline = null;
+    var d = getDept(state.id);
+    if (!d) return;
+    var key = el.dataset.field;
+    if (key === 'status') {
+      var r0 = cleanField(key, el.value, el);
+      if (r0.error) return;
+      var res = changeStatus(d, r0.value);
+      if (!res.changed) return;
+      save();
+      if (leaving) return;
+      var y = window.scrollY;
+      renderDetail();
+      window.scrollTo(0, y);
+      toast(res.autoApplied ? 'Status logged. Date applied set to today.' : 'Status changed and logged');
+      return;
+    }
+    var r = cleanField(key, el.value, el);
+    if (r.error) {
+      setFieldError(el, r.error);
+      if (key === 'name') { el.value = d.name; setTimeout(function () { setFieldError(el, null); }, 4000); }
+      toast((leaving ? 'Not saved. ' : '') + r.error, true);
+      return;
+    }
+    setFieldError(el, null);
+    if (str(getPath(d, key)) === str(r.value)) { el.value = str(r.value); return; }
+    setPath(d, key, r.value);
+    el.value = str(r.value);
+    touch(d);
+    if (save()) toast('Saved');
+    refreshDetailChrome(d);
+  }
+
+  /* Notes */
+  function noteHTML(n) {
+    return '<li data-note="' + esc(n.id) + '"><div class="note-head"><span>' + esc(fmtDate(n.date, true)) + '</span>' +
+      (n.auto ? '<span class="tag">Status change</span>' : '') + '</div>' +
+      '<p class="note-text">' + esc(n.text) + '</p>' +
+      '<div class="note-actions"><button type="button" class="link-btn" data-action="note-edit" data-id="' + esc(n.id) + '">Edit</button>' +
+      '<button type="button" class="link-btn danger" data-action="note-delete" data-id="' + esc(n.id) + '">Delete</button></div></li>';
+  }
+  function noteEditHTML(n) {
+    return '<li data-note="' + esc(n.id) + '"><form class="note-edit" data-id="' + esc(n.id) + '">' +
+      '<label class="sr-only" for="ne-text">Note text</label><textarea id="ne-text" name="text" rows="4">' + esc(n.text) + '</textarea>' +
+      '<div class="note-add-row"><div><label for="ne-date">Date</label><input type="date" id="ne-date" name="date" value="' + esc(n.date) + '"></div>' +
+      '<button type="submit" class="btn btn-primary">Save</button></div>' +
+      '<div class="note-actions"><button type="button" class="link-btn" data-action="note-cancel">Cancel</button></div></form></li>';
+  }
+  function notesHTML(d) {
+    var notes = sortedNotes(d);
+    return '<h2>Notes log <span class="count-pill">' + notes.length + '</span></h2>' +
+      '<form id="note-add" class="note-add" autocomplete="off">' +
+        '<label for="note-text" class="sr-only">New note</label>' +
+        '<textarea id="note-text" name="text" rows="3" placeholder="Log a call, email, or update...">' + esc(getDraft(d.id)) + '</textarea>' +
+        '<div class="note-add-row"><div><label for="note-date">Date</label><input type="date" id="note-date" name="date" value="' + todayStr() + '"></div>' +
+        '<button class="btn btn-primary" type="submit">Add note</button></div>' +
+      '</form>' +
+      (notes.length
+        ? '<ol class="notes">' + notes.map(function (n) { return n.id === state.editingNote ? noteEditHTML(n) : noteHTML(n); }).join('') + '</ol>'
+        : '<p class="empty" style="margin-top:12px">No notes yet. Log every call, email, and update here.</p>');
+  }
+  function renderNotes(d, focusSel) {
+    var sec = document.getElementById('notes-sec');
+    if (!sec) return;
+    var draftDate = document.getElementById('note-date');
+    var draftDateVal = draftDate ? draftDate.value : todayStr();
+    sec.innerHTML = notesHTML(d);
+    document.getElementById('note-date').value = draftDateVal;
+    if (focusSel) { var f = sec.querySelector(focusSel); if (f) f.focus(); }
+  }
+
+  /* Documents */
+  function docsHTML(d) {
+    var done = d.documents.filter(function (x) { return x.done; }).length;
+    return '<h2>Documents <span class="count-pill" id="docs-count">' + done + ' of ' + d.documents.length + ' ready</span></h2>' +
+      (d.documents.length ? '<ul class="docs">' + d.documents.map(function (x) {
+        return '<li><label class="check"><input type="checkbox" data-doc="' + esc(x.id) + '"' + (x.done ? ' checked' : '') + '>' +
+          '<span class="' + (x.done ? 'done-label' : '') + '">' + esc(x.label) + '</span></label>' +
+          (x.custom ? '<button type="button" class="link-btn danger" data-action="doc-remove" data-id="' + esc(x.id) + '" aria-label="Remove ' + esc(x.label) + '">Remove</button>' : '') +
+          '</li>';
+      }).join('') + '</ul>' : '<p class="empty">No documents in the checklist.</p>') +
+      '<form id="doc-add" class="doc-add" autocomplete="off"><label for="doc-new" class="sr-only">Add another document</label>' +
+      '<input type="text" id="doc-new" placeholder="Add other document..." enterkeyhint="done">' +
+      '<button type="submit" class="btn">Add</button></form>';
+  }
+  function renderDocs(d, refocus) {
+    var sec = document.getElementById('docs-sec');
+    if (!sec) return;
+    sec.innerHTML = docsHTML(d);
+    if (refocus) document.getElementById('doc-new').focus();
+  }
+
+  /* ---------- Data / backup ---------- */
+  function downloadBlob(blob, filename) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = filename; a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+  }
+  function backupPayload() {
+    return JSON.stringify({
+      app: 'pd-tracker', schemaVersion: SCHEMA_VERSION, exportedAt: nowISO(),
+      meta: data.meta, departments: data.departments
+    }, null, 2);
+  }
+  function backupFilename() { return 'pd-tracker-backup-' + todayStr() + '.json'; }
+  function markBackedUp() {
+    data.meta.lastBackup = nowISO();
+    save();
+    if (state.view === 'dashboard' || state.view === 'data') render();
+  }
+  function isStandalone() {
+    return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+  }
+  // Home-screen apps (especially on iPhone) can't reliably download files, so there we open the
+  // share sheet ("Save to Files", email, Drive). Resolves to 'downloaded', 'shared' or 'cancelled'.
+  function saveFile(text, filename, type) {
+    function download() { downloadBlob(new Blob([text], { type: type }), filename); return 'downloaded'; }
+    if (isStandalone() && navigator.share && navigator.canShare) {
+      var file = new File([text], filename, { type: type });
+      var ok = false;
+      try { ok = navigator.canShare({ files: [file] }); } catch (e) { /* unsupported */ }
+      if (ok) {
+        return navigator.share({ files: [file], title: filename }).then(function () { return 'shared'; }, function (e) {
+          return e && e.name === 'AbortError' ? 'cancelled' : download();
+        });
+      }
+    }
+    return Promise.resolve(download());
+  }
+  function exportJSON() {
+    var name = backupFilename();
+    saveFile(backupPayload(), name, 'application/json').then(function (r) {
+      if (r === 'cancelled') return;
+      markBackedUp();
+      toast(r === 'shared' ? 'Backup saved' : 'Backup downloaded: ' + name);
+    });
+  }
+  function canShareFiles() {
+    try {
+      return !!(navigator.canShare && navigator.canShare({ files: [new File(['{}'], 'x.json', { type: 'application/json' })] }));
+    } catch (e) { return false; }
+  }
+  function shareJSON() {
+    var file = new File([backupPayload()], backupFilename(), { type: 'application/json' });
+    navigator.share({ files: [file], title: 'PD Tracker backup' }).then(function () {
+      markBackedUp();
+      toast('Backup shared');
+    }).catch(function (e) {
+      if (e && e.name === 'AbortError') return;
+      toast('Sharing failed. Use Download instead.', true);
+    });
+  }
+  function csvCell(v) {
+    var s = str(v);
+    if (/^[=+\-@]/.test(s)) s = ' ' + s; // keep Excel from treating text as a formula
+    return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  function exportCSV() {
+    var cols = [
+      ['Department', 'name'], ['Municipality', 'municipality'], ['County', 'county'], ['Website', 'url'],
+      ['Application Type', 'appType'], ['Status', 'status'], ['Priority', 'priority'],
+      ['Date Applied', 'dateApplied'], ['Application Deadline', 'deadline'], ['Next Step Date', 'nextStepDate'], ['Next Step', 'nextStepDesc'],
+      ['Contact Name', 'contact.name'], ['Contact Title', 'contact.title'], ['Contact Phone', 'contact.phone'], ['Contact Email', 'contact.email'],
+      ['Starting Salary', 'salary'], ['Sponsorship Covers Tuition', 'tuitionCovered'], ['Pay Notes', 'payNotes'], ['Civil Service Rank', 'listRank']
+    ];
+    var header = cols.map(function (c) { return c[0]; }).concat(['Documents Ready', 'Documents Outstanding', 'Notes (newest first)', 'Created', 'Updated']);
+    var rows = data.departments.slice().sort(byName).map(function (d) {
+      var r = cols.map(function (c) { return getPath(d, c[1]); });
+      r.push(d.documents.filter(function (x) { return x.done; }).map(function (x) { return x.label; }).join('; '));
+      r.push(d.documents.filter(function (x) { return !x.done; }).map(function (x) { return x.label; }).join('; '));
+      r.push(sortedNotes(d).map(function (n) { return n.date + ': ' + n.text.replace(/\s*[\r\n]+\s*/g, ' '); }).join(' | '));
+      r.push(d.createdAt, d.updatedAt);
+      return r;
+    });
+    var csv = '﻿' + [header].concat(rows).map(function (r) { return r.map(csvCell).join(','); }).join('\r\n');
+    saveFile(csv, 'pd-tracker-' + todayStr() + '.csv', 'text/csv').then(function (r) {
+      if (r !== 'cancelled') toast(r === 'shared' ? 'CSV saved' : 'CSV downloaded');
+    });
+  }
+  function mergeInto(current, incoming) {
+    var stats = { added: 0, updated: 0, unchanged: 0 };
+    var byId = Object.create(null);
+    current.forEach(function (d, i) { byId[d.id] = i; });
+    incoming.forEach(function (inc) {
+      if (byId[inc.id] === undefined) { current.push(inc); byId[inc.id] = current.length - 1; stats.added++; return; }
+      var cur = current[byId[inc.id]];
+      var incNewer = new Date(inc.updatedAt) > new Date(cur.updatedAt);
+      var base = incNewer ? inc : cur;
+      // Keep notes from both copies; for the same note, the more recently edited version wins.
+      var notes = Object.create(null);
+      cur.notes.concat(inc.notes).forEach(function (n) {
+        if (!notes[n.id] || new Date(n.updatedAt) > new Date(notes[n.id].updatedAt)) notes[n.id] = n;
+      });
+      var merged = Object.assign({}, base, { notes: Object.keys(notes).map(function (k) { return notes[k]; }) });
+      if (JSON.stringify(merged) === JSON.stringify(cur)) { stats.unchanged++; return; }
+      current[byId[inc.id]] = merged;
+      stats.updated++;
+    });
+    return stats;
+  }
+  function importFile(file) {
+    if (!file) return;
+    file.text().then(function (text) {
+      var parsed, incoming;
+      try { parsed = JSON.parse(text); } catch (e) { throw new Error('That file is not valid JSON.'); }
+      if (!parsed || (!Array.isArray(parsed) && !Array.isArray(parsed.departments))) throw new Error('That file does not look like a PD Tracker backup.');
+      incoming = migrate(parsed);
+      var n = incoming.departments.length, m = data.departments.length;
+      var when = parsed.exportedAt ? ' exported ' + esc(fmtTimestamp(parsed.exportedAt)) : '';
+      return modal({
+        title: 'Import backup',
+        body: '<p>The file has <strong>' + n + ' department' + (n === 1 ? '' : 's') + '</strong>' + when + '. You currently have <strong>' + m + '</strong>.</p>' +
+          '<p><strong>Merge:</strong> adds new departments and updates ones in both (most recent edit wins; notes from both are kept).</p>' +
+          '<p><strong>Replace:</strong> deletes everything in the app now and uses the file instead.</p>',
+        buttons: [{ label: 'Merge', value: 'merge', kind: 'primary' }, { label: 'Replace', value: 'replace', kind: 'danger' }, { label: 'Cancel', value: null }]
+      }).then(function (choice) {
+        if (!choice) return;
+        var body = choice === 'replace'
+          ? '<p>Replace all <strong>' + m + '</strong> current department' + (m === 1 ? '' : 's') + ' with the <strong>' + n + '</strong> from the file?</p><p class="small muted">A safety copy of your current data is kept on this device.</p>'
+          : '<p>Merge <strong>' + n + '</strong> department' + (n === 1 ? '' : 's') + ' from the file into your current <strong>' + m + '</strong>?</p>';
+        return confirmModal(choice === 'replace' ? 'Replace all data?' : 'Merge data?', body, choice === 'replace' ? 'Yes, replace' : 'Yes, merge', choice === 'replace')
+          .then(function (ok) {
+            if (!ok) return;
+            try { localStorage.setItem(STORAGE_KEY + '.before-import', JSON.stringify(data)); } catch (e) { /* ignore */ }
+            var msg;
+            if (choice === 'replace') {
+              data.departments = incoming.departments;
+              msg = 'Replaced: ' + n + ' department' + (n === 1 ? '' : 's') + ' loaded';
+            } else {
+              var st = mergeInto(data.departments, incoming.departments);
+              msg = 'Merged: ' + st.added + ' added, ' + st.updated + ' updated, ' + st.unchanged + ' unchanged';
+            }
+            var fileBackup = parsed.exportedAt || (parsed.meta && parsed.meta.lastBackup);
+            if (fileBackup && (!data.meta.lastBackup || new Date(fileBackup) > new Date(data.meta.lastBackup))) data.meta.lastBackup = fileBackup;
+            data.meta.seeded = true;
+            if (save()) toast(msg);
+            go('#/dashboard');
+          });
+      });
+    }).catch(function (e) {
+      modal({ title: 'Import failed', body: '<p>' + esc(e.message) + '</p><p class="small muted">Nothing was changed.</p>', buttons: [{ label: 'OK', value: true, kind: 'primary' }] });
+    });
+  }
+  function renderData() {
+    var lb = data.meta.lastBackup;
+    var notes = data.departments.reduce(function (a, d) { return a + d.notes.length; }, 0);
+    var kb = 0;
+    try { kb = Math.round((localStorage.getItem(STORAGE_KEY) || '').length / 1024 * 10) / 10; } catch (e) { /* ignore */ }
+    app.innerHTML = '<h1 class="page-title">Backup &amp; data</h1>' +
+      backupCardHTML().replace('<a class="link-btn" href="#/data">Backup options</a>', '') +
+      '<section class="card stack"><h2>Back up</h2>' +
+        '<p class="muted small" style="margin:0">Your data is stored only in this browser on this device. A backup is a .json file you keep in Files, iCloud Drive, Google Drive, or email to yourself.</p>' +
+        '<button type="button" class="btn btn-primary btn-block" data-action="export-json">' + (isStandalone() ? 'Save backup file (.json)' : 'Download backup (.json)') + '</button>' +
+        (canShareFiles() && !isStandalone() ? '<button type="button" class="btn btn-block" data-action="share-json">Share backup file (save to Files, email...)</button>' : '') +
+      '</section>' +
+      '<section class="card stack"><h2>Restore</h2>' +
+        '<p class="muted small" style="margin:0">Pick a backup file. You will choose to merge it with what is here or replace everything, then confirm.</p>' +
+        '<label class="btn btn-block" for="import-file">Choose backup file to import</label>' +
+        '<input type="file" id="import-file" class="sr-only">' +
+      '</section>' +
+      '<section class="card stack"><h2>Spreadsheet</h2>' +
+        '<p class="muted small" style="margin:0">One row per department, notes combined into one column. Opens in Excel or Google Sheets. This is for viewing, not restoring.</p>' +
+        '<button type="button" class="btn btn-block" data-action="export-csv">Download CSV</button>' +
+      '</section>' +
+      '<section class="card"><h2>On this device</h2><dl class="kv">' +
+        '<dt>Departments</dt><dd>' + data.departments.length + '</dd>' +
+        '<dt>Notes</dt><dd>' + notes + '</dd>' +
+        '<dt>Stored size</dt><dd>' + kb + ' KB</dd>' +
+        '<dt>Last backup</dt><dd>' + (lb ? esc(fmtTimestamp(lb)) : 'Never') + '</dd>' +
+        '<dt>Data version</dt><dd>Schema ' + SCHEMA_VERSION + '</dd>' +
+      '</dl></section>';
+  }
+  function renderLoadError() {
+    app.innerHTML = '<section class="card alert-card"><h2>Saved data could not be loaded</h2><p>' + esc(loadError) + '</p>' +
+      '<p class="muted small">Nothing has been deleted. Download the raw data so it is not lost, then reload or update the app.</p>' +
+      (rawStored ? '<div class="stack"><button type="button" class="btn btn-primary btn-block" data-action="download-raw">Download raw saved data</button>' +
+        '<button type="button" class="btn btn-danger btn-block" data-action="start-over">Start over (keeps a copy)</button></div>' : '') +
+      '</section>';
+  }
+
+  /* ---------- Events ---------- */
+  var actions = {
+    'export-json': exportJSON,
+    'share-json': shareJSON,
+    'export-csv': exportCSV,
+    'download-raw': function () { saveFile(rawStored, 'pd-tracker-raw-' + todayStr() + '.json', 'application/json'); },
+    'start-over': function () {
+      confirmModal('Start over?', '<p>The unreadable data stays saved on this device under a separate name, and the app starts fresh. Download it first if you want to keep it somewhere else.</p>', 'Start over', true)
+        .then(function (ok) {
+          if (!ok) return;
+          try { localStorage.setItem(STORAGE_KEY + '.unreadable-' + Date.now(), rawStored); } catch (e) {
+            toast('Could not keep a copy (storage full). Download the raw data first.', true);
+            return;
+          }
+          data = seedData();
+          loadError = null;
+          save();
+          go('#/dashboard', true);
+        });
+    },
+    'filter-status': function (el) {
+      Object.assign(ui, { status: el.dataset.status, type: '', county: '', priority: '', q: '' });
+      saveUI();
+      go('#/list');
+    },
+    'clear-filters': function () {
+      Object.assign(ui, { q: '', status: '', type: '', county: '', priority: '' });
+      saveUI();
+      renderList();
+    },
+    'back': function () {
+      if (state.navCount > 1 && history.length > 1) history.back(); else go('#/list');
+    },
+    'cancel-form': function () {
+      confirmDiscard().then(function (ok) {
+        if (!ok) return;
+        state.formDirty = false;
+        if (state.view === 'edit') go('#/dept/' + encodeURIComponent(state.id), true);
+        else if (state.navCount > 1 && history.length > 1) history.back();
+        else go('#/dashboard', true);
+      });
+    },
+    'delete-dept': function () {
+      var d = getDept(state.id);
+      if (!d) return;
+      confirmModal('Delete department?', '<p>Delete <strong>' + esc(d.name) + '</strong> along with its ' + d.notes.length + ' note' + (d.notes.length === 1 ? '' : 's') +
+        ' and document checklist?</p><p>This cannot be undone. Download a backup first if you are not sure.</p>', 'Delete', true)
+        .then(function (ok) {
+          if (!ok) return;
+          data.departments = data.departments.filter(function (x) { return x.id !== d.id; });
+          setDraft(d.id, '');
+          if (save()) toast('Deleted ' + d.name);
+          go('#/list', true);
+        });
+    },
+    'note-edit': function (el) {
+      state.editingNote = el.dataset.id;
+      renderNotes(getDept(state.id), '#ne-text');
+    },
+    'note-cancel': function () {
+      state.editingNote = null;
+      renderNotes(getDept(state.id));
+    },
+    'note-delete': function (el) {
+      var d = getDept(state.id);
+      var n = d && d.notes.find(function (x) { return x.id === el.dataset.id; });
+      if (!n) return;
+      var preview = n.text.length > 120 ? n.text.slice(0, 120) + '...' : n.text;
+      confirmModal('Delete note?', '<p><strong>' + esc(fmtDate(n.date, true)) + '</strong>: ' + esc(preview) + '</p>', 'Delete note', true).then(function (ok) {
+        if (!ok) return;
+        d.notes = d.notes.filter(function (x) { return x.id !== n.id; });
+        touch(d);
+        if (save()) toast('Note deleted');
+        renderNotes(d);
+        refreshDetailChrome(d);
+      });
+    },
+    'doc-remove': function (el) {
+      var d = getDept(state.id);
+      d.documents = d.documents.filter(function (x) { return x.id !== el.dataset.id; });
+      touch(d);
+      if (save()) toast('Removed');
+      renderDocs(d);
+      refreshDetailChrome(d);
+    }
+  };
+
+  document.addEventListener('click', function (e) {
+    // Leaving the add/edit form by a link or tab: confirm if there are unsaved changes.
+    var link = e.target.closest('a[href^="#"]');
+    if (link && state.formDirty && (state.view === 'add' || state.view === 'edit')) {
+      e.preventDefault();
+      confirmDiscard().then(function (ok) {
+        if (ok) { state.formDirty = false; go(link.getAttribute('href')); }
+      });
+      return;
+    }
+    var el = e.target.closest('[data-action]');
+    if (!el || !actions[el.dataset.action]) return;
+    e.preventDefault();
+    actions[el.dataset.action](el, e);
+  });
+
+  document.addEventListener('submit', function (e) {
+    var form = e.target;
+    e.preventDefault();
+    var d = getDept(state.id);
+    if (form.id === 'dept-form') return submitForm(form);
+    if (form.id === 'note-add' && d) {
+      var ta = form.querySelector('#note-text');
+      var text = ta.value.trim();
+      if (!text) { toast('Type a note first.', true); ta.focus(); return; }
+      var date = form.querySelector('#note-date').value;
+      d.notes.push(makeNote(isDateStr(date) ? date : todayStr(), text, false));
+      touch(d);
+      if (save()) toast('Note added');
+      setDraft(d.id, '');
+      ta.value = '';
+      form.querySelector('#note-date').value = todayStr();
+      renderNotes(d);
+      refreshDetailChrome(d);
+      return;
+    }
+    if (form.classList.contains('note-edit') && d) {
+      var n = d.notes.find(function (x) { return x.id === form.dataset.id; });
+      var t = form.querySelector('[name=text]').value.trim();
+      if (!t) { toast('A note cannot be empty. Use Delete to remove it.', true); return; }
+      var nd = form.querySelector('[name=date]').value;
+      n.text = t;
+      if (isDateStr(nd)) n.date = nd;
+      n.updatedAt = nowISO();
+      touch(d);
+      state.editingNote = null;
+      if (save()) toast('Note updated');
+      renderNotes(d);
+      refreshDetailChrome(d);
+      return;
+    }
+    if (form.id === 'doc-add' && d) {
+      var inp = form.querySelector('#doc-new');
+      var label = inp.value.trim();
+      if (!label) { inp.focus(); return; }
+      d.documents.push(makeDoc(label, true));
+      touch(d);
+      if (save()) toast('Document added');
+      renderDocs(d, true);
+      refreshDetailChrome(d);
+    }
+  });
+
+  document.addEventListener('change', function (e) {
+    var el = e.target;
+    if (el.matches('[data-inline]')) return onInlineChange(el);
+    if (el.matches('[data-doc]')) {
+      var d = getDept(state.id);
+      var doc = d && d.documents.find(function (x) { return x.id === el.dataset.doc; });
+      if (!doc) return;
+      doc.done = el.checked;
+      touch(d);
+      save();
+      el.nextElementSibling.className = doc.done ? 'done-label' : '';
+      var done = d.documents.filter(function (x) { return x.done; }).length;
+      document.getElementById('docs-count').textContent = done + ' of ' + d.documents.length + ' ready';
+      refreshDetailChrome(d);
+      return;
+    }
+    if (el.matches('[data-ui]')) {
+      var k = el.dataset.ui;
+      ui[k] = el.type === 'checkbox' ? el.checked : el.value;
+      saveUI();
+      renderListResults();
+      return;
+    }
+    if (el.id === 'import-file') {
+      importFile(el.files && el.files[0]);
+      el.value = '';
+    }
+  });
+
+  document.addEventListener('input', function (e) {
+    if (e.target.id === 'search') { ui.q = e.target.value; saveUI(); renderListResults(); }
+    if (e.target.id === 'note-text' && state.view === 'dept') setDraft(state.id, e.target.value);
+    if (e.target.matches('[data-inline]')) state.pendingInline = e.target;
+    if (e.target.closest('#dept-form')) state.formDirty = true;
+    if (e.target.matches('#dept-form [aria-invalid="true"]')) setFieldError(e.target, null);
+  });
+
+  // Remember which detail sections are expanded ("toggle" does not bubble, so capture it).
+  document.addEventListener('toggle', function (e) {
+    var sec = e.target.dataset && e.target.dataset.sec;
+    if (sec) state.openSecs[sec] = e.target.open;
+  }, true);
+
+  // Ctrl/Cmd+Enter submits a note.
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && e.target.matches('#note-text, #ne-text')) {
+      e.preventDefault();
+      var btn = e.target.form.querySelector('[type=submit]');
+      if (btn) btn.click();
+    }
+  });
+
+  // On touch devices, hide the tab bar while typing so it doesn't sit on top of the keyboard.
+  var coarse = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+  function isTextEntry(el) {
+    return el && (el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && !/^(checkbox|radio|file|button|submit)$/.test(el.type)));
+  }
+  document.addEventListener('focusin', function (e) { if (coarse && isTextEntry(e.target)) document.body.classList.add('typing'); });
+  document.addEventListener('focusout', function () { document.body.classList.remove('typing'); });
+
+  // Phones suspend or kill a backgrounded web app: save the field being edited first.
+  // When it comes back on a new day, redraw so "today" and day counts are current.
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') { flushActiveField(); return; }
+    if (data && state.renderDay !== todayStr() && !isTextEntry(document.activeElement) && !closeOpenModal) {
+      var y = window.scrollY;
+      render();
+      window.scrollTo(0, y);
+    }
+  });
+  window.addEventListener('pagehide', flushActiveField);
+
+  // Keep two open tabs/windows from overwriting each other's changes.
+  window.addEventListener('storage', function (e) {
+    if (e.key !== STORAGE_KEY || e.newValue === null) return;
+    try { data = migrate(JSON.parse(e.newValue)); loadError = null; } catch (err) { return; }
+    if (!isTextEntry(document.activeElement) && !closeOpenModal) render();
+  });
+
+  /* ---------- Boot ---------- */
+  load();
+  if (loadError && data) toast(loadError, true);
+  window.addEventListener('hashchange', route);
+  route();
+
+  // Ask the browser not to evict our storage under pressure.
+  if (navigator.storage && navigator.storage.persist) { navigator.storage.persist().catch(function () {}); }
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js').catch(function () {}); });
+  }
+})();
+</script>
+</body>
+</html>

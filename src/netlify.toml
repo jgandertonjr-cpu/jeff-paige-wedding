@@ -1,0 +1,19 @@
+# NOTE: This is a STALE DUPLICATE. Netlify reads netlify.toml from the repo
+# root (which sets publish = "src"), so THIS file is not used as config — it is
+# only published as a static file. Recommend deleting it. Its redirect was
+# changed from a status=200 catch-all to /index.html (which would have broken
+# the 404 page) to match the correct root config, in case it ever becomes active.
+[build]
+  publish = "."
+
+[[redirects]]
+  from = "/*"
+  to = "/404.html"
+  status = 404
+
+[[headers]]
+  for = "/*"
+    [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    Cache-Control = "public, max-age=3600"

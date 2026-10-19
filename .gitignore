@@ -1,0 +1,12 @@
+# Old copies — git history replaces these
+backups/
+
+# Build output and dependencies
+node_modules/
+_site/
+
+# macOS
+.DS_Store
+
+# Machine-specific Claude Code permissions
+.claude/settings.local.json

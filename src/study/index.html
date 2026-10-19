@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#1e1b4b" />
+    <meta
+      name="description"
+      content="Independent study aid for the Pennsylvania MPOETC (Act 120) municipal police certification exam. Not an official MPOETC product."
+    />
+    <!-- Keep the app out of search results (it is shared by link only). -->
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" href="/study/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/study/icons/icon-192.png" />
+    <title>PA Act 120 Exam Prep (unofficial)</title>
+    <script>
+      // Apply the saved theme before first paint to avoid a flash.
+      try {
+        var t = localStorage.getItem('act120.theme');
+        var dark = t === 'dark' || ((t === null || t === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.classList.add('dark');
+      } catch (e) {}
+    </script>
+    <script type="module" crossorigin src="/study/assets/index-azheeaPX.js"></script>
+    <link rel="modulepreload" crossorigin href="/study/assets/vendor-DNlgmZzz.js">
+    <link rel="modulepreload" crossorigin href="/study/assets/content-Dwm5vhWl.js">
+    <link rel="modulepreload" crossorigin href="/study/assets/content-questions-Buqqn1Qy.js">
+    <link rel="modulepreload" crossorigin href="/study/assets/drills-CCfE5tgV.js">
+    <link rel="stylesheet" crossorigin href="/study/assets/index-BMwzRbty.css">
+  <link rel="manifest" href="/study/manifest.webmanifest"></head>
+  <body class="h-full bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 antialiased">
+    <div id="root" class="min-h-full">
+      <!-- Shown while the app and its bundled content load; React replaces it on first render. -->
+      <div role="status" aria-label="Loading your study plan" style="max-width: 56rem; margin: 0 auto; padding: 1.25rem 1rem; font-family: system-ui, sans-serif">
+        <style>
+          .boot-bar { background: #e2e8f0; border-radius: 0.75rem; animation: boot 1.2s ease-in-out infinite alternate; }
+          .dark .boot-bar { background: #1e293b; }
+          @keyframes boot { from { opacity: 1; } to { opacity: 0.5; } }
+          @media (prefers-reduced-motion: reduce) { .boot-bar { animation: none; } }
+        </style>
+        <div class="boot-bar" style="height: 1.75rem; width: 40%"></div>
+        <div class="boot-bar" style="height: 9rem; margin-top: 1rem"></div>
+        <div class="boot-bar" style="height: 1rem; margin-top: 1rem; width: 85%"></div>
+        <div class="boot-bar" style="height: 1rem; margin-top: 0.75rem; width: 70%"></div>
+      </div>
+    </div>
+  </body>
+</html>

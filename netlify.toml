@@ -1,0 +1,47 @@
+[build]
+  publish = "src"
+
+# Pretty URLs — Netlify strips .html automatically when this is set
+[build.processing]
+  skip_processing = false
+
+# 404 fallback
+[[redirects]]
+  from = "/*"
+  to = "/404.html"
+  status = 404
+
+# ── Cache headers ─────────────────────────────────────────────────────────────
+
+# CSS and JS: always revalidate (no versioned filenames on this site)
+[[headers]]
+  for = "/css/*"
+    [headers.values]
+    Cache-Control = "public, no-cache"
+
+[[headers]]
+  for = "/js/*"
+    [headers.values]
+    Cache-Control = "public, no-cache"
+
+# Images: 30-day cache
+[[headers]]
+  for = "/images/*"
+    [headers.values]
+    Cache-Control = "public, max-age=2592000"
+
+# HTML: always revalidate
+[[headers]]
+  for = "/*.html"
+    [headers.values]
+    Cache-Control = "public, no-cache"
+
+# ── Security headers (all pages) ─────────────────────────────────────────────
+[[headers]]
+  for = "/*"
+    [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"

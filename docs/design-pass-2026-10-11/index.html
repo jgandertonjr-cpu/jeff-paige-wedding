@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jeff &amp; Paige Design Pass</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@300;400;500&family=Pinyon+Script&display=swap" rel="stylesheet">
+<style>
+  /* Layout: the site's own system — sage banner, ivory body, white cards, gold hairlines.
+     Single light theme by choice, matching the wedding site it documents. */
+  :root {
+    color-scheme: light;
+    --sage: #BCCAB3; --ivory: #FBF8F2; --mist: #EBECE2; --white: #FFFFFF; --hairline: #E4DCCA;
+    --ink: #243022; --ink-2: #56634F; --deep-gold: #7E5C2E; --on-sage: #1F2A20; --on-sage-2: #3E4A39;
+    --gold: #C9A04A; --rosette: #E0AA9E; --champagne: rgba(201,160,74,.14);
+    --gold-metallic: linear-gradient(100deg, #A47A2C 0%, #D9B860 28%, #F5E6A8 46%, #C9A04A 62%, #8F6A26 100%);
+    --display: 'Cormorant Garamond', Georgia, serif;
+    --body: 'Jost', system-ui, sans-serif;
+    --script: 'Pinyon Script', cursive;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--ivory); }
+  body { margin: 0; background: var(--ivory); color: var(--ink); font: 300 1rem/1.7 var(--body); }
+  a { color: var(--deep-gold); text-underline-offset: 3px; }
+  :focus-visible { outline: 2px solid var(--deep-gold); outline-offset: 3px; }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding-inline: clamp(16px, 4vw, 40px); }
+  .wrap--narrow { max-width: 760px; }
+
+  header.banner { background: var(--sage); color: var(--on-sage); text-align: center; padding-block: 4.5rem 3.5rem; }
+  .eyebrow { font: 500 .75rem/1.3 var(--body); letter-spacing: .32em; text-indent: .32em; text-transform: uppercase; color: var(--deep-gold); margin: 0 0 1rem; }
+  header .eyebrow { color: #5E4519; }
+  h1, h2, h3 { font-family: var(--display); font-weight: 300; text-wrap: balance; margin: 0; }
+  h1 { font-size: clamp(2.6rem, 6vw, 4.4rem); font-style: italic; line-height: 1.05; }
+  h1 .amp { font-family: var(--script); font-style: normal; font-size: 1.15em; color: #7E5C2E; background: linear-gradient(100deg,#5E4519,#7E5C2E 45%,#5E4519); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; padding: 0 .12em; }
+  h1::after { content: ''; display: block; width: 64px; height: 1px; background: var(--gold-metallic); margin: 1.5rem auto 0; }
+  header p { color: var(--on-sage-2); max-width: 600px; margin: 1.25rem auto 0; font-size: 1.1rem; }
+
+  section { padding-block: clamp(3rem, 7vw, 5rem); }
+  section:nth-of-type(even) { background: var(--mist); }
+  h2 { font-size: clamp(2rem, 1.4rem + 2.2vw, 2.8rem); font-style: italic; margin-bottom: 1.25rem; }
+  h3 { font-size: 1.5rem; font-style: italic; margin: 0 0 .5rem; }
+  .lede { color: var(--ink-2); font-size: 1.1rem; max-width: 65ch; margin: 0 0 2rem; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-top: 2rem; }
+  .stat { background: var(--white); border: 1px solid var(--hairline); border-radius: 6px; padding: 1.25rem; }
+  .stat b { display: block; font: 300 2.2rem/1 var(--display); font-variant-numeric: lining-nums; }
+  .stat span { font-size: .85rem; color: var(--ink-2); }
+
+  .files { display: grid; gap: 1rem; }
+  details { background: var(--white); border: 1px solid var(--hairline); border-radius: 6px; }
+  summary { cursor: pointer; padding: 1rem 1.25rem; display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; list-style: none; }
+  summary::-webkit-details-marker { display: none; }
+  summary code { font: 500 .95rem var(--body); color: var(--ink); }
+  summary small { color: var(--ink-2); font-size: .8rem; white-space: nowrap; }
+  summary::after { content: '+'; color: var(--deep-gold); font-size: 1.2rem; line-height: 1; }
+  details[open] summary::after { content: '\2013'; }
+  details ul { margin: 0; padding: 0 1.25rem 1.25rem 2.5rem; color: var(--ink); }
+  details li { margin: .35rem 0; max-width: 70ch; }
+  .tag { display: inline-block; font: 500 .65rem/1 var(--body); letter-spacing: .2em; text-transform: uppercase; color: var(--deep-gold); background: var(--champagne); border-radius: 99px; padding: .35em .8em; margin-right: .4em; vertical-align: .15em; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-bottom: 2rem; position: sticky; top: 0; background: inherit; padding-block: .75rem; z-index: 2; border-bottom: 1px solid var(--hairline); }
+  .controls span { font: 500 .75rem var(--body); letter-spacing: .2em; text-transform: uppercase; color: var(--ink-2); margin-right: .5rem; }
+  .controls button { font: 500 .75rem var(--body); letter-spacing: .2em; text-transform: uppercase; color: var(--ink); background: transparent; border: 1px solid var(--gold); border-radius: 99px; padding: .6em 1.3em; cursor: pointer; }
+  .controls button[aria-pressed="true"] { background: var(--ink); color: var(--ivory); border-color: var(--ink); }
+  .controls nav { display: flex; flex-wrap: wrap; gap: .25rem 1rem; margin-left: auto; font-size: .85rem; }
+
+  .page { margin-bottom: 3.5rem; scroll-margin-top: 5rem; }
+  .page-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; border-bottom: 1px solid var(--hairline); padding-bottom: .5rem; margin-bottom: 1rem; }
+  .page-head p { margin: 0; color: var(--ink-2); font-size: .9rem; max-width: 60ch; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: start; }
+  .pair figure { margin: 0; min-width: 0; }
+  .pair figcaption { font: 500 .7rem var(--body); letter-spacing: .2em; text-transform: uppercase; color: var(--ink-2); margin-bottom: .5rem; }
+  .pair figure:last-child figcaption { color: var(--deep-gold); }
+  .shot { border: 1px solid var(--hairline); border-radius: 6px; overflow: auto; max-height: 85vh; background: var(--white); }
+  .shot img { display: block; width: 100%; height: auto; }
+  body[data-w="375"] .pair { max-width: 820px; }
+  @media (max-width: 640px) { .pair { grid-template-columns: 1fr; } .controls nav { margin-left: 0; } }
+
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem; }
+  .card { background: var(--white); border: 1px solid var(--hairline); border-radius: 6px; padding: 1.5rem; }
+  .card ul { margin: .5rem 0 0; padding-left: 1.2rem; }
+  .card li { margin: .5rem 0; }
+  footer { background: var(--sage); color: var(--on-sage-2); text-align: center; padding-block: 2.5rem; font-size: .85rem; }
+</style>
+</head>
+<body data-w="1440">
+
+<header class="banner">
+  <div class="wrap wrap--narrow">
+    <p class="eyebrow">Design system pass · October 11, 2026</p>
+    <h1>Jeff <span class="amp">&amp;</span> Paige</h1>
+    <p>The wedding site, brought into line with DESIGN.md and refined. Copy, photos, page structure, navigation and functionality are unchanged.</p>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow">Summary</p>
+    <h2>What changed</h2>
+    <p class="lede">Every color, gradient, font, type size, spacing step, radius, shadow and duration is now a token in <code>styles.css</code>, and every hex value in the stylesheet comes from DESIGN.md. Pinyon Script appears only on the “&amp;”. Rosette appears only on RSVP buttons. Nothing animates longer than 300ms. All text pairings were measured at WCAG AA or better.</p>
+    <div class="stats">
+      <div class="stat"><b>11</b><span>wedding pages reviewed and re-shot at 375, 768 and 1440px</span></div>
+      <div class="stat"><b>10</b><span>compliance fixes (C1–C10), all done</span></div>
+      <div class="stat"><b>6 + 6</b><span>high-impact items (H1–H6) and decisions (D1–D6), all done</span></div>
+      <div class="stat"><b>4.6:1</b><span>lowest text contrast now on the site (sage-gray on blush ran 4.86, reset link 4.63)</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow">Phase 3 · Report</p>
+    <h2>Changes by file</h2>
+    <div class="files">
+      <details open>
+        <summary><code>src/css/styles.css</code><small>v15 → v16</small></summary>
+        <ul>
+          <li><span class="tag">H1</span>New token block from DESIGN.md: core colors, neutrals, six text colors, three gold text gradients with solid fallbacks, one type scale, two tracking steps, radii (card 6px, arch, pill), evergreen-tinted shadows, and durations capped at 300ms. Legacy names kept as aliases because page inline styles reference them.</li>
+          <li><span class="tag">C1</span>Pinyon removed from page-banner eyebrows (now Jost caps in gold-on-sage), footer “with love,”, photo captions, mobile-menu crest (all now Cormorant italic). Hero “J&amp;P” watermark removed (D2).</li>
+          <li><span class="tag">C2</span>Nav RSVP pill keeps its Rosette fill on hover and on the RSVP page, with a gold ring. New <code>.btn--rsvp</code>.</li>
+          <li><span class="tag">C3</span>Body paragraphs and FAQ answers are evergreen; subtitles, descriptions and captions stay sage-gray.</li>
+          <li><span class="tag">C4 C5 C6</span>No pure white text, no black or warm-black tints, no off-palette colors. Lightbox is deep evergreen with ivory controls. Image placeholders are Sage Mist. Unused dark legacy hero rules deleted.</li>
+          <li><span class="tag">C7</span>Gold text fallbacks are the middle stops (#A47A2C, #94702F, #7E5C2E).</li>
+          <li><span class="tag">C8 D3 D4</span>Faint “&amp;” behind page titles removed. “No. 01–04” card numbering removed.</li>
+          <li><span class="tag">C9 D1</span>Hero is a single 300ms fade (letter-by-letter reveal retired). Scroll reveals 300ms with 12px travel. Mobile menu, accordion, lightbox, countdown tick all ≤300ms. Button sheen, endless scroll-arrow bounce and slow photo zooms removed.</li>
+          <li><span class="tag">H2</span>One card system: white, hairline, 6px, flat at rest at every width. Only link cards lift (2px) on hover.</li>
+          <li><span class="tag">H3</span><code>.btn--outline</code> and <code>.btn--ghost</code> now render identically: evergreen text, solid-gold hairline.</li>
+          <li><span class="tag">H4 H5 H6</span>Card titles are italic light at one size. Caps tracking reduced from 12 values to two. Hover motion removed from non-clickable rows, cards and photos.</li>
+          <li><span class="tag">D6 M1–M3</span>Wedding Party is two columns on phones. Footer monogram tracking tightened, footer nav balanced. Section titles a touch larger on tablets. Nav underline grows with a transform.</li>
+        </ul>
+      </details>
+      <details>
+        <summary><code>src/index.html</code><small>D2 · D5</small></summary>
+        <ul><li>Hero watermark span removed.</li><li>Closing “Save the Date” band is now Sage Mist with a primary button, like every interior page, so it no longer merges into the sage footer.</li></ul>
+      </details>
+      <details>
+        <summary><code>src/rsvp.html</code><small>C2 · M4</small></summary>
+        <ul><li>Form submit button (hidden until RSVPs open) uses <code>.btn--rsvp</code>.</li><li>Tighter gap between the “Save the Date” header and its paragraph.</li></ul>
+      </details>
+      <details>
+        <summary><code>src/404.html</code><small>C2</small></summary>
+        <ul><li>RSVP button is Rosette.</li></ul>
+      </details>
+      <details>
+        <summary><code>src/details.html</code>, <code>src/after-party.html</code><small>H2 · H4 · H5</small></summary>
+        <ul><li>Venue / Reception and “What to Expect” cards use the 6px card radius and padding token; titles italic light at card size; label tracking from the token.</li></ul>
+      </details>
+      <details>
+        <summary><code>src/travel.html</code><small>H1 · M5</small></summary>
+        <ul><li>Page-level <code>.info-badge</code> override removed so the badge matches the global champagne pill.</li><li>Weather tip icon is a sun instead of chat bubbles.</li></ul>
+      </details>
+      <details open>
+        <summary><code>Round 2</code> · suggestions done<small>CSS v17 · JS v12</small></summary>
+        <ul>
+          <li><span class="tag">Copy</span>Our Story subtitle is now “One bold sister, one late-night message, and everything after.” Page-banner subtitles balance their lines so nothing is left alone on the last line.</li>
+          <li><span class="tag">Cleanup</span>All four inline <code>&lt;style&gt;</code> blocks (details, travel, after-party, 404) moved into <code>styles.css</code> under “Page components”. All 75 inline <code>style=""</code> attributes replaced with named classes. No page has inline styles now.</li>
+          <li><span class="tag">Cleanup</span>Unused CSS removed: generic card, registry cards, the dark countdown variant, ivory banner button, unused utilities and placeholder ratios. Every class in the stylesheet is used by a page.</li>
+          <li><span class="tag">Cleanup</span>Dead JS removed from <code>main.js</code>: the parallax for a hero background that no longer exists, and the hero letter-splitting. Sections renumbered.</li>
+          <li><span class="tag">Travel</span>Each local tip has its own icon: sun, car, compass, bed.</li>
+          <li><span class="tag">Speed</span>All 25 photos carry their real <code>width</code> and <code>height</code>, so the browser reserves space before they load.</li>
+        </ul>
+      </details>
+      <details>
+        <summary>All 11 pages · docs</summary>
+        <ul><li>Cache-bust <code>styles.css?v=16</code>.</li><li><code>DESIGN.md</code> and <code>CLAUDE.md</code> added; <code>design/style_guide.md</code> marked superseded.</li><li>Backups of every touched file in <code>backups/2026-10-11-pre-design-system/</code>.</li></ul>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section id="shots">
+  <div class="wrap">
+    <p class="eyebrow">Before / after</p>
+    <h2>Every page</h2>
+    <div class="controls" role="group" aria-label="Screenshot width">
+      <span>Width</span>
+      <button type="button" data-w="375" aria-pressed="false">375</button>
+      <button type="button" data-w="768" aria-pressed="false">768</button>
+      <button type="button" data-w="1440" aria-pressed="true">1440</button>
+      <nav id="jump" aria-label="Jump to page"></nav>
+    </div>
+    <div id="pages"></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow">Open items</p>
+    <h2>Deviations &amp; later ideas</h2>
+    <div class="two">
+      <div class="card">
+        <h3>Remaining deviations from DESIGN.md</h3>
+        <ul>
+          <li><strong>Homepage opens on ivory, not a sage banner.</strong> Kept on purpose (D5): the arch photo and names are the composition, and the sage countdown band directly below acts as the banner.</li>
+          <li><strong>404 has no banner or footer.</strong> Adding them would change page structure, which is locked.</li>
+          <li><strong>Form error red #A33B2E.</strong> Not in the palette; validation needs a distinct color. 6.2:1 on ivory.</li>
+          <li><strong>Desktop film-grain overlay</strong> at 5% opacity. Invisible as texture, kept; remove if you read it as decoration.</li>
+          <li><strong>Hero photo</strong> is 683px wide shown at 440px, so slightly soft on retina. Photos are locked.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Still open</h3>
+        <ul>
+          <li><strong>Higher-resolution photos.</strong> No larger source exists for the hero photo or the two building photos on Our Story. The engagement photo’s original in <code>design/originals</code> is larger, but the site copy already covers its display size at 2×. Send larger files when you have them.</li>
+          <li><strong>Registry card styles</strong> were removed as unused. When a registry goes live, cards should use the standard card style with a link.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>Screenshots are full-page headless Chrome captures with scroll reveals settled. Desktop images are shown at half scale.</footer>
+
+<script>
+  const PAGES = [
+    ['index', 'Home', 'Watermark gone, captions in Cormorant, cards without numbering, closing band in Sage Mist.'],
+    ['our-story', 'Our Story', 'New subtitle, caps eyebrow, no ghost ampersand, evergreen story text, calmer timeline.'],
+    ['details', 'Details', 'Card headings italic at card size, 6px radius, no row hovers.'],
+    ['wedding-party', 'Wedding Party', 'Two columns on phones; no hover zoom on placeholders.'],
+    ['rsvp', 'RSVP', 'RSVP pill stays Rosette on its own page, with a gold ring.'],
+    ['registry', 'Registry', 'Caps eyebrow on the banner; Pinyon only on “&”.'],
+    ['travel', 'Travel', 'Badge matches the global pill; card titles italic; each tip has its own icon.'],
+    ['after-party', 'After Party', 'Expect cards share the card system.'],
+    ['faq', 'FAQ', 'Answers evergreen; question and answer share one left edge.'],
+    ['gallery', 'Gallery', 'Banner eyebrow; quieter photo hover.'],
+    ['404', '404', 'Rosette RSVP button.']
+  ];
+  const pagesEl = document.getElementById('pages'), jump = document.getElementById('jump');
+  pagesEl.innerHTML = PAGES.map(([slug, name, note]) => `
+    <article class="page" id="p-${slug}">
+      <div class="page-head"><h3>${name}</h3><p>${note}</p></div>
+      <div class="pair">
+        <figure><figcaption>Before</figcaption><div class="shot"><img loading="lazy" data-slug="${slug}" data-stage="before" alt="${name} before, full page"></div></figure>
+        <figure><figcaption>After</figcaption><div class="shot"><img loading="lazy" data-slug="${slug}" data-stage="after" alt="${name} after, full page"></div></figure>
+      </div>
+    </article>`).join('');
+  jump.innerHTML = PAGES.map(([slug, name]) => `<a href="#p-${slug}">${name}</a>`).join('');
+  function setWidth(w) {
+    document.body.dataset.w = w;
+    document.querySelectorAll('.controls button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.w === w)));
+    document.querySelectorAll('img[data-slug]').forEach(img => { img.src = `shots/${img.dataset.slug}-${w}-${img.dataset.stage}.jpg`; });
+  }
+  document.querySelectorAll('.controls button').forEach(b => b.addEventListener('click', () => setWidth(b.dataset.w)));
+  setWidth('1440');
+</script>
+</body>
+</html>

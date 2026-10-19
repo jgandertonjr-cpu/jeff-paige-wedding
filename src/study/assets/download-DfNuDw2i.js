@@ -1,0 +1,1 @@
+function d(t,n,c="application/json"){const a=new Blob([n],{type:c}),o=URL.createObjectURL(a),e=document.createElement("a");e.href=o,e.download=t,document.body.appendChild(e),e.click(),e.remove(),setTimeout(()=>URL.revokeObjectURL(o),1e3)}const i=()=>new Date().toISOString().slice(0,10);export{d,i};

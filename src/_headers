@@ -1,0 +1,37 @@
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  X-XSS-Protection: 1; mode=block
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+/*.html
+  Cache-Control: public, no-cache
+
+/css/*
+  Cache-Control: public, no-cache
+
+/js/*
+  Cache-Control: public, no-cache
+
+/images/*
+  Cache-Control: public, max-age=2592000
+
+# Exam-prep app: keep out of search results
+/study/*
+  X-Robots-Tag: noindex, nofollow
+
+# Private landscaping hours tracker: keep out of search results
+/landscaping-hours
+  X-Robots-Tag: noindex, nofollow, noarchive
+/landscaping-hours.html
+  X-Robots-Tag: noindex, nofollow, noarchive
+/landscaping-hours-sw.js
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-cache
+
+# Private police department application tracker: keep out of search results,
+# and always check for a newer version (its service worker handles offline use)
+/pd-tracker/*
+  X-Robots-Tag: noindex, nofollow, noarchive
+  Cache-Control: no-cache

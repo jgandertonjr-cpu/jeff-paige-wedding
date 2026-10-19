@@ -1,0 +1,1125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#0e1116">
+<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+<meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+<meta name="referrer" content="no-referrer">
+<title>Oral Board Prep</title>
+<style>
+:root{color-scheme:dark;--bg:#0e1116;--card:#171b22;--card2:#1f2530;--line:#2a3140;--text:#e8ecf2;--mute:#9aa4b2;--acc:#4c8dff;--good:#34c47c;--warn:#f0b429;--bad:#ef5a5a;--r:14px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+body{padding:0 16px calc(24px + env(safe-area-inset-bottom));max-width:720px;margin:0 auto;overflow-wrap:break-word}
+header{display:flex;align-items:center;gap:10px;padding:14px 0 10px;position:sticky;top:0;background:var(--bg);z-index:5}
+header h1{font-size:18px;margin:0;flex:1}
+.back{background:none;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:8px 14px;font-size:15px;min-height:44px}
+button{font:inherit;cursor:pointer}
+.btn{display:block;width:100%;min-height:52px;border:0;border-radius:var(--r);background:var(--card2);color:var(--text);font-size:17px;font-weight:600;padding:12px 16px;margin:8px 0}
+.btn.pri{background:var(--acc);color:#fff}
+.btn.good{background:var(--good);color:#06150d}
+.btn.bad{background:var(--bad);color:#fff}
+.btn.ghost{background:none;border:1px solid var(--line)}
+.hero{min-height:120px;font-size:24px;margin:16px 0}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;min-height:88px;text-align:left;color:var(--text)}
+.tile b{display:block;font-size:17px}.tile span{color:var(--mute);font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin:10px 0}
+.mute{color:var(--mute)}.small{font-size:13px}
+h2{font-size:20px;margin:16px 0 8px}h3{font-size:15px;margin:14px 0 6px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}
+ul{margin:6px 0;padding-left:20px}li{margin:4px 0}
+.chip{display:inline-flex;align-items:center;min-height:44px;padding:6px 14px;border-radius:999px;background:var(--card2);border:1px solid var(--line);margin:4px 4px 0 0;font-size:14px;color:var(--text)}
+.chip.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;background:var(--card2);color:var(--mute);margin-right:6px}
+.panel{display:flex;gap:8px;margin:8px 0}
+.pm{flex:1;min-width:0;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:10px 4px;opacity:.5;transition:.2s}
+.pm.on{opacity:1;border-color:var(--acc);box-shadow:0 0 0 2px var(--acc) inset}
+.pm .av{font-size:28px}.pm b{display:block;font-size:14px}.pm span{font-size:11px;color:var(--mute)}
+.q{font-size:22px;font-weight:600;line-height:1.3}
+.timer{font-size:56px;font-weight:700;text-align:center;font-variant-numeric:tabular-nums;margin:8px 0}
+.bar{height:10px;background:var(--card2);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--good);transition:width .25s linear}
+.warn .timer{color:var(--warn)}.warn .bar i{background:var(--warn)}
+.over .timer{color:var(--bad)}.over .bar i{background:var(--bad)}
+.over{animation:pulse 1s infinite}@keyframes pulse{50%{background:#2a1416}}
+.tx{background:var(--card2);border-radius:10px;padding:10px;min-height:60px;font-size:15px;white-space:pre-wrap}
+.flag{padding:8px 10px;border-radius:10px;margin:6px 0;font-size:14px}
+.flag.w{background:#3a2e10;color:#ffd77a}.flag.b{background:#3a1616;color:#ffb0b0}.flag.g{background:#10301f;color:#8ff0bb}
+.score{margin:10px 0}.score .lbl{font-weight:600;margin-bottom:4px}
+.score .opts{display:flex;gap:6px}.score .opts button{flex:1;min-height:48px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--text);font-size:18px;font-weight:700}
+.score .opts button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+details{background:var(--card2);border-radius:10px;padding:0 12px;margin:8px 0}
+details[open]{padding-bottom:10px}
+summary{font-weight:600;cursor:pointer;min-height:44px;padding:10px 0;box-sizing:border-box}
+.fc{min-height:260px;display:flex;flex-direction:column;justify-content:center}
+textarea,input[type=text]{width:100%;background:var(--card2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px;font:inherit}
+textarea{min-height:150px;font-size:16px;scroll-margin:80px 0 40px}
+textarea[rows]{min-height:0}
+.ck{display:flex;gap:12px;align-items:flex-start;padding:12px;border-bottom:1px solid var(--line);min-height:52px}
+.ck input{width:26px;height:26px;flex:none;margin-top:1px;accent-color:var(--good)}
+.ck.done span{text-decoration:line-through;color:var(--mute)}
+.stat{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)}
+.ph{background:#2a2412;color:#f5d47a;border-radius:4px;padding:0 3px}
+.toggle{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 0;min-height:48px;cursor:pointer}
+.toggle input{width:26px;height:26px;flex:none;accent-color:var(--acc)}
+.hide{display:none!important}
+.compact{padding:10px 16px}.compact .timer{font-size:36px;margin:0}
+.sticky{position:sticky;top:68px;z-index:4;box-shadow:0 6px 12px var(--bg)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+"use strict";
+/* ============ DATA ============ */
+const CATS={
+ opener:{n:"Opener / Why Policing",w:1.5},
+ commit:{n:"Academy Commitment",w:1.5},
+ integrity:{n:"Integrity Scenarios",w:3},
+ honesty:{n:"Honesty / Background",w:2},
+ judgment:{n:"Judgment / Ethics",w:2},
+ behavioral:{n:"Behavioral (STAR)",w:2},
+ self:{n:"Self-Awareness",w:1},
+ knowledge:{n:"Knowledge",w:1},
+ closer:{n:"Closer",w:0}
+};
+const STORIES={conflict:"Conflict",failure:"Failure",leadership:"Leadership",pressure:"Pressure",ethics:"Ethics",why:"Why Policing"};
+// id, cat, question, testing, framework[], sample, redflags[], probes[], story tag
+const Q=[];
+// o: {why:true} = why-policing (weighted up), {short:true} = answer-then-stop question (30–60s target)
+function add(id,c,q,t,f,s,r,p,st,o){o=o||{};Q.push({id,c,q,t,f,s,r,p,st:st||null,why:!!o.why,short:!!o.short})}
+
+/* ---- OPENER ---- */
+add("o1","opener","Tell us about yourself.",
+"Can you give a concise, relevant story that points toward policing?",
+["Present → past → why you're in this chair. 60–90 seconds.", "Every point maps to a policing trait: service, integrity, problem-solving, composure.", "Mention you've cleared reading, PFT, psych — you're serious.", "End on commitment, not on your résumé."],
+"Sure. My name is [Name]. I live here in Montgomery County, and I'm engaged — my fiancée and I are building our life here. For the last [X] years I've worked as a Business Systems Analyst at Proconex. In plain terms, I'm the person people call when something breaks. I dig into Oracle databases to figure out what went wrong, I build the Power BI reports leadership uses to make decisions, and I support the IFS system that runs the business day to day. That job has taught me a few things I think matter here: stay calm when everything's on fire, ask good questions, and follow the facts instead of assumptions. But over the last few years I've realized I want to point those skills at people, not systems. I want to serve the community I actually live in. So I didn't just apply — I did the work. I passed the reading test, the PFT, and the psych evaluation, and this interview is the last step. I'm ready to commit to the 919 hours and earn my place in this profession.",
+["Reciting your résumé from high school forward.", "Going past 2 minutes.", "No mention of why policing.", "Oversharing personal life."],
+["What would your coworkers say you're known for?", "You said 'serve the community' — what does that mean to you, specifically?"],"why",{why: true});
+add("o2","opener","Why do you want to be a police officer?",
+"Is your motivation service-based and durable — or ego, thrill, or TV?",
+["One genuine personal reason (a moment, a person, an experience).", "Service and community — not excitement or authority.", "Show you understand the unglamorous parts (reports, traffic, mental-health calls).", "Connect to strengths you already have."],
+"Honestly, it comes down to wanting work that matters to people directly. In my job right now, when I fix a problem, a report runs right or an order ships on time. That's valuable, but it's a step removed from actual people. Police officers are the ones who show up on somebody's worst day — a car crash, a domestic, a missing kid — and they're expected to bring calm, good judgment, and fairness every single time. I want to be that person. [Add one real moment here — an officer you watched handle something well, a family member, something that happened in your community.] I also want to be clear that I know it's not what's on TV. It's report writing, traffic, mental-health calls, and being patient with people who aren't happy to see you. I'm okay with that. I'm good at documentation, I stay level under pressure, and I work a problem until it's actually solved. I want to take those skills and use them where they help my own community. That's really the whole answer.",
+["'I've always wanted to since I was a kid' with nothing behind it.", "Talking about guns, chases, excitement, or authority.", "Pension / job security as the main reason.", "Criticizing police or the public."],
+["What part of this job do you think you'll like least?", "What if after a year it's not what you expected?"],"why",{why: true});
+add("o3","opener","Why now? Why at this point in your life?",
+"Is this a considered decision or an impulse / escape?",
+["It's been building over time — not a reaction.", "What's aligned now: household agreement, finances, fitness.", "Show preparation: tests passed, research done.", "Running toward something, not away from something."],
+"It's been building for a while, and I didn't want to make a decision this big on emotion, so I took my time with it. What's different now is that everything lines up. My fiancée and I talked it through — really talked it through — and we're both committed to it. We've built enough financial footing to cover tuition and handle the transition. And I'm physically ready. I train consistently, CrossFit and running, and I passed the PFT without scrambling. I also didn't want to just apply and hope. I went through the reading test, the PFT, and the psych specifically to find out whether I'm actually a fit for this, not just interested in it. And honestly, I think starting now is an advantage. I'm coming in with real professional experience — handling pressure, dealing with frustrated people, being accountable for my work. I'd rather start now, with that maturity behind me, than look back in ten years and wish I'd done it.",
+["'I'm burnt out at my job.'", "'I got laid off / have nothing else.'", "Treating it like a trial run.", "Vague 'it just felt right.'"],
+["What took you so long?", "What does your fiancée think about this?"],"why",{why: true});
+add("o4","opener","Why would you leave a stable, well-paying corporate career for this?",
+"Do you understand the trade-offs (pay, hours, danger) — and will you stay?",
+["Acknowledge what you're giving up. Don't dismiss it.", "Purpose over money — say it plainly.", "Show the math is done as a household.", "Your corporate skills transfer — you're bringing them, not abandoning them."],
+"It's a fair question, and I don't take it lightly. I'm trading a comfortable desk job with predictable hours for nights, weekends, holidays, and real risk. Before I ever applied, my fiancée and I sat down and ran the numbers — tuition, the months of transition, a starting officer's salary — and we're comfortable with it. We went in with our eyes open. The reason I'm doing it is simple: stable isn't the same thing as fulfilled. I'm good at my job. But there's a difference between a job you're good at and work you want to give the next twenty-plus years to. And I don't see it as throwing my experience away. Documenting things clearly, analyzing information, dealing with people who are frustrated because something broke, staying calm during an outage when everybody's looking at you — all of that carries straight into police work. So I'm not leaving my skills behind. I'm bringing them with me to a job where they matter more.",
+["Trashing Proconex or corporate work.", "Fudging the pay difference.", "Sounding like you haven't weighed the downsides."],
+["What happens if money gets tight during the academy?", "Would you go back to corporate if this doesn't work out?"],"why",{why: true});
+add("o5","opener","Walk us through your work history.",
+"Stability, progression, and how you describe responsibility.",
+["Highlights, not every job.", "Progression and reliability.", "Tie each role to a policing skill.", "Explain any gap honestly and briefly."],
+"Sure. Most recently I've been a Business Systems Analyst at Proconex. I support our IFS ERP system, which runs everything from orders to inventory. When the data looks wrong, I write Oracle SQL to trace where it went wrong, and I build Power BI dashboards that operations and leadership use to make decisions. Before that, I was [prior role] at [company], where I [key responsibility — one sentence]. [If there's an earlier role worth mentioning, one sentence on it.] If there's a common thread, it's that I always end up as the person who takes ownership of the messy problems and sees them through, and the person people trust to give them accurate information. That trust is something I've had to earn, and I take it seriously. I've left every position on good terms, and I'm comfortable with you calling any of my references. [If there's a gap: Between X and Y, I was ___ — happy to go into that.] Every role has made me more organized, more accountable, and better with people, which is a lot of what this job asks for.",
+["Unexplained gaps.", "Blaming former bosses.", "Anything inconsistent with your application — it's in front of them."],
+["Why did you leave [prior job]?", "Will your current supervisor give you a good reference?"]);
+add("o6","opener","What have you done to prepare for this academy?",
+"Initiative and seriousness.",
+["Concrete steps: reading test, PFT, psych — all passed.", "Physical training beyond the minimum.", "Program research (hours, weeks, 80 standard).", "Family and financial planning.", "Ride-along / talked to officers if true."],
+"I've taken it seriously from the start. First, the gates — I passed the reading test, the PFT, and the psych eval. Physically, I train consistently with CrossFit and running, because I don't want to just meet the standard. I want to be ahead of it when academy PT ramps up and I'm also studying every night. Second, I researched the program. It's 919 hours over about 24 weeks at the Health Sciences Center on the Blue Bell campus, it's MPOETC-certified, and every module needs an 80 to pass. So I know it's not something you coast through, and I've planned to study daily instead of cramming. [If true: I've also talked with officers in the county and done a ride-along, and what stuck with me was ___.] Third, home. My fiancée and I have budgeted for the roughly $5,995 tuition and planned the calendar around the schedule, including the Sunday sessions. I wanted to walk in here with every excuse already handled.",
+["'I watched some videos.'", "Knowing nothing about the program.", "Nothing physical."],
+["Have you done a ride-along? What did you see?", "Which module do you expect to be hardest?"]);
+add("o7","opener","What is your biggest accomplishment?",
+"What you value and whether you can show measurable impact.",
+["One example, STAR structure.", "A measurable result.", "Credit others where due.", "Connect it to policing (trust, accuracy, follow-through)."],
+"Professionally, it's rebuilding our month-end reporting at Proconex. The numbers kept breaking, and leadership had basically stopped trusting them — people were double-checking everything by hand. I dug in and traced it back to bad data flowing out of our IFS system. So I rebuilt the Oracle queries, reworked the Power BI model, documented every calculation, and walked the users through what changed and why. The process went from [X] to [Y], and the errors stopped. But what I'm actually proud of isn't the technical part. It's that people stopped double-checking the numbers, because they trusted them again. That took careful work, clear documentation, and being willing to admit early on what I didn't know. Personally, [getting engaged / a fitness milestone — one sentence]. I think both say the same thing about me: when I commit to something, I follow through, and I care about getting it right, not just getting it done. That's how I plan to approach this academy.",
+["Something from 15 years ago.", "No result.", "Saying 'I' for a team win."],
+["What would you do differently?", "Who else was involved?"]);
+add("o8","opener","Why this academy? Why MCCC?",
+"Did you do your homework — are you committed to this specific program?",
+["Specific program facts.", "Local — you live here and want to serve here.", "MPOETC certification / Act 120.", "High standard is a feature, not a bug."],
+"A few reasons. First, it's home. I live in Montgomery County, I want to work in Montgomery County, and a lot of local departments train their officers here, so it makes sense to learn where the people I'll work alongside learned. Second, it's MPOETC-certified, so I walk out with Act 120 certification that's recognized anywhere in Pennsylvania. Third — and this is honestly a big one for me — the standard. It's 919 hours over about 24 weeks, and every module requires an 80 to pass. I want a program that holds a high bar. If it were easy, the certification wouldn't mean much, and I don't want to be an officer who got through on an easy path. And practically, the Blue Bell campus and the schedule work for my household and my plan. So it's local, it's credible, it's demanding, and it fits. I looked at it pretty carefully before I applied, and I'm confident it's the right place for me to train.",
+["'It was closest / cheapest.'", "Not knowing it's Act 120 / MPOETC."],
+["Have you applied to any departments yet?", "What do you know about the departments in this county?"]);
+add("o9","opener","What's the difference between a job and a career in law enforcement?",
+"Are you here for a paycheck or for the long haul?",
+["A job is hours for pay; a career is a long-term commitment to a profession and its standards.", "In policing, your reputation and credibility follow you for 20+ years.", "Connect to why you're leaving a job you're good at.", "Name what you'll invest in: training, a specialty interest, mentoring."],
+"To me, a job is something you do for a paycheck, and then you clock out. A career is something you commit to, that you keep investing in, and that shapes who you are. In law enforcement, that difference matters even more, because your reputation follows you your whole career. Every report you write, every stop you make, every time you testify — it either builds your credibility or chips away at it. So a career in this field means you keep training long after the academy, you keep learning the law as it changes, and you hold the standard even on a bad night when nobody's watching. Honestly, that's part of why I'm here. I have a good job right now. What I don't have is a career I want to give twenty-five years to. I want to come out of this academy, learn from good field training officers, get solid on patrol, and eventually grow into [an area of interest — investigations, training, or community programs]. I'm not looking for a job. I'm looking for what I do for the rest of my working life.",
+["Talking only about pay, benefits, or the pension.", "'It's basically the same thing.'", "No long-term vision."],
+["What area of policing interests you long term?", "What will keep you in it when it gets hard?"],"why",{why: true});
+
+/* ---- COMMITMENT ---- */
+add("c1","commit","This academy is 919 hours over about 24 weeks. How will you manage that commitment?",
+"A realistic plan — not optimism.",
+["Specific plan: work, schedule, study, fitness.", "Name your support system.", "Admit it'll be hard.", "Evidence you've handled heavy loads before."],
+"I've planned it out instead of just hoping it works. On the work side, [your actual plan — e.g., I've talked with my manager at Proconex about leave, a reduced schedule, or a set end date with a full handover]. The academy comes first, and my employer knows that. At home, my fiancée and I sat down with the schedule — including the Sunday sessions — and agreed on who's covering what, so there aren't surprises in week ten. For studying, I'll treat it the way I treat project deadlines now: it goes on the calendar as a fixed block every night, not whenever I get to it. With an 80 minimum on every module, I can't let one slide and make it up later. Physically, I'm already training, so PT will be maintenance, not survival. I know there'll be rough weeks. I'm not pretending it'll be easy. But I've handled heavy stretches before, like a month-end close with a production outage on top of it, and I know how to put my head down and get through it.",
+["'I'll figure it out.'", "Planning to keep a full-time job with no real plan.", "Nobody at home knows."],
+["What will you give up during these 24 weeks?", "What happens if your job pushes back?"]);
+add("c2","commit","How will you pay for the academy and support yourself?",
+"Financial stress is a top reason cadets wash out.",
+["Clear source: savings, sponsor, aid.", "Budget for the full ~6 months, not just tuition.", "A buffer for surprises.", "Household agreement.", "Know the number (~$5,995)."],
+"I'm [self-sponsored — adjust if sponsored]. Tuition is around $5,995, and that's already set aside. On top of that, my fiancée and I built a household budget for the full six months — rent or mortgage, bills, gas back and forth to Blue Bell, uniforms and equipment, and a cushion for surprises. [Explain income during the academy honestly: e.g., I'll keep working reduced hours at Proconex, or we'll live on savings plus my fiancée's income.] The whole point was to make sure money isn't something I'm thinking about when I should be focused on passing modules. People get derailed in programs like this not because they can't do the work, but because money gets tight and they start picking up hours or panicking. I didn't want that to be me. [If applicable: I'm also looking at departments that reimburse academy costs after hire.] So the short answer is: it's paid for, the six months are budgeted, and there's a buffer. I'd rather over-plan this than get halfway through and have to make a bad choice.",
+["'Credit card' with no plan.", "Not knowing the cost.", "Planning to work heavy overtime to pay for it."],
+["What if an unexpected expense hits in month three?", "Have you looked into sponsorship?"]);
+add("c3","commit","How will your fiancée handle the schedule, shift work, and risk?",
+"Home stress and an unsupportive partner are top reasons for washing out or leaving early.",
+["Joint decision — not an announcement.", "Name the real concerns out loud: shifts, holidays, danger.", "The plan you made together.", "How you'll protect the relationship (talking, peer support, family resources)."],
+"This was a decision we made together, not something I announced. We had a lot of real conversations about it. We talked about shift work, missing holidays and weekends, sleeping at odd hours, and the fact that I'll be doing a job where things can go wrong. My fiancée's concerns were real, and I didn't try to talk my way past them. Where we landed is that we both think this is the right thing for us, and we'd rather plan for the hard parts now than get surprised by them. So we've already talked about how we'll handle the academy schedule, including Sundays, and what the first couple of years on shift might look like. We agreed that we talk about things. I'm not going to come home and bottle everything up, because I know that's how this job hurts relationships. And departments have peer support and family resources, and we'll use them. [Add one real detail — how your fiancée reacted, or something they said.] So yes, it'll be an adjustment. But we're going into it as a team.",
+["'They'll get over it.'", "Hesitating or sounding unsure.", "Fiancée doesn't really know, or isn't on board.", "Dismissing the risk."],
+["Does the rest of your family support this?", "What's your fiancée's biggest worry?", "How will you keep the job from affecting your relationship?"]);
+add("c4","commit","Are you sponsored or self-sponsored, and what's your plan after graduation?",
+"Direction and realism about the hiring process.",
+["State status clearly.", "Target departments or type of department.", "Know departments run their own civil-service testing.", "Flexibility on where you land."],
+"I'm [self-sponsored]. After graduation, my plan is to take my Act 120 certification and test with municipal departments here in Montgomery County. I'm looking at [name two or three departments]. I know most departments run their own hiring process — written test, physical, oral board, background — so graduating doesn't mean I'm done interviewing. But coming in already certified makes me a stronger candidate, and a department can put me on the road faster and for less money. As for what I'm looking for, my priority isn't a specific town. It's a department with a strong community focus, a good field training program, and experienced officers I can learn from. The first few years matter a lot for building good habits, and I want to learn them the right way. I'm also flexible. If the right opportunity is part-time at first, or a smaller department, I'm open to it. I'd rather get on the road and start earning a reputation than sit and wait for one perfect spot.",
+["No plan at all.", "'I'll only work for X.'", "Not realizing certification has a window to be used."],
+["What if no department hires you in the first year?", "Would you consider a part-time department?"]);
+add("c5","commit","How will you handle your current job while you're in the academy?",
+"Divided attention fails modules.",
+["Honest about the arrangement.", "Academy is the priority.", "Handled professionally with your employer.", "No burned bridges."],
+"The academy comes first. That's the non-negotiable. [State your actual arrangement — e.g., I've talked with my manager at Proconex and we've agreed on ___, or I'm transitioning out on ___ with a full handover.] Either way, I'm handling it professionally. I'm documenting my processes now — the reports I own, the queries, the fixes I usually handle — so nothing depends on me being reachable during class. I'm not going to be answering support tickets under the desk during a legal module. That's not fair to the academy, and honestly, it's not fair to my employer either, because they'd only be getting half of me. I've been at Proconex for [X] years and I want to leave on good terms. They've been good to me, and I'd like to be able to use them as a reference for the rest of my career. So I'm doing it the right way — a clear conversation, a clear timeline, and a clean handover. Once the academy starts, my focus is the academy.",
+["Planning 40+ hours of work plus the academy.", "Employer doesn't know and there's no plan.", "Talking about quitting abruptly."],
+["What if your employer asks you to stay on longer?", "Does your employer know you're here today?"]);
+add("c6","commit","What will you do if you fail a module?",
+"Resilience and understanding of the standard.",
+["Know the standard: 80 per module.", "Prevention first: nightly review, study group, ask early.", "If it happens: own it, find the gap, remediate.", "No blaming."],
+"First, I'm doing everything I can to not end up there. My plan is to review every night instead of cramming, get into a study group early, and go to the instructor the first time something isn't clicking — not the night before the test. But if I do score below 80, I own it. I'm not going to blame the test or the instructor. I'd find out exactly where I lost points, ask the instructor what I misunderstood, and follow whatever remediation the academy allows. Then I'd change how I'm studying, because if I failed, something about my approach didn't work. That's how I handle problems at work. When a report comes out wrong, I don't argue with it. I go find the root cause, fix it, and put a check in place so it doesn't happen again. Same thing here. The 80 standard exists because the material matters on the street. If I didn't learn it the first time, I need to actually learn it — not just pass it.",
+["'I won't fail.'", "Blaming.", "Not knowing the passing score."],
+["What's the hardest thing you've had to study for?", "How do you study best?"]);
+add("c7","commit","What will you sacrifice to get through the academy?",
+"Realism about cost.",
+["Name specific things.", "Show you've accepted them.", "Temporary vs. permanent."],
+"Mostly time. For twenty-four weeks, my calendar belongs to the academy. That means a lot of weekends, including the Sunday sessions. It means saying no to a lot of social stuff — birthdays, cookouts, nights out. Golf is definitely going on the shelf. It means less time with my fiancée than either of us would like, and [some of our wedding planning] is going to slow down. We've talked about that openly, and we're okay with it, because it's temporary and it's for something we both want. There are a couple of things I won't give up, though. I'll keep training, because that's part of the job and it's how I manage stress. And I'll protect a little time with my fiancée each week, even if it's just dinner, because that's what keeps me steady. I think being honest about the cost ahead of time is what makes it doable. I'm not going in thinking nothing changes. I'm going in knowing exactly what I'm giving up, and deciding it's worth it.",
+["'Nothing.'", "Complaining about it."],
+["What won't you sacrifice?"]);
+add("c8","commit","What would make you quit?",
+"Your commitment floor.",
+["Very little — a real family emergency or a medical issue.", "Not difficulty, not getting yelled at.", "Grit plus a plan."],
+"Very little. If there were a real family emergency, or a medical issue I physically couldn't overcome, that would force a hard conversation. That's about it. Hard days won't do it. Getting yelled at won't do it. A brutal PT session, a bad test score, being exhausted in week eighteen — none of that. I expect all of it, and honestly, that's part of the point. The academy is supposed to find out who stays steady when it's uncomfortable. I've also stacked the deck in my favor. My fiancée and I made this decision together. The money's set aside. I'm already in shape. I've planned around my job. So the usual reasons people wash out — family pressure, money, fitness, work conflicts — I've dealt with before day one. And I've invested a lot to get to this room. I passed the reading test, the PFT, and the psych. I didn't do all of that to walk away when it gets hard. I'm going to finish.",
+["'If it gets too hard.'", "'If I get a better offer.'"],
+["Have you ever quit something before?"]);
+add("c9","commit","What will you do if you don't get hired by a department after the academy?",
+"Persistence and realism — do you have a plan B that keeps you in the profession?",
+["Keep testing — many departments, many hiring cycles.", "Ask for feedback after every no, and fix it.", "Stay sharp: fitness, law, and don't let certification lapse.", "Open to part-time or smaller departments; stay stable financially meanwhile."],
+"I'd keep going. Getting certified isn't the finish line — it's what makes me eligible. Departments hire on their own schedules, so I'd test with as many as I can here in Montgomery County and the surrounding counties, and I'd treat every process like this one: prepared, on time, squared away. If I don't get picked, I'd ask for feedback. What held me back — the written, the oral board, something else? Then I'd fix it before the next one. That's how I approach everything: find the root cause, fix it, try again. In the meantime, I'd keep my fitness where it needs to be, keep studying, and stay aware of how long my certification stays valid so I don't let it lapse. [If true: I'd keep working at Proconex or in a similar role so I'm stable financially while I test.] And I'd be open to a part-time position or a smaller department to get started. I'd rather get on the road, build a reputation, and move later than wait for the perfect job. This academy isn't a backup plan for me. It's the plan.",
+["'I'd go back to corporate.'", "'I'd give up.'", "No idea that departments run their own hiring."],
+["How long would you keep trying?", "Would you take a part-time position?"]);
+
+/* ---- INTEGRITY ---- */
+add("i1","integrity","You see a classmate cheating on an academy exam. What do you do?",
+"Will you report a peer? Loyalty vs. integrity.",
+["No gray area — cheating is an integrity violation.", "Report it to the instructor/staff with facts only.", "Connect: someone who cheats here will lie in a report or on the stand.", "Answer fast and firm."],
+"I'd report it to the instructor. I wouldn't enjoy it, and I'd feel the pull, because we're all going through this together and you build bonds fast in an academy. But that's exactly why it matters. If somebody's willing to cheat on an exam here, where the stakes are a test score, what are they going to do on a police report, or on the witness stand, when the stakes are somebody's freedom? The academy is where integrity gets built, and it's the first place it gets tested. If I keep quiet, I'm part of it. I'd also be letting that person graduate and carry a badge and a gun without knowing the material. That's not fair to the public, and it's not fair to the officers who'd be backing them up. So I'd report exactly what I saw — just the facts, no exaggeration, no guessing about why — and let the staff handle it from there. That's their call to make. My job is to be honest about what I saw.",
+["'I'd talk to them and give them a chance' as the final answer.", "'Depends what they cheated on.'", "'I'd mind my own business.'", "A long hesitation."],
+["What if it was your best friend in the class?", "What if you weren't 100% sure what you saw?"],"ethics");
+add("i2","integrity","On a scene, you see a senior officer pocket cash from a suspect's car. What do you do?",
+"Will you report a veteran/superior? The single most common integrity question.",
+["It's theft and evidence tampering — no gray area.", "Report to supervisor per policy; if the supervisor is involved, go above or to Internal Affairs.", "Document what you saw, when, where.", "Accept the social cost."],
+"That's theft, and it's also evidence tampering. So I'd report it. I'd go to my supervisor, and if my supervisor were involved, I'd go above them or to Internal Affairs — whatever the department's policy says. And I'd write down exactly what I saw, when, and where, while it's fresh. I understand what that could cost me. I'd be new, he'd be senior, and some people might call me a rat. I've thought about that. But if I let it go, I'm now keeping a secret for somebody who steals. My own reports from that scene are compromised. Every case that touches that evidence is at risk. And if it comes out later that I saw it and said nothing, my career is over too — and it should be. The public gives us authority on the basic assumption that we're honest. One officer stealing tarnishes everybody who wears the badge, including the good ones. So yes, I'd report it. I'd rather be unpopular than compromised.",
+["'I'd ask him about it first' as the endpoint.", "'Maybe he was going to log it.'", "'I'm new, I'd keep my head down.'", "Handling it yourself."],
+["What if it was only $20?", "What if he's your field training officer and your job depends on his evaluation?"],"ethics");
+add("i3","integrity","A friend is about to drive home drunk. What do you do — and what changes once you're an officer?",
+"Do you apply the law to your own circle?",
+["Stop them: keys, a ride, an Uber, the couch.", "If they drive anyway, call 911 with the vehicle description.", "As an officer, the standard goes up, not down.", "No special treatment for friends — or for yourself."],
+"I stop them. Take the keys, drive them home myself, get them an Uber, or tell them to sleep on my couch — whatever it takes. That's not a hard call. Being somebody's friend doesn't mean helping them kill somebody on the road. If they got in the car anyway, I'd call 911 and give the plate, the car, and the direction they're heading. They'd be mad at me. I'd rather have a friend who's mad at me than a friend who killed a family or got killed. Once I'm an officer, off duty, the standard goes up, not down. I'd still use every non-enforcement option first — keys, ride, couch — because that's the best outcome for everybody. But if they drove, I'd call it in exactly the same way, and I wouldn't ask for special treatment for them. If a responding officer tried to give them a pass because they're my friend, I wouldn't want that either. And the same standard applies to me. If I ever drove impaired, I'd expect to be arrested like anyone else.",
+["'I'd follow them to make sure they got home.'", "'I'd let it go if they seemed okay.'", "Anything implying friends get a pass."],
+["What if it was your fiancée's brother?", "What if an on-duty officer stopped your friend and let him go?"],"ethics");
+add("i4","integrity","You're off duty and get pulled over. Do you tell the officer you're a cop to get out of the ticket?",
+"Professional courtesy vs. integrity.",
+["Don't badge-flash for special treatment.", "Accept whatever the officer decides.", "If carrying off-duty, you inform for officer safety — that's different from asking for a break."],
+"No. I wouldn't use my badge to get out of anything. If I was speeding, I was speeding, and I'll take the ticket. There's one exception, and it's about safety, not favors. If I'm carrying my off-duty weapon, I'd tell the officer right away, calmly, and keep my hands where they can see them. That's for their safety. It's not me asking for a break. If the officer decides on their own to give me a warning — the same discretion they'd give anybody — that's their call. But I'm not going to hint, flash a badge, or bring up where I work. The public notices that stuff. When people think cops take care of cops, it damages trust for every officer out there, and it makes this job harder for everybody. I'd also think about it from the other side. When I'm the one making the stop, I'd want to treat an off-duty officer exactly like anyone else. So I'd expect the same when I'm the one getting pulled over.",
+["'Of course I'd show my badge.'", "'That's just how it works.'"],
+["What if the officer gets offended that you didn't mention it?"],"ethics");
+add("i5","integrity","You realize a mistake in your report helped get a conviction. What do you do?",
+"Honesty when it costs you.",
+["Tell your supervisor and make sure the DA knows — immediately.", "Correct the record in writing.", "Your credibility is your career (Brady/Giglio).", "Accept the fallout."],
+"I'd tell my supervisor right away and make sure the District Attorney's office knows, so the correction gets to everyone it needs to. I'd do that even if it hurts the case, and even if it's embarrassing for me. A defendant has a right to accurate evidence. That's not a technicality — that's the whole system. There's a practical side too. An officer who gets caught hiding an error ends up on a Brady or Giglio list, and after that the DA can't put you on the stand. At that point you're not much use as a police officer. But honestly, the main reason is simpler: it's the truth, and my name is on that report. I already live by this at work. When I find an error in a report I've already sent out, I send a correction the same day and explain exactly what changed and why. I've done it, and it's uncomfortable every time. But the embarrassment lasts a day. The damage from hiding it lasts for the rest of your career.",
+["'Depends whether it would change the outcome.'", "'I'd just be more careful next time.'"],
+["What if your sergeant told you to leave it alone?"],"ethics");
+add("i6","integrity","What would you do if you saw your FTO use excessive force?",
+"Duty to intervene — even against the person who controls your evaluations.",
+["Intervene in the moment — verbally, then physically if needed.", "Get the person medical attention.", "Report to a supervisor and document exactly what you saw.", "Acknowledge the FTO controls your future — and do it anyway."],
+"I'd intervene right then. I'd say their name, tell them to stop, and physically step in if I had to. Once somebody is under control — handcuffed, compliant — that force isn't justified, and every officer has a duty to intervene, no matter who's doing it. Then I'd make sure the person gets medical attention, and I'd report it to a supervisor and write down exactly what I saw. I know what's at stake with an FTO specifically. That's the person who writes my evaluations and decides whether I make it through field training. I've thought about that, and it doesn't change the answer. If I stay quiet, I'm part of it, and I've become someone who looks the other way when it matters. I'd rather lose the job than keep it that way. And honestly, stepping in might be the best thing I can do for that FTO. It could prevent an assault charge, save their career, and protect the department's relationship with the community. The public has to be able to trust that we police ourselves.",
+["'I'd talk to them about it later.'", "'It's not my place — I'm a trainee.'", "'Depends what the suspect did first.'"],
+["What if the suspect had just assaulted your FTO?", "What if everyone else on scene says nothing?"],"ethics");
+add("i7","integrity","You find a wallet with $500 in it and no one's around. What do you do?",
+"Baseline honesty.",
+["Return it or turn it in. Short answer.", "On duty: into property, documented.", "No agonizing."],
+"I'd look for ID and get it back to the owner, or turn it in if I can't reach them. On duty, it goes into property and I document it — how much cash, where I found it, who I handed it to. That's it. It's not mine, and I don't need to think about it long. If I'm tempted by five hundred dollars that isn't mine, I have no business doing this job.",
+["Hesitation or 'finders keepers.'", "A long moral struggle."],
+["What if there's no ID?"],null,{short: true});
+add("i8","integrity","An instructor accidentally gives you a higher score than you earned. What do you do?",
+"Honesty when it benefits you.",
+["Point it out.", "Integrity isn't situational.", "A hidden gap hurts you later."],
+"I'd tell the instructor. I want to earn the 80, not be handed it. And practically, a mistake in my favor doesn't help me. If I didn't actually know that material, the grading error just hides a gap that I'll run into on the street, on a real call instead of a test. There's also a bigger point. If I'm the kind of person who keeps quiet when a mistake benefits me, what does that say about how I'll write a report when the truth isn't in my favor? Integrity is about the small stuff, especially when nobody would ever find out. So I'd bring it to the instructor, accept the correct score, and study that section harder.",
+["'I'd keep quiet — their mistake.'"],
+["What if it was the difference between passing and failing?"],"ethics",{short: true});
+add("i9","integrity","Your sergeant tells you to write a report in a way that isn't accurate. What do you do?",
+"Integrity vs. chain of command.",
+["Clarify first — might be a misunderstanding.", "Respectfully decline to put false information in a sworn document.", "Escalate if it continues.", "You can follow orders you disagree with — not orders to lie."],
+"First, I'd make sure I actually understand what's being asked. Sometimes it's a wording thing, or there's context I don't have as a new officer, so I'd ask respectfully — something like, \"Sarge, help me understand, because the way I saw it was ___.\" But if it really is asking me to put something inaccurate in a report, I won't do it. A police report is a sworn document. My name and my credibility are on it, and people's freedom depends on it being true. So I'd tell the sergeant, respectfully, that I'm not comfortable writing it that way, and why. I'd offer to write exactly what happened. If it kept going, I'd take it up the chain of command. I'm not trying to be difficult. I can follow plenty of orders I disagree with — a shift assignment, a post, how to handle a call. That's how a paramilitary organization works. But I can't follow an order to lie. Once I do that one time, I own it for the rest of my career.",
+["'I'd do it — he's the sergeant.'", "A defiant, insubordinate tone."],
+["What if that makes your life miserable on the squad?"],"ethics");
+add("i10","integrity","A restaurant owner offers you a free meal because you're a cop. Do you accept?",
+"Gratuities and the slippery slope.",
+["Follow department policy; default is to pay.", "Small gratuities create expectations.", "Be gracious, not preachy."],
+"I'd thank them and pay. I'll follow whatever my department's policy is, but my default is to pay. It seems small, but it creates an expectation. Maybe it's faster response next time, or a pass on something down the road. And the people watching in that restaurant don't know the difference — they just see a cop not paying. So I'd be gracious about it, tell them I really appreciate it, and leave a good tip.",
+["'Sure, free food.'", "Being rude or preachy to the owner."],
+["What if the owner is offended when you refuse?"],null,{short: true});
+add("i11","integrity","A fellow cadet asks you to cover for him being late or breaking a rule. What do you do?",
+"Peer loyalty vs. integrity — the academy version of the blue wall.",
+["Say no — clearly, without being a jerk about it.", "Encourage them to own it themselves first.", "If staff ask you directly, tell the truth.", "Connect: covering small things now builds the habit of covering on the street."],
+"I'd tell him no. I'd be decent about it — something like, \"I've got your back on a lot of things, but I'm not going to lie for you. Go own it before they find out. It'll go a lot better.\" And I'd mean that, because owning a mistake early is usually the best thing he can do for himself. But I wouldn't cover for him, and if an instructor asked me directly, I'd tell the truth. I think this is exactly what the academy is testing. It starts small — being late, a uniform thing, a rule nobody thinks matters. But if I'm willing to lie for a classmate about something small, I'm building the habit of covering for people. On the street, that's how you end up covering for an officer about something that really matters. Being a good teammate means helping him study, pushing him in PT, and telling him the truth. It doesn't mean lying for him. And if he's a good cadet, he'll understand that later, even if he's annoyed with me that day.",
+["'I'd cover once — everybody's late sometimes.'", "'I wouldn't want to be a snitch.'", "Lying to staff when asked directly."],
+["What if he's your best friend in the class?", "What if the whole class covers for him and you're the only one who won't?"],"ethics");
+add("i12","integrity","You pull over a family member or a fellow officer for DUI. What do you do?",
+"Equal application of the law when it's personal.",
+["Same process as anyone: investigate, field sobriety, arrest on probable cause.", "Call a supervisor early — for transparency, not favors.", "With a conflict of interest, another officer can take the case — but they don't drive away.", "Document everything."],
+"I'd handle it exactly like any other DUI stop. If the signs are there, I'd do the investigation — field sobriety tests, the whole process — and if I have probable cause, they get arrested. Because of the personal connection, I'd call my supervisor right away. Not to get them out of it, but for transparency. If it's a family member, there's a real conflict of interest, and it might be better for another officer to handle the case so nobody can question it later — but they're not driving away either way. If it's another officer, same thing. It'll be uncomfortable, and I might take some heat for it. But impaired driving kills people, and it doesn't matter whose car it is. If I let a cop go, I've told the public the law is different for us, and that's exactly what destroys trust. And if I let family go, I've put my family ahead of whoever they might hit on the way home. I'd document everything carefully, and I'd sleep fine knowing I did it the right way.",
+["'I'd drive them home.'", "'Professional courtesy.'", "Any hesitation about arresting."],
+["What if it's your fiancée?", "What if the officer is your sergeant?"],"ethics");
+add("i13","integrity","What does integrity mean to you?",
+"Whether you have a real, lived definition — not a slogan.",
+["Short definition: doing the right thing when no one is watching and when it costs you.", "Consistency: same person with your boss, your friends, or alone.", "One concrete example from your life.", "Why it's the foundation of police work: an officer's word is evidence."],
+"To me, integrity means doing the right thing when nobody's watching and when it costs you something. It's easy to be honest when honesty is free. Integrity shows up when telling the truth is embarrassing, or inconvenient, or makes you unpopular. It's also consistency — you're the same person with your boss, with your friends, and by yourself. Here's a small example from my job. [Real example — e.g., I once found an error in a report I'd already sent to leadership. Nobody had caught it, and probably nobody ever would have. I sent a correction that same day, explained what I got wrong, and fixed it.] It wasn't fun, but that's what integrity looks like day to day. It's usually not dramatic. In police work, it's the whole foundation. An officer's word is evidence. My report, my testimony, what I say happened — people's freedom depends on it. If I bend the truth even once, everything I've ever written is in question. So for me, integrity isn't one value among many. It's the thing that makes everything else in this job work.",
+["A dictionary definition with no example.", "'Never getting caught.'", "Sounding rehearsed or preachy."],
+["Tell us about a time your integrity was tested.", "Have you ever compromised it?"],"ethics");
+
+/* ---- HONESTY / BACKGROUND ---- */
+add("h1","honesty","Have you ever used illegal drugs? When was the last time?",
+"Honesty. They have your background packet. Lying is disqualifying; the use itself often isn't.",
+["Tell the truth — match your application exactly.", "Own it. No minimizing.", "Show what changed and when.", "Answer, then stop talking."],
+"[Answer truthfully — it must match your application exactly.] If no: \"No, sir, I haven't.\" Then stop. If yes: \"Yes. When I was [age], I used [substance], [how often — be accurate, don't shrink it]. The last time was [month and year]. It was a poor decision, and I disclosed it on my application. I haven't used since, and I won't. What changed was [specific — e.g., I got serious about my career and my health, and it didn't fit who I wanted to be]. I understand officers enforce those laws, and I'm not going to ask anyone to meet a standard I'm not living myself.\" Then stop talking and let them ask.",
+["Any answer different from your application.", "'Just experimenting / everybody did.'", "Minimizing, rambling, getting defensive."],
+["Anything else that isn't on your paperwork?", "How many times, exactly?"],null,{short: true});
+add("h2","honesty","Tell us about your driving record.",
+"Candor and a pattern of judgment.",
+["Know your record cold before you walk in.", "Own every ticket or accident.", "What changed afterward.", "No excuses about the officer."],
+"[Know your record cold before you walk in.] If clean: \"It's clean — no tickets, no accidents.\" If not: \"I have [one speeding ticket from YEAR]. I was doing [X] in a [Y]. That was on me — I paid it and didn't fight it. Honestly, it made me more aware of how I drive, and I haven't had anything since.\" If there's an accident: \"I was in [an accident in YEAR]. [Who was at fault, briefly and honestly.] Nobody was seriously hurt, and what I took from it was ___.\" Keep it factual, own it, and never blame the officer who wrote the ticket.",
+["Blaming the officer.", "Not remembering details.", "Anything that contradicts the record."],
+["How fast were you going?"],null,{short: true});
+add("h3","honesty","Tell us about a mistake you've made that you're not proud of.",
+"Accountability and self-awareness.",
+["A real mistake — not a humblebrag.", "Own it without excuses.", "What you did to fix it.", "What you changed afterward."],
+"Early on at Proconex, I pushed a change to a report without testing it all the way through, because I was rushing to hit a deadline. It went out to leadership with wrong numbers. Somebody in finance flagged it that afternoon. I didn't try to explain it away. I went straight to my manager and said, \"That's my mistake. I didn't test it properly.\" Then I pulled the report, fixed it, and sent a correction to everyone who'd received it, explaining exactly what was wrong and what the right numbers were. It was embarrassing — leadership had already started looking at those numbers. What changed afterward is that I built myself a checklist, and now I validate against known data before anything goes out. No exceptions, even under a deadline. The lesson I took from it is that speed doesn't matter if people can't trust what you hand them. And I think that's exactly the standard for a police report. Better to take an extra ten minutes and get it right than explain later why it was wrong.",
+["'I work too hard.'", "Blaming others.", "A mistake that reveals an integrity problem you haven't fixed."],
+["How did your manager react?", "Have you made that mistake since?"],"failure");
+add("h4","honesty","Is there anything in your background we'll find that you want to tell us about now?",
+"Do you volunteer? This is a candor test.",
+["If there's anything, say it now, calmly.", "If not, a clear, confident no.", "Consistent with the application.", "Don't pad or guess."],
+"[If there is something: \"Yes — I want to be upfront about ___. It's on my application. Briefly, what happened was ___. What I learned from it was ___, and it hasn't happened since.\"] If there's nothing: \"No, sir. I was thorough and honest on my application and throughout the background process. If anything comes up that you have questions about, I'll answer it straight.\" Then stop. Don't fill the silence — the pause is part of the test.",
+["A long pause, then 'no.'", "Something surfacing later that you didn't mention.", "Joking."],
+["Are you sure?"],null,{short: true});
+add("h5","honesty","Have you ever been arrested or had contact with police?",
+"Candor.",
+["Factual: citations, witness, victim, traffic stops.", "Consistent with the application.", "Brief."],
+"[Truthful — match your paperwork.] \"I've never been arrested. My contact with police has been [a traffic stop in YEAR / reporting a car accident / being a witness to ___]. The officer was professional, and honestly, that interaction is part of why I respect the job.\" If there's anything more, say it plainly: what happened, the outcome, and what you learned. Keep it brief and factual.",
+["Leaving out anything on record."],
+["What was that interaction like?"],null,{short: true});
+add("h6","honesty","Have you ever been fired or asked to resign?",
+"Reliability and honesty.",
+["Truthful.", "If yes: what happened, ownership, what changed.", "No bitterness."],
+"[If no:] \"No, I've never been fired or asked to resign. I've left every job on good terms, and any of my former employers can confirm that — I'm comfortable with you calling all of them.\" [If yes:] \"Yes. In [YEAR], at [company], I was let go because ___. My part in it was ___. What I changed afterward is ___, and my record since then shows it.\" No bitterness and no blaming a former boss — the board is listening for whether you own it.",
+["Bitterness toward a boss.", "Lying."],
+["Would your last employer rehire you?"],null,{short: true});
+add("h7","honesty","Have you ever lied to a supervisor?",
+"Candor about small lies — an absolute 'never' can sound dishonest.",
+["Honest. If there's a small instance, admit it.", "Show your standard now.", "Avoid absolute claims that ring false."],
+"Not about anything that mattered — never about my work, my hours, or the data I'm responsible for. But if I'm being completely honest, [years ago I called out sick when I wasn't really sick / I told a supervisor something was done when it was almost done]. It was small, but it wasn't honest, and it's not something I do now. These days, if I need a day, I just ask for it, and if something's running late, I say it's late. I'd rather have an uncomfortable conversation than have my boss wonder whether they can trust what I tell them.",
+["'Never, not once' delivered unconvincingly.", "Casually admitting something serious."],
+["What's the difference between a small lie and a big one?"],null,{short: true});
+add("h8","honesty","Have you ever taken anything from an employer — even something small?",
+"Theft risk, including time theft.",
+["Truthful.", "Show your standard.", "Cover time, not just objects."],
+"Nothing of value. Probably a pen that ended up in my bag. But I've never taken equipment, money, supplies, or time that wasn't mine. My hours are accurate, and I don't pad them. I think time counts too — being paid for hours you didn't work is taking from your employer just as much as walking out the door with something. [If there's anything real, say it here plainly, and what you did about it.]",
+["Evasiveness."],
+["Ever padded your hours?"],null,{short: true});
+
+/* ---- JUDGMENT ---- */
+add("j1","judgment","What's your view on the use of force?",
+"Mindset — neither eager nor hesitant; proportional, legal, policy-driven.",
+["Last resort; must be objectively reasonable (Graham v. Connor).", "Goal is control and safety, not punishment.", "De-escalate when feasible; time, distance, backup.", "Willing to use it when required; stop when the threat stops; document it."],
+"Force is a tool of last resort, and when it's used, it has to be objectively reasonable based on what the officer knows in that moment. That's the standard from Graham versus Connor, and I know the academy will go much deeper into the law and policy. The goal of force is to gain control and keep everyone safe — the public, the officer, and the person being arrested. It's never to punish anybody. So whenever I can, I want to use time, distance, communication, and backup so I don't need force at all. A lot of situations can be talked down if you slow them down. But I'm not naive about it. There will be times when force is necessary to protect somebody, including myself. In those moments I'd use what's necessary — no more — and I'd stop as soon as the threat stops. Then I'd get medical aid for anyone who's hurt, and I'd document it thoroughly and honestly, exactly the way it happened. If I'm ever uncomfortable describing what I did in a report, that's a sign I shouldn't have done it.",
+["Eagerness: 'I'm ready to go hands-on.'", "Hesitation: 'I'd never use force.'", "'Whatever it takes.'"],
+["Could you take a life if you had to?", "What if a crowd is filming you?"]);
+add("j2","judgment","Could you use deadly force if it was necessary?",
+"Hesitation risk.",
+["Clear yes, calmly.", "Only when legally justified: imminent threat of death or serious bodily injury.", "Seriousness, not bravado.", "You thought about it before applying."],
+"Yes. And I want to be clear that I thought about this seriously before I applied, because I don't think anybody should start this job without answering that question for themselves. I'd only use deadly force when there's an imminent threat of death or serious bodily injury to me or someone else, and within the law and department policy. It's not something I take lightly, and it's not something I'm eager for. But I understand that hesitating in that moment can get an officer or an innocent person killed. So my answer is yes — I could, if it were necessary. And afterward, I'd use the support that's available, because I know that stays with people.",
+["'I don't know.'", "Bravado.", "A long pause."],
+["How would you deal with it afterward?"],null,{short: true});
+add("j3","judgment","What is discretion and how would you use it?",
+"Judgment and fairness.",
+["Define it: choosing among lawful options.", "Aim for what the law is trying to achieve — safety, compliance.", "Consistency: same facts, same outcome, regardless of who.", "Learn department norms; document your reasoning."],
+"Discretion is the choice an officer has among lawful responses. It could be a warning, a citation, an arrest, or a referral to some kind of service. The law gives officers that room because every situation is a little different. The way I'd use it is to aim for what the law is actually trying to accomplish — usually safety and compliance, not punishment for its own sake. A warning to someone who made an honest mistake can change behavior more than a ticket ever would. But discretion only works if it's consistent. Same facts, same outcome — no matter who the person is, what they look like, what neighborhood they're from, or who they know. The moment it depends on those things, it's not discretion anymore, it's favoritism. I also know some situations don't leave room for discretion, like certain felonies. As a new officer, I'd learn how my department and my FTO approach it, I'd ask questions, and I'd document my reasoning so I could explain any decision I made.",
+["Discretion = 'doing what I want.'", "Favoritism of any kind."],
+["Where does discretion NOT apply?"]);
+add("j4","judgment","How do you handle being yelled at or disrespected?",
+"Ego control — with instructors in the academy and with the public on the street.",
+["In the academy: it's training. 'Yes, sir,' fix it, move on.", "On the street: don't take it personally; words aren't a crime.", "Control the situation, not the argument.", "A work example of staying calm with an angry person."],
+"I don't take it personally. In the academy, I expect to get yelled at, and I understand why. Instructors are putting stress on you on purpose, to see if you can still think and follow instructions. So my answer there is simple: \"Yes, sir,\" fix whatever I did wrong, and move on. It's not about my feelings. On the street it's similar. When someone's yelling or cursing at me, it usually isn't really about me. They're scared, angry, embarrassed, or having the worst day of their year. Words aren't a crime, and my job is to control the situation, not win the argument. So I'd keep my voice calm, let them vent, and stay focused on safety and what needs to happen. I actually practice this a lot at work. When a system goes down, people get heated, and sometimes they take it out on whoever's fixing it. I've learned not to match their energy. Once they feel heard, they usually calm down, and then we can solve the problem. Lower stakes, but it's the same skill.",
+["'I'd put them in their place.'", "'Respect goes both ways' as a reason to get rude.", "Getting visibly defensive when a panelist pushes."],
+["What if they spit on you?", "What if it's happening in front of a crowd?", "How will you handle an instructor screaming in your face?"]);
+add("j5","judgment","How do you de-escalate a tense situation?",
+"Communication skills.",
+["Slow it down: calm voice, open posture, space.", "Listen more than you talk; let them feel heard.", "Give options so they have some control.", "Time and distance — but never drop your guard."],
+"The first thing is to slow it down. When things are tense, everybody's talking fast and reacting, so I'd use a calm voice and open body language, and give the person some space if it's safe. Then I'd listen more than I talk. A lot of anger comes from feeling ignored, and just letting someone say their piece takes a lot of the heat out of it. I'd acknowledge what they're feeling — not agree with everything, just acknowledge it. Then I'd give them options, so they feel like they have some control over what happens next instead of feeling cornered. And I'd use time and distance whenever I can, because time is usually on the side of things calming down. At the same time, de-escalation doesn't mean dropping my guard. I'd stay aware of hands, exits, and backup. I've done a version of this at work. During an outage, a plant manager was furious. I let him vent, then told him exactly what we knew, what we didn't, and when he'd hear from me next. He calmed down within a couple of minutes.",
+["Only 'command presence.'", "No mention of listening."],
+["What if the person has a weapon?", "What if they're in a mental-health crisis?"]);
+add("j6","judgment","Would you follow an order you disagreed with?",
+"Chain of command vs. blind obedience.",
+["Lawful and ethical: yes — carry it out, raise concerns after, privately.", "Supervisors often have information you don't.", "Illegal or unethical: no, and report it.", "Separate disagreement from wrongdoing."],
+"If it's lawful and ethical, yes. I'd carry it out, and do it well — not halfway. If I thought it was the wrong call, I'd raise it with the supervisor afterward, privately and respectfully. Not in front of other officers, and not in front of the public. Supervisors often have information I don't, especially when I'm new. They might know something about the call, the history, or the bigger picture. And a paramilitary organization only works if orders get followed, especially when things are moving fast. I do this at work now. If I disagree with a decision, I say my piece once, with reasons, and then I support the decision. But there's a line. If an order is illegal or unethical — falsify a report, use force that isn't justified, look the other way on something — I won't follow it, and I'd report it. Disagreeing with a decision and being asked to do something wrong are two different things, and I think it's important to know the difference.",
+["'I always do what I'm told.'", "'I'd refuse if I disagree.'"],
+["Give us an example of an order you'd refuse."]);
+add("j7","judgment","How would you treat people from backgrounds different from your own?",
+"Bias and fairness.",
+["Same respect, same treatment.", "Everyone has biases — awareness plus slowing down.", "Decisions based on behavior and facts.", "Trust depends on every interaction."],
+"The same way I'd treat anyone — with respect and fairness. The law doesn't change based on who you are, and neither should the way I treat you. I also think it's important to be honest that everybody has biases, including me. The answer isn't pretending I don't have any. It's being aware of that, and slowing down enough to base my decisions on behavior and facts, not assumptions. Montgomery County is diverse. There are different languages, cultures, income levels, and experiences with police. Some people will come in already distrusting me because of something that happened to them or their family, and I have to be patient with that. Trust gets built one interaction at a time. Even the person who gets a ticket or gets arrested should walk away feeling they were treated fairly and with dignity. And if I saw another officer treating someone differently because of who they are, I'd say something. That behavior hurts every officer's ability to do the job.",
+["'I don't see color' and nothing else.", "Getting defensive."],
+["What if you saw a fellow officer treating someone differently?"]);
+add("j8","judgment","You're on a call that doesn't fit anything you were trained on. What do you do?",
+"Judgment under uncertainty.",
+["Go back to priorities: safety, life, then law.", "Get resources: backup, a supervisor.", "Apply principles you were trained on.", "Document and debrief with your FTO."],
+"I'd go back to priorities. Everyone's safety first, protect life, then enforce the law. Even if I don't know exactly what to do, those three things tell me what matters most. If there's time, I'd get more resources — call for backup, or get a supervisor on the phone or on scene. There's no shame in asking, especially early in my career. I'd use the principles I learned in the academy, even if the exact situation isn't in any manual. The law, the policy, and common sense usually point in the right direction. What I wouldn't do is freeze, and I wouldn't cowboy it and make something up just to look like I know what I'm doing. Afterward, I'd write it up clearly — what I saw, what I did, and why — and I'd sit down with my FTO and ask what I could have done better. That's how I handle production issues I've never seen before. Stabilize it, escalate if I need to, fix it, then document what happened so the next one goes better.",
+["Freezing.", "Cowboying it."],
+["What if there's no time to call anyone?"]);
+add("j9","judgment","The person you're arresting says they know the mayor and they'll have your badge. How do you respond?",
+"Equal treatment and composure.",
+["Stay calm; the facts don't change.", "Document thoroughly.", "Heads-up to your supervisor.", "If you did it right, nothing to fear."],
+"I'd stay calm and keep doing exactly what the law requires. Who someone knows doesn't change the facts, and it doesn't change the process. I wouldn't argue with them about it or get sarcastic. I'd keep it professional — \"I understand, sir. You'll have every chance to raise that.\" Then I'd document everything thoroughly, including what they said, and give my supervisor a heads-up so nobody's surprised by a phone call later. If I've done everything right and by the book, I have nothing to worry about. And if the mayor did call the chief, I'd expect my department to back me for doing my job correctly.",
+["Letting them go.", "Getting angry or sarcastic."],
+["What if the mayor calls your chief?"],null,{short: true});
+add("j10","judgment","You respond to a domestic and the victim refuses to cooperate. What do you do?",
+"Understanding complex calls.",
+["Safety first; separate the parties.", "Don't judge — fear, money, love, kids.", "Build the case independently: injuries, witnesses, scene, 911 call.", "Follow PA law and policy on arrest; give resources."],
+"First, I'd make sure everyone's safe and separate the parties so I can talk to each one on their own. I wouldn't judge the victim for not cooperating. People stay quiet for a lot of reasons — fear, money, kids, love, or worry about what happens after we leave. So I'd build the case independently as much as I can. That means documenting injuries, photographing the scene, talking to witnesses or neighbors, checking whether there's a 911 recording, and checking for any existing protection orders. Then I'd follow the law and department policy on arrest, which I'll learn in detail in the academy. The victim's cooperation isn't always the deciding factor. If there are kids in the home, I'd make sure they're safe too, and involve the right services if needed. Before leaving, I'd make sure the victim knows about local domestic-violence resources and how protection orders work — even if they're not ready to use them tonight. Sometimes the most important thing you do on that call is let them know there's help.",
+["'If they don't want help, I'd leave.'", "Any victim-blaming."],
+["What if there are kids in the home?"]);
+
+/* ---- BEHAVIORAL (STAR) ---- */
+add("b1","behavioral","Tell us about a conflict with a coworker and how you handled it.",
+"Conflict resolution without drama.",
+["STAR: Situation, Task, Action, Result.", "A professional disagreement — not a personality war.", "Listening, facts, direct conversation.", "Result plus the relationship afterward."],
+"Sure. At Proconex, an operations manager was convinced a Power BI report I'd built had the wrong numbers. Instead of coming to me, he escalated it straight to my boss. So I had two problems: figure out whether he was right, and fix the relationship. I didn't fire back an email. I went to his desk, asked him to walk me through exactly what he was seeing, and then I just listened. It turned out the report was correct, but it was pulling data from IFS at a different time of day than his spreadsheet. So we were both right — just for different moments. I showed him the two side by side so he could see it for himself, and then I added a \"data as of\" timestamp to the report so nobody would get tripped up that way again. After that, the complaints stopped, and he ended up being one of the report's biggest users. What I learned is to go straight to the source and have the conversation face to face, instead of fighting it out over email.",
+["Blaming the coworker.", "No resolution.", "A petty or personal conflict."],
+["What if he still disagreed?", "What if it had been your supervisor?"],"conflict");
+add("b2","behavioral","Tell us about a time you received criticism. How did you respond?",
+"Coachability — academy instructors will criticize you constantly.",
+["STAR with specific criticism.", "Listen; don't defend.", "Act on it.", "Show the lasting change."],
+"After a system rollout, my manager told me my user documentation was too technical — people couldn't follow it. Honestly, my first reaction was defensive, because I'd put a lot of time into it. But I kept my mouth shut and asked for specific examples of where people got stuck. Then I sat down with two of the actual users and watched them try to follow the guide. Within ten minutes I could see exactly where I'd lost them — I was writing for someone who already knew the system. So I rewrote the whole thing in plain language, step by step, with screenshots. Support tickets on that process dropped noticeably, and now I write every guide with the end user in mind first. The bigger lesson was about how I take feedback. My gut reaction isn't always right, and the criticism that stings is usually the most useful. That's what I'll need in the academy. Instructors are going to tell me what I'm doing wrong constantly, and the fastest way to get better is to say, \"Yes, sir,\" and fix it.",
+["Criticism you describe as unfair.", "No change afterward."],
+["How do you handle being yelled at?"],"failure");
+add("b3","behavioral","Tell us about a time you worked under pressure.",
+"Composure under stress.",
+["STAR with real stakes.", "Calm, prioritize, communicate.", "Quantify the result.", "Prevent recurrence."],
+"The one that comes to mind is a month-end at Proconex when orders suddenly stopped posting in IFS. The business couldn't ship, and month-end is exactly when you can't afford that. I was the one who had to figure out why, and fast. The first thing I did was stay calm, because people were already panicking, and that doesn't help anybody. I pulled the error logs, ran Oracle queries to narrow down exactly which records were failing, and traced it back to bad data coming in from an integration. While I worked it, I sent leadership a short update every thirty minutes, so nobody was guessing or pulling me into meetings. Once I found it, I corrected the data and reprocessed the stuck orders. We were shipping again within [X hours] and closed the month on time. Afterward, I wrote up what happened and added a check so the same bad data gets caught before it ever hits production. What I took from it is that pressure is exactly when you need to slow down enough to think clearly — and keep people informed while you work.",
+["'I work better under pressure' with no example.", "Panicking in your own story."],
+["What did you do to keep calm?", "What would you do differently?"],"pressure");
+add("b4","behavioral","Tell us about a time you failed.",
+"Ownership and growth.",
+["A genuine failure, not a humblebrag.", "Own it.", "What you learned.", "Evidence you changed."],
+"A while back, I built a new operations report that I was honestly pretty proud of. The problem was, I built it mostly on my own, based on what I thought the users needed, and I didn't get enough input from them along the way. When I launched it, nobody used it. They kept using their old spreadsheets. That was a failure, and it was mine — I'd skipped the most important step. So I went to my manager and owned it. I said, \"I built this for the wrong audience.\" Then I went back and sat down with the people who were supposed to use it. I asked what decisions they make every morning and what information they actually need, and I rebuilt it around their answers. The second version stuck, and it's still in use today. What I learned is that you can't solve people's problems without listening to them first. And I think that applies directly to this job. That's what community policing is — you ask the people you serve what's actually going on before you decide how to fix it.",
+["A fake failure.", "Blaming someone else."],
+["How did it feel?"],"failure");
+add("b5","behavioral","Tell us about a time you led without formal authority.",
+"Leadership potential and influence.",
+["STAR.", "Influence through credibility and preparation, not title.", "Bring people together around the problem.", "Result plus follow-through."],
+"At Proconex, sales, operations, and finance were each getting different numbers out of IFS for the same thing, and every meeting turned into an argument about whose numbers were right. I didn't have any authority over those teams, but a lot of our reporting depended on fixing it. So I did my homework first. I pulled a sample of records and showed exactly where and why the numbers diverged — it turned out to be different definitions, not bad data. Then I got one person from each team in a room and kept the conversation on the problem, not on who was wrong. We agreed on one definition and a simple process for keeping it consistent. I documented it, sent it out, and followed up every week for about a month to make sure it stuck. In the end, we had one source of truth, and the meetings stopped being arguments. What I learned is that you lead without rank by being prepared, fair, and following through. As a new officer I won't have rank either, but I can still earn people's trust that way.",
+["Taking credit for a team's work.", "No actual leadership in the story."],
+["What if someone refused to cooperate?"],"leadership");
+add("b6","behavioral","Describe a time you made a decision with incomplete information.",
+"Judgment when facts are missing.",
+["STAR.", "Gather what you can fast.", "Decide, communicate reasoning, adjust.", "Tie to patrol reality."],
+"During a production outage at Proconex, I had to decide whether to roll back a change we'd made the night before — without knowing for certain that it was the cause. Every hour we were down, orders weren't shipping, so waiting for perfect information wasn't really an option. So I gathered what I could, quickly. I compared when the errors started to when the change went in. I checked the logs, and I checked what else had changed. Everything pointed to that change. I explained my reasoning to my manager in about two minutes — here's what I know, here's what I don't, here's what I want to do and why — and then I rolled it back. The system recovered, and later we confirmed the change was the cause. What I took from it is that you almost never get all the facts before you have to act. Policing is like that too, just faster. You act on the best information you have, you explain your reasoning, and you stay ready to adjust if new facts come in.",
+["Paralysis.", "Recklessness."],
+["What if you'd been wrong?"],"pressure");
+add("b7","behavioral","Tell us about a time you had to deliver bad news.",
+"Communication and honesty.",
+["STAR.", "Direct, timely, in person.", "Bring a solution.", "Tie to notifications / arrests."],
+"At one point I found a calculation error in a report that leadership had been using for months to make decisions. So I had to go tell them that numbers they'd trusted were wrong — and that I was the one who built it. I didn't want to send that in an email, so I went in person. I explained what was wrong, how long it had been wrong, and what the real impact was. I didn't downplay it. And I didn't walk in with just a problem — I brought the corrected numbers and the fix I'd already made. They weren't thrilled, but they told me afterward they appreciated hearing it from me first instead of finding it on their own. That stuck with me. Officers deliver bad news all the time, and some of it is devastating — a death notification, telling a parent their son's been arrested, telling someone their car isn't coming back. I think the same principles apply. Be direct, be honest, don't make people drag it out of you, and be compassionate about how it lands. And whenever you can, tell them what happens next.",
+["Avoiding it.", "Hiding behind an email."],
+["How would you handle a death notification?"],"ethics");
+add("b8","behavioral","Tell us about a time you went above and beyond.",
+"Work ethic and service mindset.",
+["STAR.", "Beyond your job description.", "Service motive, not credit."],
+"There was a plant supervisor at Proconex who spent hours every Monday morning building the same spreadsheet by hand, copying numbers out of IFS. It wasn't my project, and nobody asked me to fix it. I noticed because she mentioned it while I was working on something else, and I knew I could help. So I built a Power BI report that pulled all of it automatically, working it in around my other projects. Then I sat with her and walked her through it until she was comfortable using it. It saved her about [X] hours every single week, and it got rid of the copy-and-paste errors too. Honestly, I didn't do it for credit. I don't think my manager even knew about it for a while. I did it because I saw somebody struggling with something I could fix in an afternoon. That's the mindset I want to bring to patrol. A lot of what officers do isn't in any job description. It's noticing that someone needs help, and then actually doing something about it.",
+["Everything is 'just my job.'"],
+["Did you get credit for it?"],"leadership");
+add("b9","behavioral","Tell us about a time you disagreed with your boss.",
+"Respectful dissent, then support.",
+["STAR.", "Private, respectful, data-driven.", "Accept the decision and support it fully."],
+"My manager wanted to push a system change live right before month-end. I thought that was risky, because if something broke, it would break during the most important week of the month. So I asked for a few minutes with him privately — not in front of the team. I laid out specifically what could fail and what the impact would be on shipping and closing the books, and I suggested waiting one week until after close. He listened, but he had reasons to go ahead — there was pressure from above that I didn't know about. So he decided to push it live. Once he made that call, I supported it completely. I didn't drag my feet or line up an \"I told you so.\" I built a rollback plan, tested it, and stayed close to it that night. It ended up going fine. What I took from it is that my job is to give my honest input once, with facts, and then back the decision. That's how I'd handle it with a sergeant — say my piece respectfully, then follow the order, as long as it's lawful and ethical.",
+["Going over the boss's head.", "Refusing to do it."],
+["What if he'd been wrong?"],"conflict");
+add("b10","behavioral","Tell us about a time you dealt with an angry or difficult person.",
+"Service temperament.",
+["STAR.", "Let them vent; acknowledge impact.", "Focus on what they need.", "Solve, then fix root cause."],
+"We made an update to our ERP system, and it broke one user's workflow right before a big customer shipment was supposed to go out. He called me, and he was furious — raised voice, blaming IT, the whole thing. The first thing I did was let him vent without interrupting or getting defensive. Then I acknowledged it: \"You're right, this is a real problem, and it's on us to fix it.\" Once he felt heard, I focused on exactly what needed to ship and by when. I got a manual workaround in place within the hour so the shipment could go out, and then I went back and fixed the underlying issue properly so it wouldn't happen again. The shipment went out on time, and later that week he actually came by and thanked me. What I've learned is that most angry people want two things: to be heard, and to see that you're actually doing something. If you give them both, the anger usually drains out pretty fast. I think that applies to a lot of calls, too.",
+["Blaming the customer."],
+["What if you couldn't fix it?"],"conflict");
+
+/* ---- SELF-AWARENESS ---- */
+add("s1","self","What are your greatest strengths?",
+"Self-knowledge relevant to policing.",
+["Two or three strengths tied to the job.", "Evidence for each.", "Not generic."],
+"I'd say three things. First, I'm calm under pressure. In my job, production outages are normal. When something breaks and everybody's looking at me, I slow down, figure out what's actually happening, and work the problem. People have told me that my staying calm helps them calm down too. Second, attention to detail and documentation. I work in data all day, and I've learned that small errors turn into big problems. I document what I do so someone else can follow it, and I think that's half of police work — a good report is the foundation of everything that comes after it. Third, I'm a problem-solver. I don't assume. I ask questions, gather facts, and follow the evidence until I understand what really happened. I'd also add discipline. I train consistently — CrossFit and running — and I show up whether I feel like it or not. I think those four things line up directly with what this academy demands and what the job needs on the street.",
+["'I'm a people person.'", "Listing seven."],
+["Which one matters most on the street?"]);
+add("s2","self","What is your biggest weakness?",
+"Honesty and self-improvement.",
+["A real weakness — not 'perfectionist.'", "What you're doing about it.", "Not job-disqualifying."],
+"I can overanalyze. In my current job, when there's time, digging deeper is usually a strength — I find root causes other people miss. But I've learned there are moments where you have to make a decision with eighty percent of the information, and waiting for the last twenty percent costs more than it's worth. There was a time [brief example — e.g., during an outage I spent too long confirming a cause I was already fairly sure of, and it delayed the fix by an hour]. That stuck with me. So I've been working on it. I set decision deadlines for myself, and during outages I commit to a course of action based on what I know, communicate it, and adjust if new information comes in. It's gotten a lot better. And I actually think policing will push me on this faster than anything else could, because on the street you often have seconds, not hours. Between the academy and a good FTO, I expect to get a lot of reps making sound decisions quickly — and I welcome that.",
+["'I'm a perfectionist' / 'I work too hard.'", "Anything disqualifying: temper, dishonesty."],
+["Give us an example where that hurt you."]);
+add("s3","self","What would your current employer and coworkers say about you?",
+"Self-perception vs. reality — they will check your references.",
+["Two or three traits, each with a quick example.", "Match what your references will actually say.", "Include one honest growth area they'd mention.", "Keep it humble."],
+"I think they'd say I'm reliable, calm, and the person who'll figure it out. When something breaks at Proconex, I'm usually one of the first people they call, and I think that's because I don't panic, and I don't stop until it's actually fixed. My manager would probably say I'm thorough and that he doesn't have to double-check my work. Coworkers would probably say I'm easy to work with — I'll explain things without making people feel dumb, and I'll help even when it's not technically my job. [Use a real line from a review or a coworker if you have one: In my last review, my manager wrote ___.] If they were being completely honest, they'd probably also say I can dig too deep sometimes when a quicker answer would do. That's fair, and it's something I've been working on. Outside of work, my friends would say I'm loyal, and that I'll tell them the truth even when they don't want to hear it. I'm comfortable with you calling any of them.",
+["Arrogance.", "Contradicting what your references will say.", "'I don't know.'"],
+["What would someone who doesn't like you say?", "Will your supervisor give you a good reference?"]);
+add("s4","self","How do you manage stress?",
+"Healthy coping — critical for a career with trauma exposure.",
+["A physical outlet.", "A support system.", "Sleep, nutrition, habits.", "No stigma about peer support / EAP."],
+"Training is my main outlet. I do CrossFit and I run, and it's not optional for me — it's how I burn off stress and reset my head. I also take care of the basics people underestimate: I eat well, I get plenty of protein, and I protect my sleep as much as I can. And I talk. My fiancée and I are open with each other. If something's bothering me, I say it instead of carrying it around. I also know policing brings a completely different level of stress than my current job. Shift work, traumatic calls, seeing things you can't unsee — and it adds up over years. I'm not naive about that. So I'd use peer support and the employee assistance program without any stigma. I don't see asking for help as weakness. I see it the same way I see training: it's maintenance, so you stay good at the job for a whole career. And if I noticed a partner struggling, I'd say something to them. Nobody should have to carry that stuff alone.",
+["Alcohol.", "'I don't get stressed.'", "Stigma about counseling."],
+["What would you do if you noticed a partner struggling?"]);
+add("s5","self","Are you physically ready for the academy?",
+"Fitness readiness.",
+["Yes — with evidence.", "Ongoing training.", "Beyond the minimum."],
+"Yes. I passed the PFT, and I don't treat that as the finish line — it's the minimum. I train consistently, CrossFit and running several days a week, and I'm careful about nutrition and recovery. My goal isn't to pass the physical standard in the academy. It's to be comfortable enough that PT isn't draining the energy I need for academics. With an 80 required on every module, I can't afford to be wrecked every night. I also know academy PT is different from a gym. It's early mornings, running in formation, getting smoked as a group when someone messes up, and then going straight into a classroom. So I've been building conditioning, not just strength. And beyond the academy, I think fitness is part of the job. If I have to chase someone, control someone, or carry someone, the people depending on me need me to be ready. That's why I'll keep training through the academy and after it.",
+["'I'll get in shape in the academy.'"],
+["What's your mile and a half time?"]);
+add("s6","self","What will be the hardest part of the academy for you?",
+"Self-awareness.",
+["Honest and not disqualifying.", "Your plan for it."],
+"Honestly, probably the paramilitary structure. I've spent my career in a corporate setting where you can discuss things, push back in a meeting, and debate the best approach. In the academy, you do what you're told, immediately, and you don't debate it. I understand why that matters. When things go bad on the street, there isn't time to talk it over, and orders have to be followed fast. So I'm ready for it. I just know it'll be an adjustment, and I'd rather name that than pretend it won't be. My plan is simple: \"Yes, sir,\" \"Yes, ma'am,\" and do it. If I have a question, I'll ask it at the right time and in the right way. The other hard part will be the pace — balancing studying, PT, and home for twenty-four weeks without letting anything slip. But I've planned for that with my fiancée, and I think knowing the hard parts ahead of time makes them a lot easier to handle.",
+["'Nothing.'"],
+["How will you handle being yelled at by instructors?"]);
+add("s7","self","What would you do if you realized the job wasn't what you expected?",
+"Commitment and realism.",
+["You've done your homework — few surprises.", "Lean on FTO, veterans, support system.", "Committed to a career, not trying it on."],
+"I've tried to do my homework so there aren't big surprises. [If true: I've talked with officers and done a ride-along.] I know it's not what's on TV — it's a lot of paperwork, traffic, mental-health calls, and difficult people. But I'm sure some parts will still be harder than I expect. Maybe it's the shift work, or a certain kind of call that stays with me. If that happens, I'd do what I do with any hard problem. I'd talk to people who've been through it — my FTO, veteran officers, peer support — and figure out whether it gets better with experience or whether I need to adjust something. And I'd lean on my fiancée and my support system. What I wouldn't do is make a quick decision on a bad week. Every career has a hard first year. I'm committing to a career here, not trying one on for size. I've given up a stable job to be in this room, and I don't plan to walk away from it because it turned out to be hard.",
+["'I'd go back to my old job.'"],
+["How long would you give it?"]);
+add("s8","self","Why should we pick you over the other candidates?",
+"Confidence without arrogance — can you make your own case?",
+["Don't knock other candidates.", "Three reasons: proven readiness, transferable skills, maturity/commitment.", "Evidence for each.", "Close with why you're here."],
+"I won't knock anybody else here — I'm sure there are strong candidates in this process. But I can tell you what I bring. First, I've already proven I'm ready. I passed the reading test, the PFT, and the psych, and I've handled the things that usually knock people out of an academy — my family's on board, the money's set aside, and I've planned around my job. Second, I bring professional experience that transfers directly. I spend my days investigating problems, following evidence, documenting clearly, and dealing with frustrated people when things go wrong. That's a lot of what this job is. And I've learned to stay calm when everyone's looking at me to fix something. Third, maturity. I'm not here on a whim or because I don't know what else to do. I'm walking away from a stable career because I know exactly why I want this — to serve this community with integrity. So if you pick me, you're getting someone who will finish this academy, hold the standard, and represent it well.",
+["Arrogance or knocking other candidates.", "Begging.", "Generic 'I really want it.'"],
+["What does a younger candidate have that you don't?", "What will you do if we don't select you?"]);
+add("s9","self","Where do you see yourself in 5 years?",
+"Realistic ambition and staying power.",
+["Years 1–2: graduate, strong field training, solid patrol officer.", "Years 3–5: trusted and reliable; add a specialty or training role.", "Stay humble — no 'I want to be chief.'", "Tie back to service and this community."],
+"In five years, I see myself as a solid, trusted patrol officer in a Montgomery County department. The first couple of years are about the basics — graduating from this academy, getting through field training, and learning to do the job the right way from experienced officers. I want to be the kind of officer my sergeant doesn't worry about. My reports are accurate, I'm on time, I handle my calls, and people in the community know my name for good reasons. By year five, I'd like to be someone other officers trust to back them up and to get things right. And I'd like to be adding something — maybe [an area that interests you — crash reconstruction, investigations, training, or a community program]. Given my background, anything involving data, investigations, or training newer officers would be a natural fit. I'm not in a rush to specialize, though. I think you earn those opportunities by being a really good patrol officer first. Personally, in five years I'll be married and settled here, and I'd like to be serving the same community I live in.",
+["'I want to be chief' or 'in the FBI.'", "'Out of patrol as fast as possible.'", "No answer at all."],
+["What specialty interests you, and why?", "What would make you leave the department that hires you?"]);
+
+/* ---- KNOWLEDGE ---- */
+add("k1","knowledge","What does a police officer actually do day to day?",
+"Realistic expectations.",
+["Patrol and calls for service.", "Traffic, crashes, disputes, welfare checks.", "Mental-health and social-service calls.", "Report writing and court."],
+"Most of it is patrol and calls for service. That's alarms, car crashes, neighbor disputes, welfare checks, shoplifting, suspicious persons, and a lot of calls where someone just needs help and doesn't know who else to call. A growing share of calls involve mental health, addiction, or someone in crisis, and those take patience more than force. A big piece of the job is report writing. Every call generates paperwork, and those reports go to the DA, the courts, insurance companies, and sometimes the news, so they have to be clear and accurate. There's traffic enforcement, which is a big part of safety in a county like this. There's investigation, follow-ups, court testimony, and ongoing training. And there's constant interaction with the community — business owners, kids, people who just want to talk. The dramatic stuff you see on TV is a small percentage. Most of the job is being present, solving problems, keeping people safe, and writing it up accurately. Honestly, that's what appeals to me — a lot of it looks like the problem-solving I already do.",
+["The TV version."],
+["Which calls do you think are most dangerous?"]);
+add("k2","knowledge","What is community policing?",
+"Philosophy alignment.",
+["Police + community partnership.", "Prevent problems, not just respond.", "Know your beat; build trust.", "A concrete example."],
+"Community policing is the idea that police and the community work together to prevent problems, not just respond after something happens. In practice, that means knowing the people and businesses on your beat — getting out of the car, talking to store owners, knowing which neighbors watch the street. It means being visible and approachable before there's a crisis. And it means actually listening to what's bothering people, because what worries a neighborhood isn't always what shows up in the crime stats. Maybe it's speeding on one street, or a vacant property, or kids with nowhere to go after school. Then you work on the root cause, sometimes with other agencies — code enforcement, schools, social services. The payoff is trust. When people trust you, they call you, they give you information, and they give you the benefit of the doubt on a hard day. That's what makes you effective. It's close to how I already work, too. Before I build anything at Proconex, I sit down with the people who'll use it and find out what the real problem is.",
+["'It's PR.'"],
+["Give us one thing you'd do on your beat."]);
+add("k3","knowledge","What do you know about this academy?",
+"Did you do your research?",
+["919 hours / ~24 weeks.", "Blue Bell campus, Health Sciences Center.", "MPOETC-certified, Act 120.", "80 minimum per module; ~$5,995; Sunday sessions."],
+"It's MCCC's Municipal Police Academy — the Act 120 program, certified by MPOETC, the Municipal Police Officers' Education and Training Commission. It's 919 hours over about 24 weeks, held at the Health Sciences Center on the Blue Bell campus, and the schedule includes Sunday sessions. Every module requires a minimum score of 80 to pass, so there's no coasting through any part of it, and tuition is around $5,995. From what I understand, the curriculum covers criminal law and procedure, the vehicle code, firearms, defensive tactics, emergency vehicle operations, first aid, report writing, and a lot of scenario-based training. [Add anything specific you learned — from the info session, the website, or a graduate.] I chose it because it's local — a lot of Montgomery County departments hire from here — and because it's rigorous. I'd rather be pushed hard in a program with a high standard than get through an easy one. And practically, the location and schedule fit my plan. I've been planning around this program specifically for a while now.",
+["Knowing nothing."],
+["What does MPOETC stand for?"]);
+add("k4","knowledge","What is Act 120?",
+"Basic knowledge.",
+["PA law requiring municipal police training and certification.", "Overseen by MPOETC."],
+"Act 120 is the Pennsylvania law — the Municipal Police Education and Training Law — that requires municipal police officers to complete basic training and be certified before they can enforce the law. It's overseen by MPOETC, the Municipal Police Officers' Education and Training Commission. The Commission sets the curriculum and the standards, certifies the academies, and requires officers to keep up with annual in-service training once they're certified. This academy is my path to that certification.",
+["Not knowing."],
+["What does the Commission oversee?"],null,{short: true});
+add("k5","knowledge","What are the most important qualities of a police officer?",
+"Values.",
+["Integrity first — your word is your evidence.", "Communication, judgment, empathy, courage.", "Tie to yourself."],
+"For me, integrity is first. Without it, nothing else matters, because an officer's word is evidence. If people can't trust your report or your testimony, you can't do the job. Second is communication. Most of policing is talking to people — calming them down, getting information, explaining what's happening. An officer who communicates well has to use force a lot less. Third is judgment. You have to make good decisions quickly, often with incomplete information, and then be able to explain them afterward. Fourth is empathy. You're meeting people on their worst days, and how you treat them sticks with them for a long time. And fifth is courage — physical courage, obviously, but also the moral courage to speak up when another officer is doing something wrong. If I'm honest about myself, I'm strongest in integrity, communication, and judgment, because that's what my job has demanded for years. Courage under physical danger is something I'll build in the academy and on the street, and I'm going in with my eyes open about that.",
+["'Being tough.'", "'Authority.'"],
+["Which is hardest to maintain over a career?"]);
+add("k6","knowledge","What are the biggest challenges facing policing today?",
+"Awareness and balance.",
+["Public trust.", "Recruitment and retention.", "Mental-health and addiction calls.", "Officer wellness. Balanced, not political."],
+"I'd say there are a few big ones. The first is trust. High-profile incidents around the country have damaged the relationship between police and some communities. Every officer either rebuilds that trust or erodes it, one interaction at a time, even if they had nothing to do with what happened somewhere else. The second is staffing. A lot of departments are short-handed, which means more overtime, more burnout, and less time for the proactive community work that prevents problems. The third is the kind of calls officers are handling. More and more calls involve mental health, addiction, and homelessness, and officers aren't always trained or resourced for them. That's why crisis intervention training and co-responder programs matter. And the fourth is officer wellness. The stress of this job adds up, and officers have historically been bad at asking for help. My part in all of that is simple. I can be professional, fair, and accountable on every call, take the training seriously, and look after my own mental health so I last a whole career.",
+["Political rants.", "Blaming the public or the media."],
+["How would you personally build trust?"]);
+add("k7","knowledge","What's the most recent thing you've read about policing?",
+"Are you genuinely engaged with the profession — and can you discuss it thoughtfully?",
+["Name a real, specific article and source — read one tonight.", "One-sentence summary.", "Your balanced take — not political.", "Connect it to the kind of officer you want to be."],
+"[Read one real article tonight and swap in its details — they may ask a follow-up.] The most recent thing I read was [an article on Police1 / in the Inquirer / in local news] about [co-responder programs, where departments pair officers with mental-health professionals on crisis calls]. The piece talked about how [clinicians respond alongside officers, so that someone in crisis gets connected to treatment instead of ending up in a cell or the ER]. What stood out to me was [that it wasn't framed as police versus social workers. It was about getting the right person to the call, and freeing up officers for the calls that need them]. I thought it was a smart approach, and it lines up with what I understand about the job — a big share of calls involve someone in crisis. My takeaway was that crisis intervention training is going to be one of the most important things I learn, because even with co-responders, patrol is usually first on scene. I try to read about the profession regularly. I want to walk into this academy already understanding the conversations happening in the field.",
+["'I don't really read about it.'", "Naming something you can't discuss when they follow up.", "Turning it into a political rant."],
+["What did you think the article got wrong?", "How would that change how you do the job?"]);
+add("k8","knowledge","Do you have any family or friends in law enforcement?",
+"Your realistic exposure to the job — and whether you'll try to trade on connections.",
+["Truthful — yes or no.", "If yes: what you've learned from them about the reality of the job.", "If no: how you learned about it anyway (ride-along, research, officers you've talked to).", "Never imply a connection should help you."],
+"[Use the version that's true.] If yes: \"Yes — my [relation] is [an officer with ___ / retired from ___]. Being around that, I saw the parts of the job most people don't — the missed holidays, the calls that came home with them, and how much the community respected someone who did it right. They've been honest with me about how hard it is, and they didn't try to talk me into it, which is part of why I trust my decision. To be clear, I'm not expecting any connection to help me here. I want to earn this on my own.\" If no: \"No, not directly. I don't come from a police family, so I've made a point of learning about the job on my own. [If true: I've done a ride-along and talked with officers in the county about what the job really looks like day to day.] I've read up on the academy, the certification, and the reality of patrol. I think coming in without a family connection means I've had to think harder about why I want this — and I'm confident in the answer.\"",
+["Name-dropping, or implying it should help you.", "Inventing a connection.", "Clearly no idea what the job involves."],
+["What did they tell you about the job that surprised you?", "Have you done a ride-along?"]);
+
+/* ---- CLOSER ---- */
+add("x1","closer","Do you have any questions for us?",
+"Engagement and preparation.",
+["Always have two ready.", "About succeeding in the academy.", "Never about pay, time off, or 'how hard is it.'"],
+"\"Yes, sir, I have two. First — what separates the cadets who really excel in this academy from the ones who just get through? And second — what's one thing you wish every cadet knew before day one?\" [Optional third, if there's time: \"What do departments in the county say they're looking for in new graduates?\"] Then listen, make eye contact with whoever answers, and thank them. Never ask about pay, time off, or how hard it is.",
+["'No, I think you covered everything.'", "Pay or vacation questions."],
+["Why did you pick those questions?"],null,{short: true});
+add("x2","closer","Is there anything else you'd like to add?",
+"Close strong.",
+["30-second summary: ready, prepared, committed.", "Thank them."],
+"Just that I'm ready. I've passed the reading test, the PFT, and the psych. I've planned the time and the money with my fiancée, and I've planned around my job, so I'm walking in with nothing standing between me and finishing this academy. I'm bringing a professional track record of integrity, staying calm under pressure, and attention to detail — and I want to use all of it to serve the community I live in. I'd be grateful for the chance to earn my place here. Thank you all for your time.",
+["Rehashing everything.", "Saying 'no' and nothing else."],
+["Why should we remember you over the next candidate?"],null,{short: true});
+
+const QMAP={};Q.forEach(q=>QMAP[q.id]=q);
+const QALIAS={x3:"s8"}; // merged questions: old saved scores follow the survivor
+
+const PANEL=[
+ {k:"dir",n:"Director",d:"Formal, measured",av:"🎖️",pitch:0.9,rate:0.92,cats:["opener","commit","knowledge","closer"],lead:["","Let's begin.","Next question.","I'd like to understand something."],fu:["Let me follow up on that.","I want to go a little deeper.","Help me understand."]},
+ {k:"ins",n:"Instructor",d:"Direct, clipped",av:"📋",pitch:1.05,rate:1.05,cats:["behavioral","self","judgment"],lead:["","Be specific.","Give me a real example.","Okay."],fu:["Be more specific.","That's general. Give me detail.","Stay with that."]},
+ {k:"off",n:"Officer",d:"Blunt, street-level",av:"🚔",pitch:0.8,rate:1.1,cats:["integrity","honesty","judgment"],lead:["","Straight question.","Here's one for you.","Let's talk about the street."],fu:["Okay, but let me push on that.","Really? Walk me through it.","Now what if it's not that simple?"]}
+];
+
+// [id, section, text]. The first 21 ids are the original list, in order, so old
+// index-keyed check marks migrate. Add new items anywhere, but never reuse an id.
+const CHECK=[
+ ["read","Tonight","Read one policing article (Police1 or local news) — be ready to discuss it"],
+ ["brackets","Tonight","Replace every [bracket] in your answers with real details"],
+ ["tmay3","Tonight","Say 'Tell me about yourself' out loud 3× with the 60s timer"],
+ ["app","Tonight","Printed copy of your application — read it tonight"],
+ ["record","Tonight","Know your record cold: driving, drug disclosure, jobs, dates"],
+ ["suit","Attire","Dark conservative suit (navy/charcoal), pressed"],
+ ["shirt","Attire","White or light-blue shirt, conservative tie"],
+ ["shoes","Attire","Polished dress shoes, dark socks, matching belt"],
+ ["groom","Attire","Fresh haircut, clean-shaven or neatly groomed, no cologne overload"],
+ ["jewel","Attire","No visible jewelry beyond a watch / engagement ring"],
+ ["folder","Bring","Folder: ID, résumé, test results, pen, notepad"],
+ ["dirs","Arrival","Directions to Blue Bell campus, Health Sciences Center — parking checked"],
+ ["early","Arrival","Arrive 15 minutes early (not 45)"],
+ ["phone","Arrival","Phone OFF before you walk in"],
+ ["shake","In the room","Firm handshake with EVERY panelist, eye contact"],
+ ["sit","In the room","Wait to be told to sit; sit upright, hands still"],
+ ["sir","In the room","“Sir” / “Ma'am” every answer"],
+ ["eyes","In the room","Answer to all three panelists — eye contact with each, not just the asker"],
+ ["pause","In the room","Pause 1–2 seconds before answering; it's fine"],
+ ["integ","In the room","Integrity questions: answer fast and firm — report it"],
+ ["honest","In the room","Honesty questions: truth, own it, what changed — then stop"],
+ ["thanks","In the room","Thank each panelist by name/title on the way out"],
+ ["ask1","Questions to ask","What separates cadets who excel from those who just get through?"],
+ ["ask2","Questions to ask","What's one thing you wish cadets knew before day one?"]
+];
+const CHECK_V1=["suit","shirt","shoes","groom","jewel","app","folder","record","dirs","early","phone","shake","sit","sir","eyes","pause","integ","honest","ask1","ask2","thanks"];
+
+/* ============ STORAGE ============ */
+// Everything read from localStorage is untrusted: a corrupted, partial, or
+// hand-edited store is normalized field by field instead of crashing the app.
+const LS="obp_v1",DIMS=["Clarity","Honesty","Specific Example","Confidence"];
+const TMAY_KEYS=["role","skills","drew","now"];
+let STORE_OK=true;
+function cleanSc(sc){const o={};if(sc&&typeof sc==="object")DIMS.forEach(d=>{const n=Math.round(+sc[d]);if(n>=1&&n<=5)o[d]=n});return o}
+function normalize(o){
+ const d={sessions:[],stories:{},check:{},tmay:{},voice:true,mic:true};
+ if(!o||typeof o!=="object"||Array.isArray(o))return d;
+ if(typeof o.voice==="boolean")d.voice=o.voice;
+ if(typeof o.mic==="boolean")d.mic=o.mic;
+ if(Array.isArray(o.sessions))o.sessions.forEach(s=>{
+  if(!s||!Array.isArray(s.items))return;
+  const items=[];s.items.forEach(i=>{if(!i)return;const id=QALIAS[i.qid]||i.qid;const q=QMAP[id];if(!q)return;
+   items.push({qid:id,c:q.c,fu:!!i.fu,probe:i.fu&&typeof i.probe==="string"?i.probe.slice(0,300):undefined,dur:Math.max(0,+i.dur||0),fill:Math.max(0,+i.fill||0),hedge:Math.max(0,+i.hedge||0),sc:cleanSc(i.sc)})});
+  d.sessions.push({date:+s.date||Date.now(),mode:s.mode==="drill"?"drill":"board",skipped:Math.max(0,+s.skipped||0),items});
+ });
+ d.sessions=d.sessions.slice(-30);
+ if(o.stories&&typeof o.stories==="object")Object.keys(STORIES).forEach(k=>{if(typeof o.stories[k]==="string")d.stories[k]=o.stories[k]});
+ if(o.tmay&&typeof o.tmay==="object")TMAY_KEYS.forEach(k=>{if(typeof o.tmay[k]==="string")d.tmay[k]=o.tmay[k]});
+ if(o.check&&typeof o.check==="object")Object.keys(o.check).forEach(k=>{const id=/^\d+$/.test(k)?CHECK_V1[+k]:k;if(id&&CHECK.some(c=>c[0]===id)&&o.check[k]===true)d.check[id]=true});
+ return d;
+}
+let S=normalize(null);
+try{const raw=localStorage.getItem(LS);if(raw){try{S=normalize(JSON.parse(raw))}catch(e){S=normalize(null)}}}catch(e){STORE_OK=false}
+function save(){try{localStorage.setItem(LS,JSON.stringify(S));return true}catch(e){STORE_OK=false;return false}}
+
+/* ============ HELPERS ============ */
+const $=s=>document.querySelector(s);
+const app=$("#app");
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ph=s=>esc(s).replace(/\[([^\]]+)\]/g,'<span class="ph">[$1]</span>');
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+const fmt=s=>{s=Math.max(0,Math.round(s));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0")};
+const words=s=>String(s||"").split(/\s+/).filter(Boolean).length;
+function hdr(title,back){return `<header>${back==="end"?'<button class="back" id="end">End</button>':back!==false?'<button class="back" data-go="home">← Home</button>':''}<h1>${esc(title)}</h1></header>`}
+function bindEnd(){const b=$("#end");if(b)b.onclick=()=>{if(!M||!M.items.length||M.mode==="quick"||confirm("End now? Answers so far will be saved."))finish()}}
+function bindNav(){app.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>go(b.dataset.go))}
+function go(v,arg){stopAll();wakeOff();if(M)M.live=false;window.scrollTo(0,0);VIEWS[v](arg);bindNav()}
+function buzz(p){try{if(navigator.vibrate)navigator.vibrate(p)}catch(e){}}
+// Keep focused text boxes above the on-screen keyboard.
+document.addEventListener("focusin",e=>{const t=e.target;if(t&&t.matches&&t.matches("textarea,input[type=text]"))setTimeout(()=>{try{t.scrollIntoView({block:"center",behavior:"smooth"})}catch(x){}},350)});
+
+/* ============ SPEECH ============ */
+const synth=window.speechSynthesis||null;
+let voices=[],spkT=null;
+function loadVoices(){if(!synth)return;try{const en=synth.getVoices().filter(v=>/^en/i.test(v.lang));voices=[...en.filter(v=>/en[-_]US/i.test(v.lang)),...en.filter(v=>!/en[-_]US/i.test(v.lang))]}catch(e){}}
+if(synth){loadVoices();try{synth.onvoiceschanged=loadVoices}catch(e){}}
+function utter(text,p){const u=new SpeechSynthesisUtterance(text);u.lang="en-US";u.pitch=p.pitch;u.rate=p.rate;if(voices.length)u.voice=voices[Math.max(0,PANEL.findIndex(x=>x.k===p.k))%voices.length];return u}
+// Speak now when idle (keeps iOS's user-gesture requirement satisfied); when something is
+// already playing, cancel it and wait a beat — Chrome drops a speak() issued right after cancel().
+function speak(text,p){
+ if(!synth||!S.voice)return;
+ try{clearTimeout(spkT);spkT=null;
+  if(!synth.speaking&&!synth.pending){synth.resume();synth.speak(utter(text,p));return}
+  synth.cancel();spkT=setTimeout(()=>{spkT=null;try{synth.resume();synth.speak(utter(text,p))}catch(e){}},120);
+ }catch(e){}
+}
+function hush(){clearTimeout(spkT);spkT=null;if(synth)try{synth.cancel()}catch(e){}}
+
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition||null;
+const ANDROID=/Android/i.test(navigator.userAgent||"");
+// Chrome ends a recognition run on silence, so we restart it until the user taps Done.
+// Android Chrome repeats growing partial results in continuous mode, so there we use
+// single-utterance runs and also collapse any final that just extends the previous one.
+let rec=null,recOn=false,baseTx="",finalTx="",interimTx="",recStarts=[];
+function joinFinals(list){const out=[];list.forEach(t=>{const s=t.trim();if(!s)return;const l=out[out.length-1],sl=s.toLowerCase(),ll=l&&l.toLowerCase();
+ if(l&&sl.startsWith(ll))out[out.length-1]=s;else if(!(l&&ll.startsWith(sl)))out.push(s)});return out.join(" ")}
+function liveTx(){return (finalTx+" "+interimTx).replace(/\s+/g," ").trim()}
+function startRec(onUpd,onFail){
+ baseTx="";finalTx="";interimTx="";recStarts=[];
+ if(!SR||!S.mic)return false;
+ let r;
+ const fail=msg=>{if(rec!==r)return;recOn=false;rec=null;try{r.abort()}catch(e){}onFail&&onFail(msg)};
+ const begin=()=>{const now=Date.now();recStarts=recStarts.filter(t=>now-t<8000);recStarts.push(now);
+  if(recStarts.length>6&&!liveTx()){fail("Transcription keeps dropping — type or dictate below instead.");return}
+  try{r.start()}catch(e){}};
+ try{r=new SR();rec=r;r.lang="en-US";r.continuous=!ANDROID;r.interimResults=true;r.maxAlternatives=1;
+  r.onresult=e=>{if(rec!==r)return;const fin=[];let im="";for(let i=0;i<e.results.length;i++){const x=e.results[i];if(x.isFinal)fin.push(x[0].transcript);else im+=x[0].transcript+" "}
+   finalTx=(baseTx+" "+joinFinals(fin)).trim();interimTx=im.trim();onUpd&&onUpd()};
+  r.onend=()=>{if(rec!==r)return;baseTx=liveTx();finalTx=baseTx;interimTx="";if(recOn)begin()};
+  r.onerror=e=>{if(rec!==r)return;const er=e&&e.error;
+   if(er==="not-allowed"||er==="service-not-allowed")fail("Mic blocked or unavailable — type or dictate below instead.");
+   else if(er==="audio-capture")fail("No microphone found — type or dictate below instead.");
+   else if(er==="network")fail("Transcription needs internet — type or dictate below instead.");
+   else if(er==="language-not-supported")fail("Transcription unavailable — type or dictate below instead.")};
+  recOn=true;begin();return recOn;
+ }catch(e){recOn=false;rec=null;return false}
+}
+function stopRec(){recOn=false;const out=liveTx();if(rec){const r=rec;rec=null;try{r.stop()}catch(e){try{r.abort()}catch(x){}}}return out}
+
+let tick=null,wake=null;
+function wakeOn(){try{if(!wake&&navigator.wakeLock)navigator.wakeLock.request("screen").then(w=>{wake=w;w.addEventListener("release",()=>{if(wake===w)wake=null})}).catch(()=>{})}catch(e){}}
+function wakeOff(){try{if(wake)wake.release()}catch(e){}wake=null}
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&M&&M.live)wakeOn()});
+function stopTimer(){if(tick){clearInterval(tick);tick=null}}
+function stopAll(){stopTimer();stopRec();hush()}
+// One countdown at a time: warn buzz at `warn`s, end buzz at `lim`s, then counts overtime.
+function runTimer(lim,warn,box,onWarn,onEnd){
+ stopTimer();
+ const t0=Date.now(),tm=box.querySelector(".timer"),bar=box.querySelector(".bar i");let w=false,o=false;
+ const f=()=>{const e=(Date.now()-t0)/1000;
+  tm.textContent=e<lim?fmt(Math.ceil(lim-e)):"+"+fmt(e-lim);
+  bar.style.width=Math.min(100,e/lim*100)+"%";
+  box.classList.toggle("warn",e>=warn&&e<lim);box.classList.toggle("over",e>=lim);
+  if(e>=warn&&!w){w=true;buzz(120);onWarn&&onWarn()}
+  if(e>=lim&&!o){o=true;buzz([200,100,200]);onEnd&&onEnd()}};
+ f();tick=setInterval(f,200);
+ return ()=>(Date.now()-t0)/1000;
+}
+function timerHTML(lim,cls){return `<div id="tbox" class="card ${cls||""}"><div class="timer">${fmt(lim)}</div><div class="bar"><i></i></div><div class="small mute" id="tstat" style="text-align:center;margin-top:6px">Ready when you are</div></div>`}
+// Transcript + typed fallback go below the Start/Done button so the keyboard never hides it.
+function extrasHTML(){return `<div id="txw" class="card hide"><div class="small mute">Live transcript</div><div class="tx" id="tx"></div></div>
+ <div id="fbw" class="card hide"><div class="small" id="fbn" style="color:var(--warn);margin-bottom:6px"></div><textarea id="fbt" rows="4" placeholder="Optional: type key points, or tap 🎤 on your keyboard to dictate."></textarea></div>`}
+// Wires Start → Done on #ans. Falls back to a text box when transcription is off,
+// unsupported, or fails mid-answer. Calls done(seconds, text, typed).
+function answerFlow(lim,warn,done){
+ const btn=$("#ans"),box=$("#tbox"),st=$("#tstat");
+ let getE=null,armed=0,startedRec=false;
+ const showFallback=msg=>{$("#fbn").textContent=msg;$("#fbw").classList.remove("hide");$("#txw").classList.add("hide")};
+ btn.onclick=()=>{
+  if(getE){ // Done
+   if(Date.now()<armed)return; // ignore the second tap of a double-tap
+   const dur=getE();stopTimer();const said=stopRec();const typed=($("#fbt").value||"").trim();
+   getE=null;done(dur,said||typed,!said&&!!typed);return;
+  }
+  hush();
+  btn.textContent="■ Done";btn.className="btn bad hero";armed=Date.now()+800;
+  const rep=$("#rep");if(rep)rep.classList.add("hide");
+  startedRec=startRec(()=>{const el=$("#tx");if(el)el.textContent=liveTx()||"(listening…)"},msg=>{showFallback(msg);st.textContent="Timer running"});
+  if(startedRec){$("#txw").classList.remove("hide");$("#tx").textContent="(listening…)";st.textContent="Recording + transcribing"}
+  else{showFallback(!S.mic?"Transcription is off (Home → toggle). Timer still runs.":!SR?"Live transcription isn't supported in this browser — type or use your keyboard's 🎤 to dictate.":"Couldn't start transcription — type or dictate below.");st.textContent="Timer running"}
+  getE=runTimer(lim,warn,box,()=>{st.textContent=`${lim-warn} seconds left — start landing it`},()=>{st.textContent="Time — wrap it up now"});
+ };
+}
+
+/* ============ ANALYSIS ============ */
+// "like" skips normal verb/comparison uses ("I'd like", "looks like"); "feel like" is counted as a hedge
+const FILLERS=[["um","\\bu+m+\\b"],["uh","\\bu+h+\\b"],["like","(?<!\\b(?:would|i'd|you'd|we'd|they'd|look|looks|looked|seem|seems|sound|sounds|feel|feels|felt|just|be|is|was|things|something|anything|nothing|people|exactly|more|less|much|not|don't|didn't|i|you|we|they) )\\blike\\b"],["you know","\\byou know\\b(?! (?:what|how|that|the|about|when|where|why|who))"],["basically","\\bbasically\\b"],["literally","\\bliterally\\b"],["I mean","\\bi mean\\b"]];
+const HEDGES=["i think maybe","i guess","maybe","probably","i feel like","i'm not sure","hopefully","i would try","i might","it depends","sort of","kind of"];
+function lengthFlag(dur,q){
+ // Background yes/no questions are meant to be short: answer, then stop.
+ const L=q.range||(q.short?{lo:15,hi:75,max:120,target:"30–60s: answer, then stop"}:{lo:30,hi:95,max:120,target:"60–90s"});
+ if(dur<L.lo)return ["b",`Too short: ${fmt(dur)}. ${q.short?"Even short answers need the full truth + what changed.":`Aim for ${L.target} — the board wants substance.`}`];
+ if(dur>L.max)return ["b",`Too long: ${fmt(dur)}. Cut to ${L.target}.`];
+ if(dur<=L.hi)return ["g",`Good length: ${fmt(dur)}.`];
+ return ["w",`${fmt(dur)} — a bit long. Target ${L.target}.`];
+}
+function analyze(tx,dur,q,typed){
+ const t=" "+String(tx||"").toLowerCase()+" ",out=[lengthFlag(dur,q)];
+ if(!String(tx||"").trim()){out.push(["w","No transcript captured — self-score honestly."]);return {flags:out,fill:0,hedge:0}}
+ let fc=0;const fl=[];
+ FILLERS.forEach(([n,re])=>{const m=t.match(new RegExp(re,"g"));if(m){fc+=m.length;fl.push(`${n} ×${m.length}`)}});
+ if(fc>=3)out.push(["b",`Filler words: ${fc} (${fl.join(", ")}). Replace with a pause.`]);
+ else if(fc)out.push(["w",`Filler words: ${fl.join(", ")}.`]);
+ else out.push(["g","No filler words detected."]);
+ let hc=0;const hl=[];let ht=t;
+ HEDGES.forEach(h=>{const re=new RegExp("\\b"+h+"\\b","g");const m=ht.match(re);if(m){hc+=m.length;hl.push(`“${h}” ×${m.length}`);ht=ht.replace(re," ")}});
+ const firm=q.c==="integrity"||q.c==="honesty";
+ if(hc)out.push([firm?"b":"w",`Hedging: ${hl.join(", ")}. ${firm?"Integrity and honesty answers must be decisive.":"State it plainly."}`]);
+ if(q.c==="behavioral"){
+  const star={
+   Situation:/\b(when i|there was|at proconex|we had|situation|one time|last year|a while back|a few (months|years)|at work|at one point)\b/,
+   Task:/\b(my (job|role|task|responsibility)|i was responsible|i needed to|i had to|the goal|task was|i was asked|i was the one)\b/,
+   Action:/\b(i (went|called|met|built|pulled|asked|decided|talked|sat|set up|wrote|fixed|created|reached out|listened|explained|documented|rolled|traced|scheduled|rebuilt|laid out|showed|got|brought))\b/,
+   Result:/\b(result|as a result|ended up|outcome|in the end|so now|we were able|reduced|improved|saved|percent|%|learned|dropped|stopped|what i took)\b/};
+  const miss=Object.keys(star).filter(k=>!star[k].test(t));
+  out.push(miss.length?["b","STAR missing: "+miss.join(", ")+"."]:["g","STAR structure: all four parts present."]);
+ }
+ const w=words(tx);
+ out.push(["g",typed?`${w} words typed`:`${w} words · ~${Math.round(w/Math.max(dur,1)*60)} wpm`]);
+ return {flags:out,fill:fc,hedge:hc};
+}
+
+/* ============ SCORING ============ */
+// Per-item score = mean of the dimensions actually rated. Unrated items are ignored,
+// so skipped or partially-scored answers never produce NaN.
+function itemScore(i){return avg(DIMS.map(d=>i.sc[d]).filter(Boolean))}
+function stats(items){
+ const dims=DIMS.map(d=>[d,avg(items.map(i=>i.sc[d]).filter(Boolean))]);
+ const byCat={};items.forEach(i=>{const s=itemScore(i);if(s!==null)(byCat[i.c]=byCat[i.c]||[]).push(s)});
+ const cats=Object.entries(byCat).map(([c,v])=>[c,avg(v),v.length]).sort((a,b)=>a[1]-b[1]||b[2]-a[2]);
+ const scoredN=items.filter(i=>itemScore(i)!==null).length;
+ return {dims,cats,scoredN,weak:cats.filter(c=>c[1]<4).slice(0,2)};
+}
+function weakHTML(items){
+ const s=stats(items);
+ if(!s.scoredN)return `<div class="mute small">No self-scores recorded.</div>`;
+ return `${s.weak.length?`<div class="flag b"><b>Weakest:</b> ${s.weak.map(w=>`${CATS[w[0]].n} (${w[1].toFixed(1)})`).join(" · ")}</div>`:`<div class="flag g">No category under 4.0 — strong session.</div>`}
+ ${s.dims.map(([d,v])=>`<div class="stat"><span>${d}</span><b>${v===null?"–":v.toFixed(1)}</b></div>`).join("")}`;
+}
+
+/* ============ VIEWS ============ */
+const VIEWS={};
+VIEWS.home=()=>{
+ const last=S.sessions[S.sessions.length-1];
+ app.innerHTML=`<header><h1>Oral Board Prep</h1><span class="small mute">MCCC Act 120</span></header>
+ ${STORE_OK?"":`<div class="flag w">Storage is blocked in this browser (private mode?) — scores and stories won't be saved after you close the page.</div>`}
+ <button class="btn pri hero" id="start">🎙️ Start Mock Board</button>
+ <div class="row"><button class="btn" id="q5">⚡ Quick 5</button><button class="btn" id="wsd">🎯 Weak Spots <span class="mute small">(${weakQs().length})</span></button></div>
+ <div class="grid">
+  <button class="tile" data-go="tmay"><b>Tell Me About Yourself</b><span>60-second builder + timer</span></button>
+  <button class="tile" data-go="flash"><b>Flashcards</b><span>${Q.length} questions by category</span></button>
+  <button class="tile" data-go="stories"><b>Story Bank</b><span>${Object.values(S.stories).filter(s=>s&&s.trim()).length}/6 stories written</span></button>
+  <button class="tile" data-go="check"><b>Day-Of Checklist</b><span>${CHECK.filter(c=>S.check[c[0]]).length}/${CHECK.length} done</span></button>
+  <button class="tile" data-go="history"><b>Past Sessions</b><span>${S.sessions.length} saved</span></button>
+  <button class="tile" data-go="export"><b>Export .txt</b><span>Stories + scores to print</span></button>
+ </div>
+ ${last?`<div class="card"><div class="small mute">Last session · ${new Date(last.date).toLocaleString()}</div>${weakHTML(last.items)}</div>`:""}
+ <div class="card">
+  <label class="toggle"><span>Read questions aloud</span><input type="checkbox" id="tv" ${S.voice?"checked":""}></label>
+  <label class="toggle"><span>Transcribe my answers (mic)</span><input type="checkbox" id="tm" ${S.mic?"checked":""}></label>
+  <div class="small mute">${!synth?"This browser can't read questions aloud — they'll show on screen. ":""}${SR?"Live transcription available (needs internet).":"Live transcription isn't supported here — you'll get a text box instead (your keyboard's 🎤 dictation works in it)."}</div>
+ </div>
+ <div class="card small mute">Text in <span class="ph">[brackets]</span> = fill in your real details before tomorrow. Never say an answer the board can contradict with your paperwork.</div>`;
+ $("#start").onclick=()=>go("mock","board");
+ $("#wsd").onclick=()=>go("mock","drill");
+ $("#q5").onclick=()=>go("mock","quick");
+ $("#tv").onchange=e=>{S.voice=e.target.checked;save();if(!S.voice)hush()};
+ $("#tm").onchange=e=>{S.mic=e.target.checked;save()};
+};
+
+/* ---- MOCK BOARD ---- */
+let M=null;
+const qW=q=>q.why?3:CATS[q.c].w;
+// Weighted sampling without replacement: removes each pick from `avail`.
+function drawWeighted(avail,k){
+ const out=[];
+ while(out.length<k&&avail.length){
+  const tot=avail.reduce((a,q)=>a+qW(q),0);if(tot<=0)break;
+  let r=Math.random()*tot,idx=-1;
+  for(let i=0;i<avail.length;i++){if(qW(avail[i])>0)idx=i;r-=qW(avail[i]);if(r<0&&qW(avail[i])>0)break}
+  out.push(avail.splice(idx,1)[0]);
+ }
+ return out;
+}
+// Weak spots: questions whose most recent scored attempt averaged ≤3. The main answer decides;
+// a follow-up probe's score is only used when the main answer wasn't scored.
+function weakQs(){
+ const last={};
+ S.sessions.forEach(s=>{const main={},fu={};s.items.forEach(i=>{const v=itemScore(i);if(v!==null){const m=i.fu?fu:main;(m[i.qid]=m[i.qid]||[]).push(v)}});
+  new Set([...Object.keys(main),...Object.keys(fu)]).forEach(id=>last[id]=avg(main[id]||fu[id]))});
+ return Object.keys(last).filter(id=>QMAP[id]&&last[id]<=3).map(id=>({q:QMAP[id],score:last[id]})).sort((a,b)=>a.score-b.score);
+}
+function buildDeck(mode){
+ if(mode==="quick")return drawWeighted(Q.filter(q=>q.c!=="closer"),5);
+ if(mode==="drill")return shuffle(weakQs().map(w=>w.q)).slice(0,12);
+ const n=10+Math.floor(Math.random()*3); // 10–12 including opener + closer
+ const avail=Q.filter(q=>q.id!=="o1"&&q.c!=="closer");
+ const take=list=>{list.forEach(q=>avail.splice(avail.indexOf(q),1));return list};
+ // Guarantee coverage of what boards hit hardest, then fill by weight.
+ const chosen=[...take(shuffle(avail.filter(q=>q.c==="integrity")).slice(0,3)),...take(shuffle(avail.filter(q=>q.why)).slice(0,2))];
+ chosen.push(...drawWeighted(avail,n-2-chosen.length));
+ return [QMAP.o1,...shuffle(chosen),pick(Q.filter(q=>q.c==="closer"))];
+}
+function panelistFor(q){const c=PANEL.filter(p=>p.cats.includes(q.c));return pick(c.length?c:PANEL)}
+const MODE_NAME={board:"Mock Board",drill:"Weak Spot Drill",quick:"Quick 5"};
+VIEWS.mock=mode=>{
+ mode=MODE_NAME[mode]?mode:"board";
+ const deck=buildDeck(mode);
+ M={mode,deck,i:0,items:[],skipped:0,start:Date.now()};
+ if(!deck.length){app.innerHTML=hdr(MODE_NAME[mode])+`<div class="card">No weak spots yet. Weak Spot Drill pulls every question whose latest self-score averaged 3 or lower — run a Mock Board and score yourself honestly first.</div><button class="btn pri" id="gb">Start Mock Board</button>`;$("#gb").onclick=()=>go("mock","board");return}
+ app.innerHTML=hdr(MODE_NAME[mode])+`<div class="panel">${PANEL.map(p=>`<div class="pm on"><div class="av">${p.av}</div><b>${p.n}</b><span>${p.d}</span></div>`).join("")}</div>
+ ${mode==="drill"?`<div class="card"><b>Drilling ${deck.length} weak question${deck.length>1?"s":""}</b> (latest score ≤3). Score yourself again — anything that rises above 3 drops off the list.</div>`:""}
+ <div class="card"><b>${deck.length} questions.</b> Each question is read aloud. Tap <b>Start Answer</b>, speak to the panel, tap <b>Done</b>. 90-second timer — yellow at 60s, red at 90s. Follow-up probes fire ~40% of the time.</div>
+ <div class="card small mute">Stand up, phone propped at eye level. Answer like it's real — “Sir/Ma'am,” eye contact.</div>
+ <button class="btn pri hero" id="go">Enter the Room</button>`;
+ $("#go").onclick=()=>{
+  // iOS only lets speech start inside a tap; a silent utterance here unlocks it for the session.
+  if(synth&&S.voice){try{const u=new SpeechSynthesisUtterance(" ");u.volume=0;synth.speak(u)}catch(e){}}
+  M.live=true;wakeOn();askQ(M.deck[0],false)};
+ if(mode==="quick")$("#go").onclick();
+};
+function askQ(q,isFU,fuText,panelist){
+ stopAll();window.scrollTo(0,0);
+ const p=panelist||panelistFor(q);
+ const text=isFU?fuText:q.q;
+ const spoken=isFU?pick(p.fu)+" "+fuText:(pick(p.lead)+" "+q.q).trim();
+ M.cur={q,isFU,text,p};
+ app.innerHTML=hdr(`Question ${M.i+1} of ${M.deck.length}${isFU?" · Follow-up":""}`,"end")+
+ `<div class="panel">${PANEL.map(x=>`<div class="pm ${x===p?"on":""}"><div class="av">${x.av}</div><b>${x.n}</b><span>${x.d}</span></div>`).join("")}</div>
+ <div class="card"><span class="tag">${CATS[q.c].n}</span>${isFU?'<span class="tag" style="color:var(--warn)">Probe</span>':""}${q.short?'<span class="tag">Short answer</span>':""}
+  ${isFU?`<div class="small mute" style="margin-top:6px">Following up on: ${esc(q.q)}</div>`:""}
+  <div class="q" style="margin-top:8px">${esc(text)}</div></div>
+ ${timerHTML(90)}
+ <button class="btn pri hero" id="ans">▶ Start Answer</button>
+ <div class="row"><button class="btn ghost" id="rep">🔊 Repeat</button><button class="btn ghost" id="skip">Skip</button></div>
+ ${extrasHTML()}`;
+ speak(spoken,p);
+ $("#rep").onclick=()=>speak(text,p);
+ $("#skip").onclick=()=>{M.skipped++;nextQ()};
+ answerFlow(90,60,(dur,tx,typed)=>review(dur,tx,typed));
+ bindNav();bindEnd();
+}
+function guideHTML(q,isFU){
+ const story=q.st&&S.stories[q.st]&&S.stories[q.st].trim();
+ return `<div class="card"><div class="small mute">${isFU?"Parent question — board is testing":"Board is testing"}</div><div>${esc(q.t)}</div>
+ <details><summary>Framework</summary><ul>${q.f.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></details>
+ <details><summary>Sample answer</summary><div>${ph(q.s)}</div></details>
+ <details><summary>Red flags</summary><ul>${q.r.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></details>
+ ${story?`<details open><summary>Your ${STORIES[q.st]} story</summary><div class="tx">${esc(story)}</div></details>`:""}</div>`;
+}
+function review(dur,tx,typed){
+ stopAll();window.scrollTo(0,0);
+ const {q,isFU,text,p}=M.cur;
+ const a=analyze(tx,dur,q,typed);
+ const sc={};
+ app.innerHTML=hdr(`Review · Q${M.i+1}${isFU?" follow-up":""}`,"end")+
+ `<div class="card"><span class="tag">${CATS[q.c].n}</span>${isFU?'<span class="tag" style="color:var(--warn)">Probe</span>':""}<div style="font-weight:600;margin-top:6px">${esc(text)}</div></div>
+ <div class="card"><h3 style="margin-top:0">Auto-check</h3>${a.flags.map(f=>`<div class="flag ${f[0]}">${esc(f[1])}</div>`).join("")}
+ ${tx?`<details><summary>Your ${typed?"notes":"transcript"}</summary><div class="tx">${esc(tx)}</div></details>`:""}</div>
+ ${M.mode==="quick"?"":`<div class="card"><h3 style="margin-top:0">Self-score (1–5)</h3>
+ ${DIMS.map(k=>`<div class="score"><div class="lbl">${k}</div><div class="opts" data-k="${k}">${[1,2,3,4,5].map(n=>`<button data-n="${n}">${n}</button>`).join("")}</div></div>`).join("")}</div>`}
+ ${guideHTML(q,isFU)}
+ <button class="btn pri" id="nx">Next →</button>
+ <button class="btn ghost" id="redo">↺ Redo this answer</button>`;
+ $("#redo").onclick=()=>askQ(q,isFU,text,p);
+ app.querySelectorAll(".opts").forEach(o=>o.querySelectorAll("button").forEach(b=>b.onclick=()=>{
+  o.querySelectorAll("button").forEach(x=>x.classList.remove("on"));b.classList.add("on");sc[o.dataset.k]=+b.dataset.n}));
+ let used=false;
+ $("#nx").onclick=()=>{
+  if(used)return;used=true;
+  M.items.push({qid:q.id,c:q.c,fu:isFU,probe:isFU?text:undefined,dur:Math.round(dur),fill:a.fill,hedge:a.hedge,sc:cleanSc(sc)});
+  if(M.mode!=="quick"&&!isFU&&q.p.length&&Math.random()<0.4)askQ(q,true,pick(q.p),p);
+  else nextQ();
+ };
+ bindNav();bindEnd();
+}
+function nextQ(){M.i++;if(M.i>=M.deck.length)finish();else askQ(M.deck[M.i],false)}
+function finish(){
+ stopAll();M.live=false;wakeOff();window.scrollTo(0,0);
+ if(M.mode==="quick"){VIEWS.quickDone();bindNav();return}
+ if(M.items.length){S.sessions.push({date:Date.now(),mode:M.mode,skipped:M.skipped,items:M.items});S.sessions=S.sessions.slice(-30);save()}
+ window.scrollTo(0,0);VIEWS.summary({items:M.items,skipped:M.skipped,mode:M.mode});bindNav();
+}
+VIEWS.summary=({items,skipped,mode})=>{
+ const wq=weakQs().length;
+ const s=stats(items);
+ const tf=items.reduce((a,i)=>a+i.fill,0),th=items.reduce((a,i)=>a+i.hedge,0);
+ const shortN=items.filter(i=>i.dur<30&&!(QMAP[i.qid]||{}).short).length,longN=items.filter(i=>i.dur>120).length;
+ app.innerHTML=hdr("Session Summary")+
+ `<div class="card">${weakHTML(items)}</div>
+ <div class="card"><h3 style="margin-top:0">By category</h3>${s.cats.map(([c,v,n])=>`<div class="stat"><span>${CATS[c].n} <span class="mute small">(${n})</span></span><b style="color:${v<3?"var(--bad)":v<4?"var(--warn)":"var(--good)"}">${v.toFixed(1)}</b></div>`).join("")||'<div class="mute small">No scores.</div>'}</div>
+ <div class="card"><h3 style="margin-top:0">Delivery</h3>
+  <div class="stat"><span>Answers</span><b>${items.length}</b></div>
+  <div class="stat"><span>Scored</span><b>${s.scoredN}</b></div>
+  <div class="stat"><span>Skipped</span><b>${skipped||0}</b></div>
+  <div class="stat"><span>Filler words</span><b>${tf}</b></div>
+  <div class="stat"><span>Hedges</span><b>${th}</b></div>
+  <div class="stat"><span>Under 30s</span><b>${shortN}</b></div>
+  <div class="stat"><span>Over 2 min</span><b>${longN}</b></div></div>
+ ${s.cats.length?`<button class="btn pri" id="drill">Flashcards: ${CATS[s.cats[0][0]].n}</button>`:""}
+ ${wq?`<button class="btn" id="wsd">Weak Spot Drill (${wq})</button>`:""}
+ <button class="btn" id="again">Run another ${mode==="drill"?"drill":"board"}</button>
+ <button class="btn ghost" data-go="home">Home</button>`;
+ if(s.cats.length)$("#drill").onclick=()=>go("flash",s.cats[0][0]);
+ if(wq)$("#wsd").onclick=()=>go("mock","drill");
+ $("#again").onclick=()=>go("mock",mode==="drill"?"drill":"board");
+};
+VIEWS.history=()=>{
+ app.innerHTML=hdr("Past Sessions")+(S.sessions.length?S.sessions.slice().reverse().map(s=>`<div class="card"><div class="small mute">${new Date(s.date).toLocaleString()} · ${s.mode==="drill"?"Weak Spot Drill":"Mock Board"} · ${s.items.length} answers${s.skipped?` · ${s.skipped} skipped`:""}</div>${weakHTML(s.items)}</div>`).join("")+`<button class="btn ghost" id="clr">Clear history</button>`:`<div class="card mute">No sessions yet.</div>`);
+ const c=$("#clr");if(c)c.onclick=()=>{if(confirm("Delete all saved sessions?")){S.sessions=[];save();go("history")}};
+};
+
+/* ---- FLASHCARDS ---- */
+let F={cat:"all",list:[],i:0,flip:false};
+VIEWS.flash=cat=>{
+ F.cat=cat||F.cat||"all";F.list=Q.filter(q=>F.cat==="all"||q.c===F.cat);if(!F.list.length){F.cat="all";F.list=Q.slice()}F.i=0;F.flip=false;renderFlash();
+};
+function renderFlash(){
+ const q=F.list[F.i];
+ const story=q.st&&S.stories[q.st]&&S.stories[q.st].trim();
+ app.innerHTML=hdr("Flashcards")+
+ `<div class="chips">${[["all","All"],...Object.entries(CATS).map(([k,v])=>[k,v.n])].map(([k,n])=>`<button class="chip ${F.cat===k?"on":""}" data-c="${k}">${esc(n)}</button>`).join("")}</div>
+ <div class="card fc" id="card">
+  <div class="small mute">${F.i+1} / ${F.list.length} · ${CATS[q.c].n}${q.short?" · short answer":""}</div>
+  <div class="q" style="margin:10px 0">${esc(q.q)}</div>
+  ${F.flip?`<div class="small mute">Board is testing</div><div style="margin-bottom:6px">${esc(q.t)}</div>
+   <h3>Framework</h3><ul>${q.f.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>
+   <details><summary>Sample answer (${q.short?"30–60s":"60–90s"})</summary><div>${ph(q.s)}</div></details>
+   <details><summary>Red flags</summary><ul>${q.r.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></details>
+   ${q.p.length?`<details><summary>Likely follow-ups</summary><ul>${q.p.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></details>`:""}
+   ${q.st?`<details ${story?"open":""}><summary>Your ${STORIES[q.st]} story</summary>${story?`<div class="tx">${esc(story)}</div>`:`<div class="mute small">Not written yet — add it in Story Bank.</div>`}</details>`:""}`
+  :`<div class="mute small" style="margin-top:20px">Tap card to reveal framework</div>`}
+ </div>
+ <div class="row"><button class="btn" id="pv">← Prev</button><button class="btn" id="sh">Shuffle</button><button class="btn" id="nx">Next →</button></div>`;
+ app.querySelectorAll(".chip").forEach(c=>c.onclick=()=>VIEWS.flash(c.dataset.c));
+ $("#card").onclick=e=>{if(e.target.closest("details"))return;F.flip=!F.flip;renderFlash()};
+ $("#pv").onclick=()=>{F.i=(F.i-1+F.list.length)%F.list.length;F.flip=false;renderFlash();window.scrollTo(0,0)};
+ $("#nx").onclick=()=>{F.i=(F.i+1)%F.list.length;F.flip=false;renderFlash();window.scrollTo(0,0)};
+ $("#sh").onclick=()=>{F.list=shuffle(F.list);F.i=0;F.flip=false;renderFlash()};
+ bindNav();
+}
+
+/* ---- STORY BANK ---- */
+VIEWS.stories=()=>{
+ const hints={conflict:"Coworker/stakeholder disagreement — e.g., ops manager disputing your Power BI numbers.",failure:"Something that went wrong that you owned — e.g., untested report that went to leadership.",leadership:"Leading without authority — e.g., aligning sales/ops/finance on one IFS definition.",pressure:"High-stakes deadline — e.g., month-end production outage, orders not posting.",ethics:"A time you did the right thing when it cost you, or reported/corrected something.",why:"The specific moment or person that made you want this job."};
+ app.innerHTML=hdr("Story Bank")+`<div class="card small mute">Write each in STAR: <b>S</b>ituation · <b>T</b>ask · <b>A</b>ction · <b>R</b>esult. Short bullets are fine. Saves as you type. These show up in flashcards and mock review.</div>`+
+ Object.entries(STORIES).map(([k,n])=>{const qs=Q.filter(q=>q.st===k);return `<div class="card"><h2 style="margin-top:0">${n}</h2><div class="small mute">${esc(hints[k])}</div>
+ <textarea data-k="${k}" placeholder="S: &#10;T: &#10;A: &#10;R: ">${esc(S.stories[k]||"")}</textarea>
+ <div class="row" style="align-items:center"><div class="small mute" id="sv-${k}" style="flex:2">${S.stories[k]&&S.stories[k].trim()?"Saved":""}</div><button class="btn ghost" data-del="${k}" style="margin:6px 0">Clear</button></div>
+ <div class="small mute">Answers:</div>${qs.map(q=>`<span class="tag" style="margin-top:4px">${esc(q.q)}</span>`).join("")}</div>`}).join("");
+ const mark=(k,msg)=>{const s=$("#sv-"+k);if(s)s.textContent=msg};
+ app.querySelectorAll("textarea").forEach(ta=>ta.oninput=()=>{const k=ta.dataset.k;if(ta.value)S.stories[k]=ta.value;else delete S.stories[k];mark(k,save()?"Saved ✓":"Not saved — storage blocked")});
+ app.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{const k=b.dataset.del;if(!S.stories[k]||confirm(`Clear your ${STORIES[k]} story?`)){delete S.stories[k];save();app.querySelector(`textarea[data-k="${k}"]`).value="";mark(k,"Cleared")}});
+};
+
+VIEWS.quickDone=()=>{
+ const n=M.items.length;
+ app.innerHTML=hdr("Quick 5")+`<div class="card"><b>${n} rep${n===1?"":"s"} done${M.skipped?`, ${M.skipped} skipped`:""}.</b><div class="small mute" style="margin-top:4px">Quick 5 isn't scored or saved — it's for warm-up reps.</div></div>
+ <button class="btn pri hero" id="again">⚡ Another 5</button><button class="btn ghost" data-go="home">Home</button>`;
+ $("#again").onclick=()=>go("mock","quick");
+};
+
+/* ---- EXPORT ---- */
+function exportText(){
+ const L=[],line="-".repeat(44),d=new Date();
+ const sc=i=>DIMS.map(k=>`${k==="Specific Example"?"Example":k} ${i.sc[k]||"–"}`).join(" · ");
+ L.push("ORAL BOARD PREP — MCCC Municipal Police Academy (Act 120)","Exported "+d.toLocaleString(),"");
+ const t=tmayText(),m=tmayMeta();
+ L.push("TELL ME ABOUT YOURSELF"+(t?`  (${m.w} words, ~${m.sec}s)`:""),line,t||"(not written yet)","");
+ L.push("STORY BANK",line);Object.entries(STORIES).forEach(([k,n])=>{L.push(`[${n}]`,(S.stories[k]||"").trim()||"(not written yet)","")});
+ const wq=weakQs();L.push("WEAK SPOTS — latest self-score 3 or lower",line);
+ if(wq.length)wq.forEach(w=>L.push(`${w.score.toFixed(1)}  ${w.q.q}`));else L.push("(none)");L.push("");
+ const all=S.sessions.flatMap(s=>s.items),st=stats(all);
+ L.push("OVERALL — all saved sessions",line);
+ if(st.scoredN){st.dims.forEach(([k,v])=>L.push(`${k.padEnd(18)} ${v===null?"–":v.toFixed(1)}`));L.push("");st.cats.forEach(([c,v,n])=>L.push(`${CATS[c].n.padEnd(24)} ${v.toFixed(1)}  (${n} answer${n>1?"s":""})`))}
+ else L.push("(no self-scores yet)");L.push("");
+ L.push("SESSIONS",line);
+ if(!S.sessions.length)L.push("(none yet)");
+ S.sessions.forEach((s,k)=>{const ss=stats(s.items);
+  L.push(`#${k+1}  ${s.mode==="drill"?"Weak Spot Drill":"Mock Board"} · ${new Date(s.date).toLocaleString()} · ${s.items.length} answers${s.skipped?` · ${s.skipped} skipped`:""}`);
+  if(ss.weak.length)L.push("   Weakest: "+ss.weak.map(w=>`${CATS[w[0]].n} ${w[1].toFixed(1)}`).join(", "));
+  s.items.forEach(i=>{const q=QMAP[i.qid];L.push(`   ${i.fu?"  ↳ Follow-up: "+(i.probe||"(probe)"):"• "+q.q}`,`       ${sc(i)} | ${fmt(i.dur)} | fillers ${i.fill} · hedges ${i.hedge}`)});
+  L.push("")});
+ L.push("DAY-OF CHECKLIST",line);CHECK.forEach(([id,,c])=>L.push(`[${S.check[id]?"x":" "}] ${c}`));
+ return L.join("\n")+"\n";
+}
+VIEWS.export=()=>{
+ const txt=exportText(),name=`oral-board-prep-${new Date().toISOString().slice(0,10)}.txt`;
+ app.innerHTML=hdr("Export")+`<div class="card small mute">Stories, your "tell me about yourself," weak spots, every scored session, and the checklist — as plain text you can print or read on paper.</div>
+ <button class="btn pri" id="dl">⬇ Download ${esc(name)}</button><button class="btn" id="cp">Copy to clipboard</button><div class="small mute" id="exs" style="text-align:center"></div>
+ <textarea id="ext" readonly style="min-height:320px;font:13px/1.4 ui-monospace,Menlo,Consolas,monospace">${esc(txt)}</textarea>`;
+ const msg=t=>{$("#exs").textContent=t};
+ $("#dl").onclick=()=>{try{const u=URL.createObjectURL(new Blob([txt],{type:"text/plain;charset=utf-8"}));const a=document.createElement("a");a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);msg("Downloaded — check your Downloads / Files app.")}catch(e){msg("Download blocked here — use Copy instead.")}};
+ $("#cp").onclick=async()=>{try{await navigator.clipboard.writeText(txt);msg("Copied.")}catch(e){const t=$("#ext");t.focus();t.select();try{document.execCommand("copy");msg("Copied.")}catch(x){msg("Select the text below and copy it.")}}};
+};
+
+/* ---- TELL ME ABOUT YOURSELF ---- */
+const TMAY_F=[
+ ["role","1 · Present role","Who you are and what you do now.","I'm [Name]. I live here in Montgomery County, and I'm engaged. For the last [X] years I've been a Business Systems Analyst at Proconex — I'm the person people call when something breaks."],
+ ["skills","2 · Relevant skills","What you do that transfers to policing.","I dig into Oracle databases to find out what went wrong, build the Power BI reports leadership uses to make decisions, and support the IFS system that runs the business. That's taught me to stay calm under pressure, ask good questions, and follow the facts instead of assumptions."],
+ ["drew","3 · What drew me to policing","The real reason — one moment or person if you have it.","What drew me to policing is that I want to point those skills at people, not systems. [One real moment or person that sparked it.] I want to serve the community I actually live in."],
+ ["now","4 · Why now","Why this is the right time — and proof you're ready.","The timing's right. My fiancée and I made this decision together, the finances are planned, and I'm in shape. I've passed the reading test, the PFT, and the psych, and I'm ready to commit to the 919 hours and earn my place."]
+];
+const tmayText=()=>TMAY_F.map(f=>(S.tmay[f[0]]||"").trim()).filter(Boolean).join("\n\n");
+function tmayMeta(){const w=words(tmayText()),sec=Math.round(w/150*60);return {w,sec,col:!w?"var(--mute)":sec<45?"var(--warn)":sec<=70?"var(--good)":"var(--bad)"}}
+VIEWS.tmay=()=>{
+ app.innerHTML=hdr("Tell Me About Yourself")+`<div class="card small mute">Four short parts that stitch into one answer. Target <b>~130–170 words ≈ 60 seconds</b> spoken. Saves as you type.</div>
+ ${TMAY_F.map(([k,l,h,ex])=>`<div class="card"><div style="font-weight:600">${l}</div><div class="small mute" style="margin-bottom:6px">${h}</div><textarea rows="4" data-t="${k}" placeholder="${esc(ex)}">${esc(S.tmay[k]||"")}</textarea></div>`).join("")}
+ <div class="card"><div class="stat"><span>Length</span><b id="tw"></b></div><div class="tx" id="tp" style="margin-top:8px"></div></div>
+ <button class="btn pri" id="tgo">▶ Practice with 60s timer</button>
+ <div class="row"><button class="btn ghost" id="tfill">Fill from sample</button><button class="btn ghost" id="tclr">Clear</button></div>`;
+ const upd=()=>{const m=tmayMeta();$("#tw").innerHTML=`<span style="color:${m.col}">${m.w} words · ~${m.sec}s</span>`;$("#tp").innerHTML=tmayText()?ph(tmayText()):'<span class="mute">Your stitched answer appears here.</span>'};
+ app.querySelectorAll("textarea[data-t]").forEach(t=>t.oninput=()=>{const k=t.dataset.t;if(t.value)S.tmay[k]=t.value;else delete S.tmay[k];save();upd()});
+ $("#tfill").onclick=()=>{if(tmayText()&&!confirm("Replace what you've written with the sample?"))return;TMAY_F.forEach(f=>S.tmay[f[0]]=f[3]);save();go("tmay")};
+ $("#tclr").onclick=()=>{if(tmayText()&&confirm("Clear all four parts?")){S.tmay={};save();go("tmay")}};
+ $("#tgo").onclick=()=>{if(!tmayText()){alert("Write at least one part first (or tap Fill from sample).");return}go("tmayPractice")};
+ upd();
+};
+const TMAY_Q={c:"opener",range:{lo:40,hi:70,max:90,target:"45–70s"}};
+VIEWS.tmayPractice=()=>{
+ const m=tmayMeta();
+ app.innerHTML=hdr("Practice: About Yourself")+`${timerHTML(60,"compact sticky")}
+ <button class="btn pri" id="ans">▶ Start</button>
+ <div id="tres"></div>
+ <div class="card"><div class="row" style="align-items:center"><span class="small mute" style="flex:2">${m.w} words · ~${m.sec}s</span><button class="btn ghost" id="thide" style="margin:0">Hide text</button></div>
+ <div id="ttext" style="font-size:19px;line-height:1.5;margin-top:8px">${ph(tmayText()).replace(/\n/g,"<br>")}</div></div>
+ ${extrasHTML()}
+ <div class="row"><button class="btn ghost" id="rep">🔊 Read it to me</button><button class="btn ghost" id="tedit">✎ Edit</button></div>`;
+ $("#thide").onclick=()=>{const t=$("#ttext"),h=t.classList.toggle("hide");$("#thide").textContent=h?"Show text":"Hide text"};
+ $("#rep").onclick=()=>speak(tmayText().replace(/\[[^\]]*\]/g,""),Object.assign({},PANEL[0],{rate:1}));
+ $("#tedit").onclick=()=>go("tmay");
+ answerFlow(60,45,(dur,tx,typed)=>{
+  const a=analyze(tx,dur,TMAY_Q,typed);
+  $("#ans").textContent="↺ Again";$("#ans").className="btn pri";$("#ans").onclick=()=>go("tmayPractice");
+  $("#tres").innerHTML=`<div class="card"><h3 style="margin-top:0">How it went</h3>${a.flags.map(f=>`<div class="flag ${f[0]}">${esc(f[1])}</div>`).join("")}${tx?`<details><summary>Your ${typed?"notes":"transcript"}</summary><div class="tx">${esc(tx)}</div></details>`:""}</div>`;
+  window.scrollTo({top:0,behavior:"smooth"});
+ });
+};
+
+/* ---- CHECKLIST ---- */
+VIEWS.check=()=>{
+ let sec="";
+ app.innerHTML=hdr("Day-Of Checklist")+`<div class="card" style="padding:0 4px">${CHECK.map(([id,s,c])=>{const h=s!==sec?`<h3 style="padding:0 12px">${esc(s)}</h3>`:"";sec=s;return h+`<label class="ck ${S.check[id]?"done":""}"><input type="checkbox" data-id="${id}" ${S.check[id]?"checked":""}><span>${esc(c)}</span></label>`}).join("")}</div><button class="btn ghost" id="rs">Reset checklist</button>`;
+ app.querySelectorAll(".ck input").forEach(cb=>cb.onchange=()=>{const id=cb.dataset.id;if(cb.checked)S.check[id]=true;else delete S.check[id];cb.parentNode.classList.toggle("done",cb.checked);save()});
+ $("#rs").onclick=()=>{if(confirm("Uncheck everything?")){S.check={};save();go("check")}};
+};
+
+go("home");
+</script>
+</body>
+</html>
