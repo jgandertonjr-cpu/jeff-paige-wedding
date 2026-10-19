@@ -1,0 +1,44 @@
+{
+  "seo": {
+    "title": "RSVP | Jeff & Paige",
+    "description": "RSVP for Jeff and Paige's wedding on August 5, 2028 at Holly Hedge Estate in New Hope, PA.",
+    "social_description": "Let us know you'll be joining us for Jeff and Paige's wedding."
+  },
+  "hero": {
+    "label": "Kindly Reply",
+    "title": "RSVP",
+    "subtitle": "We can't wait to celebrate with you. RSVPs will open when formal invitations go out."
+  },
+  "rsvp_open": false,
+  "deadline": "",
+  "closed_notice": {
+    "title": "Save the Date",
+    "text": "We're still planning the details. Formal invitations — and this RSVP form — will go out closer to the day. For now, please mark your calendar!"
+  },
+  "form_intro": {
+    "label": "One Form Per Guest",
+    "title": "Your Response"
+  },
+  "meal_options": [
+    {
+      "label": "Roasted Chicken",
+      "value": "chicken"
+    },
+    {
+      "label": "Salmon",
+      "value": "salmon"
+    },
+    {
+      "label": "Grilled Steak",
+      "value": "steak"
+    },
+    {
+      "label": "Vegetarian",
+      "value": "vegetarian"
+    }
+  ],
+  "thank_you": {
+    "title": "Thank You!",
+    "text": "We've received your RSVP. Jeff and Paige can't wait to celebrate with you."
+  }
+}

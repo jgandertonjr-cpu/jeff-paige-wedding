@@ -1,0 +1,75 @@
+{
+  "seo": {
+    "title": "Travel & Stay | Jeff & Paige",
+    "description": "Hotel blocks, nearby accommodations, airport info, and local tips for guests travelling to Jeff and Paige's wedding at Holly Hedge Estate in New Hope, PA.",
+    "social_description": "Everything you need to plan your trip for the wedding weekend in New Hope, PA."
+  },
+  "hero": {
+    "label": "Plan Your Trip",
+    "title": "Travel & Stay",
+    "subtitle": "Everything you need to plan a smooth and enjoyable trip to celebrate with us in New Hope, PA. Hotel and travel details coming soon."
+  },
+  "room_block": {
+    "label": "Reserved Just for You",
+    "title": "Our Room Block",
+    "intro": "We're planning a courtesy room block at a hotel near Holly Hedge Estate. Details and booking links will be shared here once it's set — be sure to book before the deadline to get the group rate.",
+    "hotel_name": "Details Coming Soon",
+    "badge": "Room Block",
+    "hotel_details": "Hotel TBD — we're planning a room block near Holly Hedge Estate",
+    "deadline": "",
+    "booking_note": "Group code and booking link coming soon — check back closer to the date",
+    "booking_url": ""
+  },
+  "nearby": {
+    "label": "Other Options",
+    "title": "Nearby Hotels",
+    "empty_text": "We'll list hotel options near Holly Hedge Estate here. Check back soon!",
+    "hotels": []
+  },
+  "airports": {
+    "label": "Getting Here",
+    "title": "By Air",
+    "card_title": "Airport & Driving Info",
+    "list": [
+      {
+        "name": "Philadelphia International (PHL)",
+        "details": "about 1 hr 5 min, 54 miles. The biggest airport nearby, with the most flight options."
+      },
+      {
+        "name": "Trenton-Mercer (TTN)",
+        "details": "about 30 min, 16 miles. The closest airport, but small, with limited flights."
+      },
+      {
+        "name": "Newark Liberty (EWR)",
+        "details": "about 1 hr 10 min, 58 miles. Another major hub, handy if you're coming from the New York area."
+      }
+    ],
+    "footnote": "Drive times are estimates to Holly Hedge Estate in normal traffic."
+  },
+  "tips": {
+    "label": "From the Locals",
+    "title": "Local Tips",
+    "list": [
+      {
+        "icon": "sun",
+        "title": "Weather",
+        "text": "Closer to the date, we'll share expected weather and what to pack for an August weekend in New Hope."
+      },
+      {
+        "icon": "car",
+        "title": "Getting Around",
+        "text": "A car is the easiest way to get to Holly Hedge Estate and around New Hope. Uber and Lyft work in the area but can take longer to arrive out in the countryside, especially late at night, so plan your ride home ahead of time."
+      },
+      {
+        "icon": "compass",
+        "title": "Explore the Area",
+        "text": "Local dining and things to do in and around New Hope will be added here soon."
+      },
+      {
+        "icon": "bed",
+        "title": "Book Early",
+        "text": "Once our room block is announced, we recommend booking your accommodations as soon as possible to guarantee availability and the best rates."
+      }
+    ]
+  }
+}

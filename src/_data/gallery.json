@@ -1,0 +1,83 @@
+{
+  "seo": {
+    "title": "Gallery | Jeff & Paige",
+    "description": "Browse photos of Jeff and Paige — memories, adventures, and everything that brought them together.",
+    "social_description": "A look at us — the adventures, the laughs, and everything that got us here."
+  },
+  "hero": {
+    "label": "Our Memories",
+    "title": "Gallery",
+    "subtitle": "A look at us — the adventures, the laughs, and everything that got us here."
+  },
+  "header": {
+    "label": "Photos",
+    "title": "Us, So Far"
+  },
+  "photos": [
+    {
+      "image": "/images/gallery1.jpg",
+      "alt": "Paige hugging Jeff from behind at home"
+    },
+    {
+      "image": "/images/gallery2.jpg",
+      "alt": "Jeff and Paige smiling in a car selfie"
+    },
+    {
+      "image": "/images/gallery3.jpg",
+      "alt": "Jeff and Paige posing with Gritty, the Flyers mascot"
+    },
+    {
+      "image": "/images/gallery4.jpg",
+      "alt": "Jeff in a navy suit and Paige in a lavender dress, dressed up for an evening out"
+    },
+    {
+      "image": "/images/gallery5.jpg",
+      "alt": "Jeff and Paige standing together under a cloudy sky"
+    },
+    {
+      "image": "/images/gallery6.jpg",
+      "alt": "Jeff and Paige in the stands at a stadium concert"
+    },
+    {
+      "image": "/images/gallery7.jpg",
+      "alt": "Jeff and Paige in the crowd at a stadium concert"
+    },
+    {
+      "image": "/images/gallery8.jpg",
+      "alt": "Jeff and Paige bundled in fall jackets under autumn leaves"
+    },
+    {
+      "image": "/images/gallery9.jpg",
+      "alt": "Jeff in a tuxedo and Paige in a floral gown, dressed for a formal evening"
+    },
+    {
+      "image": "/images/gallery10.jpg",
+      "alt": "Jeff and Paige on a boat in Boston Harbor"
+    },
+    {
+      "image": "/images/gallery11.jpg",
+      "alt": "Jeff and Paige cheek to cheek at the beach"
+    },
+    {
+      "image": "/images/gallery12.jpg",
+      "alt": "Jeff and Paige on vacation under a seaside pergola lined with palm trees"
+    },
+    {
+      "image": "/images/gallery13.jpg",
+      "alt": "Jeff and Paige in sunglasses, taking a poolside selfie"
+    },
+    {
+      "image": "/images/gallery14.jpg",
+      "alt": "Jeff and Paige on the beach at dusk"
+    },
+    {
+      "image": "/images/gallery15.jpg",
+      "alt": "Jeff and Paige hugging at a night baseball game"
+    }
+  ],
+  "wedding_photos": {
+    "label": "Coming Soon",
+    "title": "Wedding Photos",
+    "text": "Wedding photos are on their way — check back soon after the big day on August 5, 2028."
+  }
+}

@@ -1,0 +1,148 @@
+---
+permalink: travel.html
+pageKey: travel
+canonical: travel
+headerDark: true
+---
+{%- extends "layouts/base.njk" -%}
+{%- from "icons.njk" import icon -%}
+{%- block main %}
+{%- set v = site.venue -%}
+{%- set block = travel.room_block %}
+    <!-- ── PAGE HERO ── -->
+    <section class="page-hero" aria-label="Page header">
+      <span class="section-label">{{ travel.hero.label }}</span>
+      <h1 class="page-hero__title">{{ travel.hero.title }}</h1>
+      <p class="page-hero__subtitle">{{ travel.hero.subtitle }}</p>
+    </section>
+
+    <!-- ── HOTEL BLOCK ── -->
+    <section class="section" aria-labelledby="hotel-block-heading">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-label reveal">{{ block.label }}</span>
+          <h2 id="hotel-block-heading" class="section-title reveal reveal--delay-1">{{ block.title }}</h2>
+          <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
+          <p class="section-subtitle">{{ block.intro }}</p>
+        </div>
+
+        <div class="hotel-card card--centered card--featured reveal">
+          <div class="hotel-card__header">
+            <h3 class="hotel-card__name">{{ block.hotel_name }}</h3>
+            <span class="info-badge">{{ block.badge }}</span>
+          </div>
+          <div class="stack">
+            <p class="hotel-card__meta">
+              {{ icon("pin", 16, true) }}
+              {{ block.hotel_details }}
+            </p>
+            <p class="hotel-card__meta">
+              {{ icon("calendar", 16, true) }}
+              Block deadline: <strong>{{ (block.deadline | dateFormat('long')) if block.deadline else "To be announced" }}</strong>
+            </p>
+            <p class="hotel-card__meta">
+              {{ icon("house", 16, true) }}
+              {{ block.booking_note }}
+            </p>
+          </div>
+          <div class="mt-6">
+            {%- if block.booking_url %}
+            <a href="{{ block.booking_url }}" class="btn btn--primary" target="_blank" rel="noopener noreferrer">Book Your Room</a>
+            {%- else %}
+            <a href="[HOTEL_ROOM_BLOCK_URL]" class="btn btn--primary" target="_blank" rel="noopener noreferrer" title="Booking link coming soon">Book Your Room</a>
+            {%- endif %}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── NEARBY HOTELS ── -->
+    <section class="section section--alt" aria-labelledby="nearby-hotels-heading">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-label reveal">{{ travel.nearby.label }}</span>
+          <h2 id="nearby-hotels-heading" class="section-title reveal reveal--delay-1">{{ travel.nearby.title }}</h2>
+          <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
+        </div>
+        {%- if travel.nearby.hotels.length %}
+        <div class="grid grid--2">
+          {%- for hotel in travel.nearby.hotels %}
+          <div class="hotel-card reveal{% if loop.index0 % 2 %} reveal--delay-1{% endif %}">
+            <h3 class="hotel-card__name">{{ hotel.name }}</h3>
+            <div class="stack">
+              {%- if hotel.address %}
+              <p class="hotel-card__meta">
+                {{ icon("pin", 16, true) }}
+                {{ hotel.address }}
+              </p>
+              {%- endif %}
+              {%- if hotel.distance %}
+              <p class="hotel-card__meta">{{ hotel.distance }}</p>
+              {%- endif %}
+              {%- if hotel.note %}
+              <p class="hotel-card__meta">{{ hotel.note }}</p>
+              {%- endif %}
+            </div>
+            {%- if hotel.url %}
+            <div class="mt-6">
+              <a href="{{ hotel.url }}" class="btn btn--outline" target="_blank" rel="noopener noreferrer">Visit Website</a>
+            </div>
+            {%- endif %}
+          </div>
+          {%- endfor %}
+        </div>
+        {%- else %}
+        <div class="hotel-card card--centered reveal">
+          <p class="hotel-card__meta">{{ travel.nearby.empty_text }}</p>
+        </div>
+        {%- endif %}
+      </div>
+    </section>
+
+    <!-- ── AIRPORT INFO ── -->
+    <section class="section" aria-labelledby="airport-heading">
+      <div class="container container--narrow">
+        <div class="section-header">
+          <span class="section-label reveal">{{ travel.airports.label }}</span>
+          <h2 id="airport-heading" class="section-title reveal reveal--delay-1">{{ travel.airports.title }}</h2>
+          <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
+        </div>
+        <div class="hotel-card reveal reveal--delay-3">
+          <h3 class="hotel-card__name">{{ travel.airports.card_title }}</h3>
+          <div class="stack">
+            {%- for airport in travel.airports.list %}
+            <p class="hotel-card__meta">
+              {{ icon("pin", 16, true) }}
+              <span><strong>{{ airport.name }}</strong> &mdash; {{ airport.details }}</span>
+            </p>
+            {%- endfor %}
+          </div>
+          <p class="fine-print mt-6">{{ travel.airports.footnote }} <a href="{{ (v.name + ', ' + v.street + ', ' + v.city + ', ' + v.state + ' ' + v.zip) | mapsSearchUrl }}" target="_blank" rel="noopener">Get directions</a></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── LOCAL TIPS ── -->
+    <section class="section section--alt" aria-labelledby="tips-heading">
+      <div class="container container--narrow">
+        <div class="section-header">
+          <span class="section-label reveal">{{ travel.tips.label }}</span>
+          <h2 id="tips-heading" class="section-title reveal reveal--delay-1">{{ travel.tips.title }}</h2>
+          <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
+        </div>
+        <div class="tip-list reveal reveal--delay-3">
+          {%- for tip in travel.tips.list %}
+          <div class="tip-item">
+            <div class="tip-item__icon" aria-hidden="true">
+              {{ icon(tip.icon, 18) }}
+            </div>
+            <div class="tip-item__text">
+              <strong>{{ tip.title }}</strong>
+              <p>{{ tip.text }}</p>
+            </div>
+          </div>
+          {%- endfor %}
+        </div>
+      </div>
+    </section>
+{% endblock %}

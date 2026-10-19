@@ -1,5 +1,10 @@
+# Eleventy builds the pages from the content in src/_data/ into _site/.
 [build]
-  publish = "src"
+  command = "npm run build"
+  publish = "_site"
+
+[build.environment]
+  NODE_VERSION = "22"
 
 # Pretty URLs — Netlify strips .html automatically when this is set
 [build.processing]

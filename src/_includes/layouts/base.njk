@@ -1,0 +1,116 @@
+{#-
+  Shared page shell: <head>, header, mobile nav and footer.
+
+  Each page template sets these in its front matter:
+    pageKey     which _data file holds the page's SEO text (home, story, …)
+    canonical   path after https://jeffandpaige.net/ ("" for the home page)
+    headerDark  true for every page except the home page
+    bare        true for the 404 page (no header, nav or footer)
+  and can fill these blocks: headExtra, afterMain, scripts.
+-#}
+{%- set pages = { "home": home, "story": story, "details": details, "party": party, "rsvp": rsvp,
+    "registry": registry, "travel": travel, "afterparty": afterparty, "faq": faq, "gallery": gallery,
+    "notfound": notfound } -%}
+{%- set seo = pages[pageKey].seo -%}
+{%- set c = site.couple -%}
+{%- set navigation = [
+  { "label": "Home", "url": "index.html" },
+  { "label": "Our Story", "url": "our-story.html" },
+  { "label": "Details", "url": "details.html" },
+  { "label": "Wedding Party", "url": "wedding-party.html" },
+  { "label": "RSVP", "url": "rsvp.html", "rsvp": true },
+  { "label": "Registry", "url": "registry.html" },
+  { "label": "Travel", "url": "travel.html" },
+  { "label": "After Party", "url": "after-party.html" },
+  { "label": "FAQ", "url": "faq.html" },
+  { "label": "Gallery", "url": "gallery.html" }
+] -%}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta name="theme-color" content="#FBF8F2">
+  <meta name="msapplication-navbutton-color" content="#FBF8F2">
+  <meta name="color-scheme" content="light">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>{{ seo.title }}</title>
+  <meta name="description" content="{{ seo.description }}">
+{%- if bare %}
+  <meta name="robots" content="noindex">
+{%- else %}
+  <link rel="canonical" href="https://jeffandpaige.net/{{ canonical }}">
+  <meta property="og:title" content="{{ seo.social_title or seo.title }}">
+  <meta property="og:description" content="{{ seo.social_description or seo.description }}">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://jeffandpaige.net/{{ canonical }}">
+  <meta property="og:image" content="https://jeffandpaige.net/images/hero.jpg">
+{%- endif %}
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" href="/images/favicon.png">
+  <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@300;400;500&family=Pinyon+Script&display=swap" rel="stylesheet">
+{%- block preload %}{% endblock %}
+  <link rel="stylesheet" href="css/styles.css?v=17">
+{%- block headExtra %}{% endblock %}
+</head>
+<body>
+
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+{% if not bare %}
+  <!-- ── HEADER ── -->
+  <header class="site-header{% if headerDark %} site-header--dark{% endif %}" role="banner">
+    <div class="header-inner">
+      <a href="index.html" class="site-logo" aria-label="{{ c.partner1_first }} &amp; {{ c.partner2_first }} — Home">{{ c.partner1_first | first }}<span class="amp">&amp;</span>{{ c.partner2_first | first }}</a>
+      <nav class="site-nav" aria-label="Primary navigation">
+        <ul class="site-nav__list">
+          {%- for item in navigation %}
+          <li><a href="{{ item.url }}" class="site-nav__link{% if item.rsvp %} site-nav__link--rsvp{% endif %}">{{ item.label }}</a></li>
+          {%- endfor %}
+        </ul>
+      </nav>
+      <button class="hamburger" aria-expanded="false" aria-controls="mobile-nav" aria-label="Open menu">
+        <span class="hamburger__line"></span>
+        <span class="hamburger__line"></span>
+        <span class="hamburger__line"></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ── MOBILE NAV ── -->
+  <nav class="mobile-nav" id="mobile-nav" aria-label="Mobile navigation">
+    {%- for item in navigation %}
+    <a href="{{ item.url }}" class="mobile-nav__link">{{ item.label }}</a>
+    {%- endfor %}
+  </nav>
+{% endif %}
+  <main id="main-content">
+{% block main %}{% endblock %}
+  </main>
+{% block afterMain %}{% endblock %}
+{%- if not bare %}
+  <!-- ── FOOTER ── -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="container text-center">
+      <span class="footer__monogram">{{ c.partner1_first }} <span class="amp">&amp;</span> {{ c.partner2_first }}</span>
+
+      <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
+
+      <nav class="footer__nav" aria-label="Footer navigation">
+        {%- for item in navigation %}
+        <a href="{{ item.url }}" class="footer__nav-link">{{ item.label }}</a>
+        {%- endfor %}
+      </nav>
+      <div class="footer__divider"></div>
+      <p class="footer__copy">{{ site.footer_text }}</p>
+    </div>
+  </footer>
+{%- endif %}
+{% block scripts %}
+  <script src="js/main.js?v=12" defer></script>
+{%- endblock %}
+</body>
+</html>

@@ -1,3 +1,7 @@
+---
+permalink: js/main.js
+eleventyExcludeFromCollections: true
+---
 /* =============================================================
    Jeff & Paige Wedding — main.js
    ============================================================= */
@@ -107,14 +111,14 @@
   }
 
   /* =============================================================
-     5. COUNTDOWN TIMER — counts to the start of Aug 5, 2028 (Eastern);
-        ceremony time is still TBD
+     5. COUNTDOWN TIMER — counts to the start of the wedding day (Eastern);
+        the date comes from Site Settings in the admin
      ============================================================= */
   function initCountdown() {
     var containers = qsa('[data-countdown]');
     if (!containers.length) return;
 
-    var target = new Date('2028-08-05T00:00:00-04:00').getTime();
+    var target = new Date('{{ site.wedding_date | dateFormat("iso") }}T00:00:00{{ site.wedding_date | easternOffset }}').getTime();
 
     function pad(n) { return n < 10 ? '0' + n : String(n); }
 
@@ -608,7 +612,7 @@
     var bar = document.createElement('div');
     bar.className = 'rsvp-bar';
     bar.innerHTML =
-      '<span class="rsvp-bar__text">Jeff &amp; Paige &middot; 8.5.2028</span>' +
+      '<span class="rsvp-bar__text">{{ site.couple.partner1_first }} &amp; {{ site.couple.partner2_first }} &middot; {{ site.wedding_date | dateFormat("dots") }}</span>' +
       '<a href="details.html" class="rsvp-bar__btn">Details</a>';
     document.body.appendChild(bar);
 

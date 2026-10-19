@@ -1,0 +1,56 @@
+---
+permalink: faq.html
+pageKey: faq
+canonical: faq
+headerDark: true
+---
+{%- extends "layouts/base.njk" -%}
+{%- block main %}
+    <!-- ── PAGE HERO ── -->
+    <section class="page-hero" aria-label="Page header">
+      <span class="section-label">{{ faq.hero.label }}</span>
+      <h1 class="page-hero__title">{{ faq.hero.title }}</h1>
+      <p class="page-hero__subtitle">{{ faq.hero.subtitle }} <a href="mailto:{{ site.email }}">{{ site.email }}</a></p>
+    </section>
+
+    <!-- ── FAQ ACCORDION ── -->
+    <section class="section" aria-labelledby="faq-heading">
+      <div class="container container--narrow">
+        <div class="section-header">
+          <span class="section-label reveal">{{ faq.list_header.label }}</span>
+          <h2 id="faq-heading" class="section-title reveal reveal--delay-1">{{ faq.list_header.title }}</h2>
+          <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
+        </div>
+
+        <div class="accordion reveal reveal--delay-3" role="list">
+          {%- for item in faq.questions %}
+          <div class="accordion__item" role="listitem">
+            <button class="accordion__trigger" aria-expanded="false">
+              {{ item.question }}
+              <svg class="accordion__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </button>
+            <div class="accordion__body">
+              {%- for para in item.answer | paragraphs %}
+              <p class="accordion__answer">{{ para | markdownInline | safe }}</p>
+              {%- endfor %}
+            </div>
+          </div>
+          {%- endfor %}
+        </div>
+      </div>
+    </section>
+
+    <!-- ── CTA ── -->
+    <section class="section section--alt text-center" aria-label="Still have questions">
+      <div class="container container--narrow">
+        <h2 class="section-title reveal">{{ faq.cta.title }}</h2>
+        <p class="section-subtitle mb-8 reveal reveal--delay-1">{{ faq.cta.text }}</p>
+        <div class="flex flex--center reveal reveal--delay-2">
+          <a href="mailto:{{ site.email }}" class="btn btn--primary">Email Us</a>
+          <a href="details.html" class="btn btn--outline">See the Details</a>
+        </div>
+      </div>
+    </section>
+{% endblock %}

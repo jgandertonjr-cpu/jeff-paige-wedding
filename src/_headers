@@ -35,3 +35,8 @@
 /pd-tracker/*
   X-Robots-Tag: noindex, nofollow, noarchive
   Cache-Control: no-cache
+
+# Content editor (Sveltia CMS at /admin): keep out of search results
+/admin/*
+  X-Robots-Tag: noindex, nofollow
+  Cache-Control: no-cache

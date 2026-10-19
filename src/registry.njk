@@ -1,0 +1,34 @@
+---
+permalink: registry.html
+pageKey: registry
+canonical: registry
+headerDark: true
+---
+{%- extends "layouts/base.njk" -%}
+{%- block main %}
+    <!-- ── PAGE HERO ── -->
+    <section class="page-hero" aria-label="Page header">
+      <span class="section-label">{{ registry.hero.label }}</span>
+      <h1 class="page-hero__title">{{ registry.hero.title }}</h1>
+      <p class="page-hero__subtitle">{{ registry.hero.subtitle }}</p>
+    </section>
+
+    <!-- ── INTRO ── -->
+    <section class="section" aria-labelledby="registry-intro">
+      <div class="container container--narrow text-center">
+        <span class="section-label reveal">{{ registry.intro.label }}</span>
+        <h2 id="registry-intro" class="section-title reveal reveal--delay-1">{{ registry.intro.title }}</h2>
+        <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
+        <p class="section-subtitle reveal reveal--delay-3">
+          {{ registry.intro.text }}
+        </p>
+        {%- if registry.registries.length %}
+        <div class="flex flex--center mt-8 reveal reveal--delay-3">
+          {%- for item in registry.registries %}
+          <a href="{{ item.url }}" class="btn btn--outline" target="_blank" rel="noopener noreferrer">{{ item.name }}</a>
+          {%- endfor %}
+        </div>
+        {%- endif %}
+      </div>
+    </section>
+{% endblock %}

@@ -1,0 +1,54 @@
+{
+  "seo": {
+    "title": "After Party | Jeff & Paige",
+    "description": "After party details for Jeff and Paige's wedding. Location and time to be announced.",
+    "social_description": "The night doesn't have to end. Join us for the after party — all wedding guests welcome."
+  },
+  "hero": {
+    "label": "Keep the Celebration Going",
+    "title": "After Party",
+    "subtitle": "The reception ends — the night doesn't. Join us for a proper send-off. Location and time TBD."
+  },
+  "details": {
+    "label": "The Details",
+    "title": "Where & When",
+    "venue_name": "TBD",
+    "address": "TBD",
+    "map_address": "",
+    "time": "TBD",
+    "time_note": "Right after the reception send-off",
+    "dress_code": "Keep your cocktail look or dress it down — you've earned it.",
+    "open_to": "All wedding guests — no separate RSVP needed.",
+    "map_note": "Map & directions coming soon — location TBD"
+  },
+  "expect": {
+    "label": "What's in Store",
+    "title": "What to Expect",
+    "items": [
+      {
+        "icon": "mug",
+        "title": "Drinks & Good Times",
+        "text": "Get ready for cold drinks, shots with the crew, and the kind of laughs you'll still be talking about next year."
+      },
+      {
+        "icon": "billiard",
+        "title": "Bar Games & Shenanigans",
+        "text": "Bar games and zero obligations. This is the part of the night where everyone loosens their tie and actually has fun."
+      },
+      {
+        "icon": "people",
+        "title": "Smaller Crowd, More You",
+        "text": "A smaller, looser crowd after the big party. More face time with the people who matter most — no seating charts required."
+      },
+      {
+        "icon": "star",
+        "title": "No Agenda. Just Joy.",
+        "text": "No toasts, no timeline, no pressure. Just Jeff and Paige and the people they love most, doing what they do best — having a great time."
+      }
+    ]
+  },
+  "cta": {
+    "title": "See You There",
+    "text": "Save the date — we'll share after-party details here once they're set."
+  }
+}

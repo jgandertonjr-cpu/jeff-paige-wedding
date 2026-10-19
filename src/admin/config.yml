@@ -1,0 +1,632 @@
+# Sveltia CMS configuration for jeffandpaige.net
+# Docs: https://sveltiacms.app/en/docs
+#
+# Every editable data file in src/_data/ has one entry below. Saving in the
+# admin commits the change to the main branch on GitHub; Netlify then rebuilds
+# the site, which takes about a minute.
+
+backend:
+  name: github
+  repo: jgandertonjr-cpu/jeff-paige-wedding
+  branch: main
+  # base_url is intentionally not set, so sign-in uses Netlify's built-in
+  # GitHub OAuth provider (see ADMIN-SETUP.md).
+
+site_url: https://jeffandpaige.net
+
+# Photo uploads go next to the site's existing photos, so old and new photos
+# can all be picked from the same media library.
+media_folder: src/images
+public_folder: /images
+
+collections:
+  # ── Site-wide ────────────────────────────────────────────────────────────
+  - name: settings
+    label: Site Settings
+    icon: settings
+    description: Names, wedding date, venue and contact email. These appear on many pages at once.
+    format: json
+    files:
+      - name: site
+        label: Names, Date & Venue
+        file: src/_data/site.json
+        fields:
+          - name: couple
+            label: The couple
+            widget: object
+            fields:
+              - { name: partner1_first, label: "First partner — first name", widget: string, hint: "Shown everywhere, e.g. the big names on the home page and the J&P logo." }
+              - { name: partner1_full, label: "First partner — full name", widget: string }
+              - { name: partner1_formal, label: "First partner — formal name", widget: string, required: false, hint: "Optional, e.g. Jeffrey. Used by screen readers and Google." }
+              - { name: partner2_first, label: "Second partner — first name", widget: string }
+              - { name: partner2_full, label: "Second partner — full name", widget: string }
+              - { name: partner2_formal, label: "Second partner — formal name", widget: string, required: false }
+          - name: wedding_date
+            label: Wedding date
+            widget: datetime
+            type: date
+            hint: "Updates the countdown, the home page, Details, RSVP and more. Sentences you typed yourself that mention the date (like the Welcome text) need updating by hand."
+          - name: venue
+            label: Venue
+            widget: object
+            hint: Used for the address, the map and the directions links.
+            fields:
+              - { name: name, label: Venue name, widget: string }
+              - { name: street, label: Street address, widget: string }
+              - { name: city, label: City, widget: string }
+              - { name: state, label: State, widget: string, hint: "Two letters, e.g. PA" }
+              - { name: zip, label: ZIP code, widget: string }
+          - { name: email, label: Contact email, widget: string, hint: "Every \"Email us\" link on the site uses this address." }
+          - { name: footer_text, label: Footer text, widget: string, hint: "The small line at the bottom of every page." }
+
+  # ── Pages ────────────────────────────────────────────────────────────────
+  - name: pages
+    label: Pages
+    icon: description
+    description: The text and photos on each page of the website.
+    format: json
+    files:
+      # Home ------------------------------------------------------------------
+      - name: home
+        label: Home
+        file: src/_data/home.json
+        fields:
+          - &seo
+            name: seo
+            label: Search & Sharing
+            widget: object
+            collapsed: true
+            hint: How this page appears in Google results, browser tabs and link previews (texts, iMessage, Facebook). Rarely needs changing.
+            fields:
+              - { name: title, label: Browser tab title, widget: string }
+              - { name: description, label: Google description, widget: text, hint: "One or two sentences shown under the link in Google results." }
+              - { name: social_title, label: Link preview title, widget: string, required: false, hint: "Leave empty to use the browser tab title." }
+              - { name: social_description, label: Link preview description, widget: text, required: false, hint: "Shown when the link is shared in a text or on social media. Leave empty to use the Google description." }
+          - name: hero
+            label: Top of page
+            widget: object
+            hint: The names, date and venue come from Site Settings.
+            fields:
+              - { name: eyebrow, label: Small text above the photo, widget: string }
+              - { name: photo, label: Main photo, widget: image, hint: "A tall (portrait) photo works best." }
+              - { name: photo_alt, label: Photo description, widget: string, hint: "Describe the photo for people using screen readers, e.g. \"Jeff and Paige on the beach\"." }
+          - name: countdown
+            label: Countdown band
+            widget: object
+            collapsed: true
+            hint: The countdown itself counts to the wedding date in Site Settings.
+            fields:
+              - { name: label, label: Small text, widget: string }
+              - { name: title, label: Heading, widget: string }
+          - name: welcome
+            label: Welcome section
+            widget: object
+            fields:
+              - { name: label, label: Small text, widget: string }
+              - { name: title, label: Heading, widget: string }
+              - { name: text, label: Welcome message, widget: text }
+          - name: photos
+            label: Three photos
+            widget: object
+            fields:
+              - { name: label, label: Small text, widget: string }
+              - { name: title, label: Heading, widget: string }
+              - name: items
+                label: Photos
+                label_singular: Photo
+                widget: list
+                min: 3
+                max: 3
+                summary: "{{fields.caption}}"
+                hint: Exactly three photos, shown side by side.
+                fields:
+                  - { name: image, label: Photo, widget: image }
+                  - { name: alt, label: Photo description, widget: string, hint: "For screen readers." }
+                  - { name: caption, label: Caption, widget: string, hint: "Short and lowercase works best, e.g. \"the adventures\"." }
+                  - &focus
+                    name: focus
+                    label: Photo crop
+                    widget: select
+                    default: center
+                    hint: "If a face gets cut off, try showing more of the top or left."
+                    options:
+                      - { label: Center (default), value: center }
+                      - { label: Show more of the top, value: high }
+                      - { label: Show more of the left side, value: left }
+          - name: quick_links
+            label: '"Everything You Need to Know" cards'
+            widget: object
+            collapsed: true
+            fields:
+              - { name: label, label: Small text, widget: string }
+              - { name: title, label: Heading, widget: string }
+              - { name: our_story, label: Our Story card text, widget: string }
+              - { name: details, label: Details card text, widget: string }
+              - { name: rsvp, label: RSVP card text, widget: string, hint: "Update this when RSVPs open." }
+              - { name: wedding_party, label: Wedding Party card text, widget: string }
+          - name: save_the_date
+            label: Save the Date band
+            widget: object
+            collapsed: true
+            hint: The big date heading comes from Site Settings.
+            fields:
+              - { name: label, label: Small text, widget: string }
+              - { name: text, label: Message, widget: text }
+
+      # Our Story -------------------------------------------------------------
+      - name: story
+        label: Our Story
+        file: src/_data/story.json
+        fields:
+          - *seo
+          - &hero
+            name: hero
+            label: Top of page
+            widget: object
+            hint: The banner at the very top of the page.
+            fields:
+              - { name: label, label: Small text above the title, widget: string }
+              - { name: title, label: Page title, widget: string }
+              - { name: subtitle, label: Text under the title, widget: text }
+          - name: events
+            label: Timeline
+            label_singular: Moment
+            widget: list
+            collapsed: true
+            summary: "{{fields.date_label}} — {{fields.title}}"
+            hint: Moments alternate left and right automatically. Drag to reorder.
+            fields:
+              - { name: date_label, label: Date (as shown), widget: string, hint: "Written however you like, e.g. \"November 2022\" or \"2023 – 2026\"." }
+              - name: date_value
+                label: Date (for search engines)
+                widget: string
+                hint: "The same date as numbers: year, year-month or year-month-day, e.g. 2022-11"
+                pattern: ['^\d{4}(-\d{2}(-\d{2})?)?$', "Use a format like 2022, 2022-11 or 2022-11-05"]
+              - { name: title, label: Title, widget: string }
+              - name: story
+                label: Story
+                widget: markdown
+                modes: [rich_text]
+                buttons: [bold, italic, link]
+                editor_components: []
+                hint: Press Enter twice to start a new paragraph.
+              - { name: photo, label: Photo, widget: image, hint: "Wide photos get a landscape frame, tall photos a portrait frame — automatically." }
+              - { name: photo_alt, label: Photo description, widget: string, hint: "For screen readers." }
+              - *focus
+          - name: cta
+            label: Bottom section
+            widget: object
+            collapsed: true
+            fields:
+              - { name: label, label: Small text, widget: string }
+              - { name: title, label: Heading, widget: string }
+              - { name: text, label: Message, widget: text }
+
+      # Details ---------------------------------------------------------------
+      - name: details
+        label: Details (ceremony, reception, schedule)
+        file: src/_data/details.json
+        fields:
+          - *seo
+          - *hero
+          - name: ceremony
+            label: Ceremony
+            widget: object
+            hint: The venue name, address and map come from Site Settings. The small date above the heading comes from the wedding date.
+            fields:
+              - { name: title, label: Heading, widget: string }
+              - { name: box_heading, label: Box heading, widget: string }
+              - name: items
+                label: Ceremony details
+                label_singular: Detail
+                widget: list
+                summary: "{{fields.label}}: {{fields.value}}"
+                hint: Rows shown under the address, e.g. Time, Dress Code, Parking.
+                fields:
+                  - { name: label, label: Label, widget: string, hint: "e.g. Time" }
+                  - { name: value, label: Value, widget: string, hint: "e.g. 4:30 PM" }
+                  - { name: note, label: Extra note, widget: text, required: false, hint: "Optional smaller text underneath." }
+          - name: reception
+            label: Reception
+            widget: object
+            fields:
+              - { name: label, label: Small text, widget: string }
+              - { name: title, label: Heading, widget: string }
+              - { name: subtitle, label: Intro text, widget: text }
+              - { name: box_heading, label: Box heading, widget: string }
+              - name: items
+                label: Reception details
+                label_singular: Detail
+                widget: list
+                summary: "{{fields.label}}: {{fields.value}}"
+                fields:
+                  - { name: label, label: Label, widget: string }
+                  - { name: value, label: Value, widget: string }
+                  - { name: note, label: Extra note, widget: text, required: false }
+          - name: schedule
+            label: Schedule of the day
+            widget: object
+            fields:
+              - { name: label, label: Small text, widget: string }
+              - { name: title, label: Heading, widget: string }
+              - { name: subtitle, label: Intro text, widget: text, required: false, hint: "e.g. \"Exact times will be shared closer to the day.\" Clear it once you add times." }
+              - name: events
+                label: Events
+                label_singular: Event
+                widget: list
+                summary: "{{fields.time}} {{fields.title}}"
+                hint: In order. Drag to reorder.
+                fields:
+                  - { name: time, label: Time, widget: string, required: false, hint: "e.g. 4:30 PM. Leave empty to show a number (01, 02, …) instead." }
+                  - { name: title, label: Event, widget: string }
+                  - { name: description, label: Description, widget: text }
+          - name: cta
+            label: Bottom section
+            widget: object
+            collapsed: true
+            fields:
+              - { name: title, label: Heading, widget: string }
+              - { name: text, label: Message, widget: text }
+
+      # Wedding Party ---------------------------------------------------------
+      - name: party
+        label: Wedding Party
+        file: src/_data/party.json
+        fields:
+          - *seo
+          - *hero
+          - name: bridesmaids
+            label: "Paige's side"
+            widget: object
+            fields:
+              - { name: label, label: Small text, widget: string }
+              - { name: title, label: Heading, widget: string }
+              - &members
+                name: members
+                label: People
+                label_singular: Person
+                widget: list
+                summary: "{{fields.role}} — {{fields.name}}"
+                hint: Drag to reorder.
+                fields:
+                  - { name: name, label: Name, widget: string }
+                  - { name: role, label: Role, widget: string, hint: "e.g. Maid of Honor, Bridesmaid" }
+                  - { name: bio, label: Short bio, widget: text }
+                  - { name: photo, label: Photo, widget: image, required: false, hint: "Optional. A square or portrait photo of their face works best. Without one, a placeholder circle is shown." }
+          - name: groomsmen
+            label: "Jeff's side"
+            widget: object
+            fields:
+              - { name: label, label: Small text, widget: string }
+              - { name: title, label: Heading, widget: string }
+              - *members
+          - name: cta
+            label: Bottom section
+            widget: object
+            collapsed: true
+            fields:
+              - { name: title, label: Heading, widget: string }
+              - { name: text, label: Message, widget: text }
+
+      # RSVP ------------------------------------------------------------------
+      - name: rsvp
+        label: RSVP
+        file: src/_data/rsvp.json
+        fields:
+          - *seo
+          - *hero
+          - name: rsvp_open
+            label: RSVPs are open
+            widget: boolean
+            default: false
+            hint: "Off: guests see a Save the Date message. On: guests see the RSVP form. Responses arrive in Netlify under Forms."
+          - name: deadline
+            label: Reply-by date
+            widget: datetime
+            type: date
+            required: false
+            hint: "Optional. Shown above the form while RSVPs are open."
+          - name: closed_notice
+            label: Message while RSVPs are closed
+            widget: object
+            fields:
+              - { name: title, label: Heading, widget: string }
+              - { name: text, label: Message, widget: text }
+          - name: form_intro
+            label: Heading above the form
+            widget: object
+            collapsed: true
+            fields:
+              - { name: label, label: Small text, widget: string }
+              - { name: title, label: Heading, widget: string }
+          - name: meal_options
+            label: Meal choices
+            label_singular: Meal
+            widget: list
+            summary: "{{fields.label}}"
+            fields:
+              - { name: label, label: Meal name (what guests see), widget: string }
+              - { name: value, label: Short code (what you see in responses), widget: string, hint: "One lowercase word, e.g. chicken. Don't change it after RSVPs open." }
+          - name: thank_you
+            label: Thank-you message after sending
+            widget: object
+            collapsed: true
+            fields:
+              - { name: title, label: Heading, widget: string }
+              - { name: text, label: Message, widget: text }
+
+      # Registry --------------------------------------------------------------
+      - name: registry
+        label: Registry
+        file: src/_data/registry.json
+        fields:
+          - *seo
+          - *hero
+          - name: intro
+            label: Main section
+            widget: object
+            fields:
+              - { name: label, label: Small text, widget: string }
+              - { name: title, label: Heading, widget: string }
+              - { name: text, label: Message, widget: text }
+          - name: registries
+            label: Registry links
+            label_singular: Registry
+            widget: list
+            required: false
+            summary: "{{fields.name}}"
+            hint: Each one becomes a button under the message. Leave empty for no buttons.
+            fields:
+              - { name: name, label: Button text, widget: string, hint: "e.g. Zola, Amazon, Honeymoon Fund" }
+              - { name: url, label: Link, widget: string, hint: "The full web address, starting with https://" }
+
+      # Travel ----------------------------------------------------------------
+      - name: travel
+        label: Travel & Hotels
+        file: src/_data/travel.json
+        fields:
+          - *seo
+          - *hero
+          - name: room_block
+            label: Room block
+            widget: object
+            fields:
+              - { name: label, label: Small text, widget: string }
+              - { name: title, label: Heading, widget: string }
+              - { name: intro, label: Intro text, widget: text }
+              - { name: hotel_name, label: Hotel name, widget: string }
+              - { name: badge, label: Badge text, widget: string }
+              - { name: hotel_details, label: Hotel address / distance, widget: string }
+              - name: deadline
+                label: Booking deadline
+                widget: datetime
+                type: date
+                required: false
+                hint: 'Leave empty to show "To be announced".'
+              - { name: booking_note, label: Group code / booking note, widget: string }
+              - { name: booking_url, label: Booking link, widget: string, required: false, hint: "The full web address, starting with https://" }
+          - name: nearby
+            label: Nearby hotels
+            widget: object
+            fields:
+              - { name: label, label: Small text, widget: string }
+              - { name: title, label: Heading, widget: string }
+              - { name: empty_text, label: Message when no hotels are listed, widget: string }
+              - name: hotels
+                label: Hotels
+                label_singular: Hotel
+                widget: list
+                required: false
+                summary: "{{fields.name}}"
+                fields:
+                  - { name: name, label: Hotel name, widget: string }
+                  - { name: address, label: Address, widget: string, required: false }
+                  - { name: distance, label: Distance from the venue, widget: string, required: false, hint: "e.g. 10 minutes, 4 miles" }
+                  - { name: note, label: Note, widget: string, required: false }
+                  - { name: url, label: Website, widget: string, required: false, hint: "The full web address, starting with https://" }
+          - name: airports
+            label: Airports
+            widget: object
+            collapsed: true
+            fields:
+              - { name: label, label: Small text, widget: string }
+              - { name: title, label: Heading, widget: string }
+              - { name: card_title, label: Box heading, widget: string }
+              - name: list
+                label: Airports
+                label_singular: Airport
+                widget: list
+                summary: "{{fields.name}}"
+                fields:
+                  - { name: name, label: Airport, widget: string, hint: "e.g. Philadelphia International (PHL)" }
+                  - { name: details, label: Distance and notes, widget: text }
+              - { name: footnote, label: Small print, widget: string }
+          - name: tips
+            label: Local tips
+            widget: object
+            collapsed: true
+            fields:
+              - { name: label, label: Small text, widget: string }
+              - { name: title, label: Heading, widget: string }
+              - name: list
+                label: Tips
+                label_singular: Tip
+                widget: list
+                summary: "{{fields.title}}"
+                fields:
+                  - &icon
+                    name: icon
+                    label: Icon
+                    widget: select
+                    default: star
+                    options:
+                      - { label: "☀️ Sun / weather", value: sun }
+                      - { label: "🚗 Car", value: car }
+                      - { label: "🧭 Compass / explore", value: compass }
+                      - { label: "🛏️ Bed / hotel", value: bed }
+                      - { label: "🍺 Drink", value: mug }
+                      - { label: "🎱 Billiard ball / games", value: billiard }
+                      - { label: "👥 People", value: people }
+                      - { label: "⭐ Star", value: star }
+                  - { name: title, label: Title, widget: string }
+                  - { name: text, label: Tip, widget: text }
+
+      # After Party -----------------------------------------------------------
+      - name: afterparty
+        label: After Party
+        file: src/_data/afterparty.json
+        fields:
+          - *seo
+          - *hero
+          - name: details
+            label: Where & when
+            widget: object
+            fields:
+              - { name: label, label: Small text, widget: string }
+              - { name: title, label: Heading, widget: string }
+              - { name: venue_name, label: Place name, widget: string }
+              - { name: address, label: Address, widget: string }
+              - { name: map_address, label: Address for the map, widget: string, required: false, hint: "Optional. Once filled in (e.g. \"Stella, 50 S Main St, New Hope, PA\"), a map and directions link replace the \"coming soon\" box." }
+              - { name: time, label: Time, widget: string }
+              - { name: time_note, label: Time note, widget: string, required: false }
+              - { name: dress_code, label: Dress code, widget: string }
+              - { name: open_to, label: Who's invited, widget: string }
+              - { name: map_note, label: Text in the map box before the address is known, widget: string }
+          - name: expect
+            label: What to expect
+            widget: object
+            collapsed: true
+            fields:
+              - { name: label, label: Small text, widget: string }
+              - { name: title, label: Heading, widget: string }
+              - name: items
+                label: Items
+                label_singular: Item
+                widget: list
+                summary: "{{fields.title}}"
+                fields:
+                  - *icon
+                  - { name: title, label: Title, widget: string }
+                  - { name: text, label: Description, widget: text }
+          - name: cta
+            label: Bottom section
+            widget: object
+            collapsed: true
+            fields:
+              - { name: title, label: Heading, widget: string }
+              - { name: text, label: Message, widget: text }
+
+      # FAQ -------------------------------------------------------------------
+      - name: faq
+        label: FAQ
+        file: src/_data/faq.json
+        fields:
+          - *seo
+          - name: hero
+            label: Top of page
+            widget: object
+            fields:
+              - { name: label, label: Small text above the title, widget: string }
+              - { name: title, label: Page title, widget: string }
+              - { name: subtitle, label: Text under the title, widget: string, hint: "The contact email from Site Settings is added after this text." }
+          - name: list_header
+            label: Heading above the questions
+            widget: object
+            collapsed: true
+            fields:
+              - { name: label, label: Small text, widget: string }
+              - { name: title, label: Heading, widget: string }
+          - name: questions
+            label: Questions
+            label_singular: Question
+            widget: list
+            collapsed: true
+            summary: "{{fields.question}}"
+            hint: Drag to reorder.
+            fields:
+              - { name: question, label: Question, widget: string }
+              - name: answer
+                label: Answer
+                widget: markdown
+                modes: [rich_text]
+                buttons: [bold, italic, link]
+                editor_components: []
+                hint: "Use the link button to link an email (mailto:you@example.com) or another page (e.g. travel.html)."
+          - name: cta
+            label: Bottom section
+            widget: object
+            collapsed: true
+            fields:
+              - { name: title, label: Heading, widget: string }
+              - { name: text, label: Message, widget: text }
+
+      # Gallery ---------------------------------------------------------------
+      - name: gallery
+        label: Gallery
+        file: src/_data/gallery.json
+        fields:
+          - *seo
+          - *hero
+          - name: header
+            label: Heading above the photos
+            widget: object
+            collapsed: true
+            fields:
+              - { name: label, label: Small text, widget: string }
+              - { name: title, label: Heading, widget: string }
+          - name: photos
+            label: Photos
+            label_singular: Photo
+            widget: list
+            collapsed: true
+            summary: "{{fields.alt}}"
+            hint: Drag to reorder. Visitors can click any photo to see it larger.
+            fields:
+              - { name: image, label: Photo, widget: image }
+              - { name: alt, label: Photo description, widget: string, hint: "For screen readers, e.g. \"Jeff and Paige at a Phillies game\"." }
+          - name: wedding_photos
+            label: Wedding photos note
+            widget: object
+            collapsed: true
+            fields:
+              - { name: label, label: Small text, widget: string }
+              - { name: title, label: Heading, widget: string }
+              - { name: text, label: Message, widget: text }
+
+      # 404 -------------------------------------------------------------------
+      - name: notfound
+        label: Page Not Found (404)
+        file: src/_data/notfound.json
+        fields:
+          - name: seo
+            label: Search & Sharing
+            widget: object
+            collapsed: true
+            fields:
+              - { name: title, label: Browser tab title, widget: string }
+              - { name: description, label: Description, widget: text }
+          - { name: title, label: Heading, widget: string }
+          - { name: text, label: Message, widget: text }
+
+  # ── Guest list ───────────────────────────────────────────────────────────
+  - name: guest_list
+    label: Guest List
+    icon: group
+    description: "Names the RSVP form recognizes as guests type. Note: this list is part of the public website code, so anyone who knows where to look can see it."
+    format: json
+    files:
+      - name: guests
+        label: Guest List
+        file: src/_data/guests.json
+        fields:
+          - name: guests
+            label: Guests
+            label_singular: Guest
+            widget: list
+            collapsed: true
+            summary: "{{fields.name}}"
+            fields:
+              - { name: id, label: Guest number, widget: string, hint: "Any number not used by another guest — just use the next one." }
+              - { name: name, label: Full name, widget: string, hint: "Exactly as written on the invitation." }
+              - { name: plus_one, label: Can bring a plus-one, widget: boolean, default: false }
+              - { name: plus_one_name, label: "Plus-one's name", widget: string, required: false, hint: "Optional. Fills in their guest's name for them." }

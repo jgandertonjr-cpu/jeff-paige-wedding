@@ -1,5 +1,7 @@
 # Content Guide: Updating Your Wedding Website
 
+> **Outdated (October 2026):** the site's text and photos now live in `src/_data/*.json` and are edited at **jeffandpaige.net/admin**. Netlify builds the site from GitHub automatically. Editing the HTML files described below no longer works, because the pages are generated. See [ADMIN-SETUP.md](../ADMIN-SETUP.md).
+
 **Welcome, Jeff & Paige!** This guide walks you through every common update you might want to make to your wedding website. No coding experience required — just follow the steps and you'll be fine. If something ever looks wrong, just undo your change (Ctrl+Z) and try again.
 
 ---

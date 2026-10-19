@@ -1,0 +1,27 @@
+---
+permalink: 404.html
+pageKey: notfound
+bare: true
+---
+{%- extends "layouts/base.njk" -%}
+{%- block main %}
+{%- set c = site.couple %}
+    <div class="error-page">
+
+      <span class="error-page__monogram">{{ c.partner1_first | first }} <span class="amp">&amp;</span> {{ c.partner2_first | first }}</span>
+
+      <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
+
+      <span class="error-page__code">404</span>
+      <h1 class="error-page__title">{{ notfound.title }}</h1>
+      <p class="error-page__subtitle">
+        {{ notfound.text }}
+      </p>
+
+      <div class="error-page__actions">
+        <a href="index.html" class="btn btn--primary">Back to Home</a>
+        <a href="rsvp.html" class="btn btn--rsvp">RSVP</a>
+      </div>
+
+    </div>
+{% endblock %}

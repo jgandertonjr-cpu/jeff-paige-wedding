@@ -1,0 +1,65 @@
+---
+permalink: our-story.html
+pageKey: story
+canonical: our-story
+headerDark: true
+---
+{%- extends "layouts/base.njk" -%}
+{%- block main %}
+    <!-- ── PAGE HERO ── -->
+    <section class="page-hero" aria-label="Page header">
+      <span class="section-label">{{ story.hero.label }}</span>
+      <h1 class="page-hero__title">{{ story.hero.title }}</h1>
+      <p class="page-hero__subtitle">{{ story.hero.subtitle }}</p>
+    </section>
+
+    <!-- ── TIMELINE ── -->
+    <section class="section" aria-labelledby="timeline-heading">
+      <div class="container">
+        <h2 id="timeline-heading" class="sr-only">Our milestones</h2>
+        <div class="timeline">
+          {%- for event in story.events %}
+          {%- set size = event.photo | imgSize %}
+          {%- set content %}
+            <div class="timeline__content">
+              <time class="timeline__date" datetime="{{ event.date_value }}">{{ event.date_label }}</time>
+              <h3 class="timeline__title">{{ event.title }}</h3>
+              {{ event.story | markdown | safe }}
+            </div>
+          {%- endset %}
+          {%- set figure %}
+            <figure class="timeline__img{% if size.width > size.height %} timeline__img--landscape{% endif %}">
+              <img src="{{ event.photo | relUrl }}" width="{{ size.width }}" height="{{ size.height }}" alt="{{ event.photo_alt }}" loading="lazy"{% if event.focus and event.focus != 'center' %} class="img-focus-{{ event.focus }}"{% endif %}>
+            </figure>
+          {%- endset %}
+
+          <article class="timeline__item timeline__item--{{ 'left' if loop.index0 % 2 == 0 else 'right' }} reveal">
+          {%- if loop.index0 % 2 == 0 %}
+            {{- content | safe }}
+            <div class="timeline__dot" aria-hidden="true"></div>
+            {{- figure | safe }}
+          {%- else %}
+            {{- figure | safe }}
+            <div class="timeline__dot" aria-hidden="true"></div>
+            {{- content | safe }}
+          {%- endif %}
+          </article>
+          {%- endfor %}
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ── CTA ── -->
+    <section class="section section--alt text-center" aria-label="Call to action">
+      <div class="container container--narrow">
+        <span class="section-label reveal">{{ story.cta.label }}</span>
+        <h2 class="section-title reveal reveal--delay-1">{{ story.cta.title }}</h2>
+        <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
+        <p class="section-subtitle mb-8 reveal reveal--delay-3">{{ story.cta.text }}</p>
+        <div class="flex flex--center reveal reveal--delay-4">
+          <a href="details.html" class="btn btn--primary">View Details</a>
+        </div>
+      </div>
+    </section>
+{% endblock %}

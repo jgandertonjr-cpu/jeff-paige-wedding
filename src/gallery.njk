@@ -1,0 +1,74 @@
+---
+permalink: gallery.html
+pageKey: gallery
+canonical: gallery
+headerDark: true
+---
+{%- extends "layouts/base.njk" -%}
+{%- block main %}
+    <!-- ── PAGE HERO ── -->
+    <section class="page-hero" aria-label="Page header">
+      <span class="section-label">{{ gallery.hero.label }}</span>
+      <h1 class="page-hero__title">{{ gallery.hero.title }}</h1>
+      <p class="page-hero__subtitle">{{ gallery.hero.subtitle }}</p>
+    </section>
+
+    <!-- ── GALLERY ── -->
+    <section class="section" aria-labelledby="gallery-heading">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-label reveal">{{ gallery.header.label }}</span>
+          <h2 id="gallery-heading" class="section-title reveal reveal--delay-1">{{ gallery.header.title }}</h2>
+          <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
+        </div>
+
+        <div class="gallery-grid" role="list" aria-label="Photo gallery">
+          {%- for photo in gallery.photos %}
+          {%- set size = photo.image | imgSize %}
+          <div class="gallery-item reveal{% if loop.index0 % 3 %} reveal--delay-{{ loop.index0 % 3 }}{% endif %}" role="listitem"
+               data-src="{{ photo.image | relUrl }}" data-alt="{{ photo.alt }}"
+               tabindex="0" aria-label="View larger: {{ photo.alt }}">
+            <img src="{{ photo.image | relUrl }}" width="{{ size.width }}" height="{{ size.height }}" alt="{{ photo.alt }}" loading="lazy">
+          </div>
+          {%- endfor %}
+        </div>
+      </div>
+    </section>
+
+    <!-- ── WEDDING PHOTOS NOTE ── -->
+    <section class="section section--alt text-center" aria-labelledby="wedding-photos-note">
+      <div class="container container--narrow">
+        <span class="section-label reveal">{{ gallery.wedding_photos.label }}</span>
+        <h2 id="wedding-photos-note" class="section-title reveal reveal--delay-1">{{ gallery.wedding_photos.title }}</h2>
+        <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
+        <p class="section-subtitle mb-8 reveal reveal--delay-3">
+          {{ gallery.wedding_photos.text }}
+        </p>
+        <a href="details.html" class="btn btn--primary reveal reveal--delay-4">See the Details</a>
+      </div>
+    </section>
+{% endblock %}
+{%- block afterMain %}
+  <!-- ── LIGHTBOX ── -->
+  <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Photo lightbox">
+    <button class="lightbox__prev" aria-label="Previous photo">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </button>
+    <div class="lightbox__inner">
+      <button class="lightbox__close" aria-label="Close photo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+      <img class="lightbox__img" src="" alt="">
+    </div>
+    <button class="lightbox__next" aria-label="Next photo">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+    </button>
+  </div>
+{% endblock %}

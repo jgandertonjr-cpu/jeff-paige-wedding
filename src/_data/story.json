@@ -1,0 +1,73 @@
+{
+  "seo": {
+    "title": "Our Story | Jeff & Paige",
+    "description": "Read the love story of Jeff and Paige — how they met, fell in love, and decided to spend forever together.",
+    "social_description": "Read the love story of Jeff and Paige — how they met, fell in love, and decided to spend forever together."
+  },
+  "hero": {
+    "label": "A Love Story",
+    "title": "Our Story",
+    "subtitle": "One bold sister, one late-night message, and everything after."
+  },
+  "events": [
+    {
+      "date_label": "November 2022",
+      "date_value": "2022-11",
+      "title": "A Tap on the Shoulder",
+      "story": "Jeff was up at the bar with his friend Albert, grabbing another round for the group, when a girl walked over and tapped him on the shoulder. It was Victoria — Paige's older sister — and she got straight to the point: *\"You're cute, you should date my sister\"*.\n\nThey talked for a few minutes. Jeff found out who Paige was, and before they went their separate ways he had her Instagram handle. He messaged Paige the moment he got home that night. They talked until neither of them could keep their eyes open.",
+      "photo": "/images/harrys_taproom.jpg",
+      "photo_alt": "Harry's Taproom — where Jeff and Paige's story began",
+      "focus": "center"
+    },
+    {
+      "date_label": "November 2022",
+      "date_value": "2022-11",
+      "title": "The First Date",
+      "story": "After weeks of late-night messages, Jeff and Paige headed to Brick & Barrel for their first date. The conversation flowed effortlessly. What they liked to do, what they did for work, where they wanted their lives to go. After awhile it didn't feel like a first date at all.\n\nAt some point Jeff got up to use the bathroom, and when he came back Paige mentioned that their waitress had stopped by the table to say how cute they were together. Even strangers could see it. By the end of the night, Jeff already knew — Paige was exactly who he'd been looking for.",
+      "photo": "/images/brick_barrel.jpg",
+      "photo_alt": "Brick & Barrel — Jeff and Paige's first date",
+      "focus": "center"
+    },
+    {
+      "date_label": "February 2023",
+      "date_value": "2023-02",
+      "title": "Making It Official",
+      "story": "By February, Jeff was sure he had a girlfriend. There had been date after date, flowers, Valentine's Day gifts — as far as he was concerned, the case was closed. There was just one problem: nobody had told Paige. In her mind, they weren't dating at all.\n\nOne night she sat him down and asked, point-blank, *\"What are we?\"* Jeff, who thought he'd answered that question with a bouquet weeks earlier, finally said it out loud. That night they became a couple — officially this time, with both of them in on it.",
+      "photo": "/images/gallery4.jpg",
+      "photo_alt": "Jeff and Paige dressed up for a night out",
+      "focus": "high"
+    },
+    {
+      "date_label": "2023 – 2026",
+      "date_value": "2023-01",
+      "title": "Building Our World",
+      "story": "Dating Paige meant getting to know the Mullens, and the Mullens are a game family. Card games around the table, always with a new one to learn, and Switch battles that run later than anyone planned. Jeff learned quickly that game night can get competitive, and that this is a family that genuinely loves being together. Somewhere between rounds, he stopped feeling like a guest.\n\nThe trips kept coming, too. A week in Mexico with Paige's family, multiple households all in together. Corolla on the Outer Banks every fall with Jeff's family, a tradition that quietly became non-negotiable. And when it was just the two of them, Tampa and St. Pete: wandering, eating, drinking, and finding the next good thing.\n\nBut most of the best moments happened on ordinary weeks. Trying a new bar in Ambler. Another night at Towey's in Hatboro. Nights out with the G6 squad, who never need much of an excuse.\n\nThe years filled in fast. Life got fuller with each one.",
+      "photo": "/images/gallery11.jpg",
+      "photo_alt": "Jeff and Paige at the beach",
+      "focus": "center"
+    },
+    {
+      "date_label": "July 2026",
+      "date_value": "2026-07",
+      "title": "She Said Yes",
+      "story": "Paige's cousin Macenzie and her boyfriend Brendan were coming in from Illinois for a visit, and that was reason enough for a night out: the G6 crew — Jeff, Paige, Devin, Kyle, Victoria, and Chris — plus Macenzie and Brendan, all heading to New Hope for drinks and fries at Stella.\n\nAs the day got closer, the plan started to unravel. One by one, everyone decided they'd just drive up separately. Jeff and Paige set off together, while the rest of the group was supposedly right behind them — \"on their way,\" they said. They never showed.\n\nJeff had a plan, and it started with a parking spot. Paige drove, Jeff rode passenger princess, and he plugged in the directions so she would follow them without asking questions. The lot turned out to be expensive, with no easy path to where he needed them to be. Jeff wanted to stick with it anyway. Paige was not paying that much to park. Jeff gave in, they found street parking for a fraction of the price, and Paige got to say \"I told you so\" before the night had even started.\n\nAs they walked, Jeff kept looking for any alley that would cut through to the waterfront path behind Stella. Then he spotted it: trees, flowers, a bench, and a view of the water and the bridge. It was perfect, until they got close and Paige pointed out the smell. Whatever the ducks had been up to, it was not what he wanted her to remember about this moment.\n\nSo they kept walking. Farther along the same path, right behind Stella, the walkway opened up, with the water in front of them and the bridge in the background. Jeff got down on one knee. She said yes.\n\nAfterward, they finally went in for the reservation — just the two of them, savoring the moment before anyone else knew. Then they drove over to Warwick Brewing, where their friends and family were waiting, and celebrated with the people who'd known all along.",
+      "photo": "/images/she_said_yes.jpg",
+      "photo_alt": "Paige in a bridal veil, hugging Jeff and showing her engagement ring",
+      "focus": "high"
+    },
+    {
+      "date_label": "August 5, 2028",
+      "date_value": "2028-08-05",
+      "title": "Forever Starts Here",
+      "story": "It started with a stranger at a bar, a bold sister, and a late-night DM. It ends — or really begins — at Holly Hedge Estate in New Hope, surrounded by the people who have been part of this story all along. We're so glad you're one of them.",
+      "photo": "/images/gallery9.jpg",
+      "photo_alt": "Jeff and Paige dressed up for a formal evening",
+      "focus": "high"
+    }
+  ],
+  "cta": {
+    "label": "Join Us",
+    "title": "Be Part of Our Story",
+    "text": "We'd love to have you celebrate with us."
+  }
+}

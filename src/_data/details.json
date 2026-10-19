@@ -1,0 +1,112 @@
+{
+  "seo": {
+    "title": "The Details | Jeff & Paige",
+    "description": "Ceremony and reception details for Jeff and Paige's wedding on August 5, 2028 at Holly Hedge Estate in New Hope, PA.",
+    "social_description": "Ceremony and reception details, schedule, dress code, and venue information."
+  },
+  "hero": {
+    "label": "Plan Your Visit",
+    "title": "The Details",
+    "subtitle": "Everything you need to know about the day — ceremony, reception, and everything in between."
+  },
+  "ceremony": {
+    "title": "Ceremony",
+    "box_heading": "Venue",
+    "items": [
+      {
+        "label": "Time",
+        "value": "To be announced",
+        "note": ""
+      },
+      {
+        "label": "Dress Code",
+        "value": "Cocktail Attire",
+        "note": "Garden-party elegant. Florals, soft greens, blush, and warm neutrals fit right in."
+      },
+      {
+        "label": "Parking",
+        "value": "On-site at Holly Hedge Estate",
+        "note": "Parking details will be shared closer to the day."
+      }
+    ]
+  },
+  "reception": {
+    "label": "Same Venue",
+    "title": "Reception",
+    "subtitle": "The reception immediately follows the ceremony at the same venue — no travel required!",
+    "box_heading": "Reception Details",
+    "items": [
+      {
+        "label": "Location",
+        "value": "Holly Hedge Estate",
+        "note": ""
+      },
+      {
+        "label": "Cocktail Hour",
+        "value": "Immediately following the ceremony",
+        "note": "Drinks and bites to kick off the celebration"
+      },
+      {
+        "label": "Dinner",
+        "value": "Menu details to come",
+        "note": ""
+      },
+      {
+        "label": "Dancing",
+        "value": "To close out the evening",
+        "note": ""
+      }
+    ]
+  },
+  "schedule": {
+    "label": "Day Of",
+    "title": "The Flow of the Day",
+    "subtitle": "Exact times will be shared closer to the day.",
+    "events": [
+      {
+        "time": "",
+        "title": "Guests Arrive & Be Seated",
+        "description": "Find your seat for our outdoor ceremony on the grounds of Holly Hedge Estate."
+      },
+      {
+        "time": "",
+        "title": "Ceremony Begins",
+        "description": "The wedding ceremony commences. Please silence your phones."
+      },
+      {
+        "time": "",
+        "title": "Ceremony Concludes",
+        "description": "Head to cocktail hour while Jeff & Paige sneak away for a few photos."
+      },
+      {
+        "time": "",
+        "title": "Cocktail Hour",
+        "description": "Drinks, bites, and a toast to the newlyweds."
+      },
+      {
+        "time": "",
+        "title": "Dinner & Toasts",
+        "description": "Dinner is served, followed by toasts from the wedding party."
+      },
+      {
+        "time": "",
+        "title": "First Dance & Dancing Opens",
+        "description": "Jeff & Paige take the floor, then the dance floor opens for everyone."
+      },
+      {
+        "time": "",
+        "title": "Cake Cutting",
+        "description": "Dessert service follows the cake cutting ceremony."
+      },
+      {
+        "time": "",
+        "title": "Grand Send-off",
+        "description": "Help us send off Jeff & Paige in style as we close out the evening."
+      }
+    ]
+  },
+  "cta": {
+    "title": "Ready to Celebrate?",
+    "text": "Invitations and RSVPs will go out closer to the day. In the meantime, start planning your trip."
+  }
+}

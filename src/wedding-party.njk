@@ -1,0 +1,66 @@
+---
+permalink: wedding-party.html
+pageKey: party
+canonical: wedding-party
+headerDark: true
+---
+{%- extends "layouts/base.njk" -%}
+{%- macro partyGrid(members) %}
+        <div class="party-grid">
+          {%- for person in members %}
+          <article class="party-card reveal{% if loop.index0 % 4 %} reveal--delay-{{ loop.index0 % 4 }}{% endif %}">
+            <div class="party-card__img">
+            {%- if person.photo %}
+              <img src="{{ person.photo | relUrl }}" alt="{{ person.name }}" loading="lazy">
+            {%- else %}
+              <div class="img-placeholder img-placeholder--circle" aria-label="Photo of {{ person.role }}"></div>
+            {%- endif %}
+            </div>
+            <h3 class="party-card__name">{{ person.name }}</h3>
+            <p class="party-card__title">{{ person.role }}</p>
+            <p class="party-card__bio">{{ person.bio }}</p>
+          </article>
+          {%- endfor %}
+        </div>
+{%- endmacro -%}
+{%- block main %}
+    <!-- ── PAGE HERO ── -->
+    <section class="page-hero" aria-label="Page header">
+      <span class="section-label">{{ party.hero.label }}</span>
+      <h1 class="page-hero__title">{{ party.hero.title }}</h1>
+      <p class="page-hero__subtitle">{{ party.hero.subtitle }}</p>
+    </section>
+
+    <!-- ── BRIDESMAIDS ── -->
+    <section class="section" aria-labelledby="bridesmaids-heading">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-label reveal">{{ party.bridesmaids.label }}</span>
+          <h2 id="bridesmaids-heading" class="section-title reveal reveal--delay-1">{{ party.bridesmaids.title }}</h2>
+          <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
+        </div>
+{{ partyGrid(party.bridesmaids.members) }}
+      </div>
+    </section>
+
+    <!-- ── GROOMSMEN ── -->
+    <section class="section section--alt" aria-labelledby="groomsmen-heading">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-label reveal">{{ party.groomsmen.label }}</span>
+          <h2 id="groomsmen-heading" class="section-title reveal reveal--delay-1">{{ party.groomsmen.title }}</h2>
+          <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
+        </div>
+{{ partyGrid(party.groomsmen.members) }}
+      </div>
+    </section>
+
+    <!-- ── CTA ── -->
+    <section class="section text-center" aria-label="RSVP prompt">
+      <div class="container container--narrow">
+        <h2 class="section-title reveal">{{ party.cta.title }}</h2>
+        <p class="section-subtitle mb-8 reveal reveal--delay-1">{{ party.cta.text }}</p>
+        <a href="details.html" class="btn btn--primary reveal reveal--delay-2">See the Details</a>
+      </div>
+    </section>
+{% endblock %}

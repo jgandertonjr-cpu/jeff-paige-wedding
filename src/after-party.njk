@@ -1,0 +1,112 @@
+---
+permalink: after-party.html
+pageKey: afterparty
+canonical: after-party
+headerDark: true
+---
+{%- extends "layouts/base.njk" -%}
+{%- from "icons.njk" import icon -%}
+{%- block main %}
+{%- set d = afterparty.details %}
+    <!-- ── PAGE HERO ── -->
+    <section class="page-hero" aria-label="Page header">
+      <span class="section-label">{{ afterparty.hero.label }}</span>
+      <h1 class="page-hero__title">{{ afterparty.hero.title }}</h1>
+      <p class="page-hero__subtitle">{{ afterparty.hero.subtitle }}</p>
+    </section>
+
+    <!-- ── EVENT DETAILS ── -->
+    <section class="section" aria-labelledby="afterparty-details-heading">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-label reveal">{{ d.label }}</span>
+          <h2 id="afterparty-details-heading" class="section-title reveal reveal--delay-1">{{ d.title }}</h2>
+          <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
+        </div>
+
+        <div class="grid grid--2 grid--loose">
+
+          <!-- Info card -->
+          <div class="hotel-card card--featured reveal">
+            <h3 class="hotel-card__name mb-4">{{ d.venue_name }}</h3>
+            <div class="stack stack--loose">
+
+              <div>
+                <p class="fact__label">Address</p>
+                <p class="fact__value">{{ d.address }}</p>
+              </div>
+
+              <div>
+                <p class="fact__label">Time</p>
+                <p class="fact__value">{{ d.time }}
+                {%- if d.time_note %}
+                  <span class="fact__note">{{ d.time_note }}</span>
+                {% endif -%}
+                </p>
+              </div>
+
+              <div>
+                <p class="fact__label">Dress Code</p>
+                <p class="fact__value">{{ d.dress_code }}</p>
+              </div>
+
+              <div>
+                <p class="fact__label">Open To</p>
+                <p class="fact__value">{{ d.open_to }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="reveal reveal--delay-1">
+          {%- if d.map_address %}
+            <div class="map-embed">
+              <iframe src="{{ d.map_address | mapsEmbedUrl }}" title="Map of {{ d.venue_name }}" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+            <p class="fine-print mt-4"><a href="{{ d.map_address | mapsSearchUrl }}" target="_blank" rel="noopener">Get directions</a></p>
+          {%- else %}
+            <div class="map-embed img-placeholder map-embed--empty" aria-label="Map placeholder — after party location TBD">
+              <span class="fine-print">{{ d.map_note }}</span>
+            </div>
+          {%- endif %}
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ── WHAT TO EXPECT ── -->
+    <section class="section section--alt" aria-labelledby="expect-heading">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-label reveal">{{ afterparty.expect.label }}</span>
+          <h2 id="expect-heading" class="section-title reveal reveal--delay-1">{{ afterparty.expect.title }}</h2>
+          <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
+        </div>
+
+        <div class="expect-grid">
+          {%- for item in afterparty.expect.items %}
+          <div class="expect-item reveal{% if loop.index0 % 4 %} reveal--delay-{{ loop.index0 % 4 }}{% endif %}">
+            <div class="expect-item__icon" aria-hidden="true">
+              {{ icon(item.icon, 22) }}
+            </div>
+            <div>
+              <h3 class="expect-item__title">{{ item.title }}</h3>
+              <p class="expect-item__desc">{{ item.text }}</p>
+            </div>
+          </div>
+          {%- endfor %}
+        </div>
+      </div>
+    </section>
+
+    <!-- ── CTA ── -->
+    <section class="section text-center" aria-label="RSVP reminder">
+      <div class="container container--narrow">
+        <h2 class="section-title reveal">{{ afterparty.cta.title }}</h2>
+        <p class="section-subtitle mb-8 reveal reveal--delay-1">{{ afterparty.cta.text }}</p>
+        <div class="flex flex--center reveal reveal--delay-2">
+          <a href="details.html" class="btn btn--primary">Wedding Details</a>
+        </div>
+      </div>
+    </section>
+{% endblock %}

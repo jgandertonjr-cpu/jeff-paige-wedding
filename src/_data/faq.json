@@ -1,0 +1,74 @@
+{
+  "seo": {
+    "title": "FAQ | Jeff & Paige",
+    "description": "Frequently asked questions about Jeff and Paige's wedding — dress code, parking, hotel block, kids policy, registry, after party, and more.",
+    "social_description": "Everything you need to know about the wedding weekend — dress code, parking, hotels, after party, and more."
+  },
+  "hero": {
+    "label": "We've Got Answers",
+    "title": "FAQ",
+    "subtitle": "Can't find what you're looking for? Email us at"
+  },
+  "list_header": {
+    "label": "Common Questions",
+    "title": "Frequently Asked Questions"
+  },
+  "questions": [
+    {
+      "question": "What is the dress code?",
+      "answer": "Cocktail attire is requested for the ceremony and reception. Think garden-party elegant — sundresses, midi dresses, jumpsuits, suits, or blazers with dress trousers all work beautifully. Our colors are dusty sage and soft rose, so florals, greens, blush, and warm neutrals will fit right in. Please avoid white, ivory, or cream out of respect for the bride. The after party is more relaxed — feel free to change into something more comfortable."
+    },
+    {
+      "question": "Is parking available at the venue?",
+      "answer": "Parking details for Holly Hedge Estate will be shared closer to the date. If you plan to drink, we encourage you to arrange a rideshare or designate a driver in advance."
+    },
+    {
+      "question": "Are children welcome at the wedding?",
+      "answer": "We love your little ones! Details on whether children are included will be noted with your invitation. If you have any questions, please reach out to us at [jeffandpaigeplanning@gmail.com](mailto:jeffandpaigeplanning@gmail.com)."
+    },
+    {
+      "question": "Where are you registered? Can I bring a gift to the wedding?",
+      "answer": "We haven't set up a registry yet — if we do, we'll share it on our [Registry page](registry.html). We kindly ask that physical gifts not be brought to the venue — shipping directly to us is preferred. If you'd like to give a card or cash envelope, there will be a designated box at the reception."
+    },
+    {
+      "question": "Is there a hotel room block for guests?",
+      "answer": "We're planning a courtesy room block near Holly Hedge Estate. Booking details and the group code will be shared soon. Visit our [Travel page](travel.html) for updates."
+    },
+    {
+      "question": "Will there be a shuttle between the hotel and venue?",
+      "answer": "We haven't arranged a shuttle yet — if we do, we'll share the details here. Questions? Email us at [jeffandpaigeplanning@gmail.com](mailto:jeffandpaigeplanning@gmail.com). Uber and Lyft operate in the area, but rides can take a while to arrive late at night, so plan your ride home ahead of time."
+    },
+    {
+      "question": "What time should I arrive?",
+      "answer": "Ceremony time is **TBD**. Once the time is confirmed, we'll share exact arrival and seating guidance here. Latecomers may not be seated until a suitable break in the ceremony."
+    },
+    {
+      "question": "Will the ceremony be indoors or outdoors?",
+      "answer": "Outdoors! The ceremony will be held outside on the grounds of Holly Hedge Estate, weather permitting. We'll confirm the indoor rain backup plan with Holly Hedge Estate closer to the date."
+    },
+    {
+      "question": "Can I take photos and post on social media?",
+      "answer": "We are having an **unplugged ceremony** — please keep phones and cameras away during the ceremony so our photographer can capture the moment and so you can be fully present. After the ceremony, photos are warmly encouraged! Feel free to share with **#JeffAndPaige**."
+    },
+    {
+      "question": "I have a food allergy or dietary restriction. Will you accommodate me?",
+      "answer": "Absolutely. Please note your dietary restrictions in the RSVP form and we will do our best to accommodate you. If you have a serious allergy, please also email us directly at [jeffandpaigeplanning@gmail.com](mailto:jeffandpaigeplanning@gmail.com) so we can coordinate with the catering team."
+    },
+    {
+      "question": "Can I bring a plus one?",
+      "answer": "Plus ones are noted on your invitation. If your invitation says \"and guest,\" you are welcome to bring one. Due to venue capacity, we are unable to accommodate additional guests beyond what is listed on your invitation. If you have questions, please reach out to us directly."
+    },
+    {
+      "question": "Is there an after party?",
+      "answer": "Yes — and all guests are welcome! After the reception, the party continues at a nearby spot (location and time **TBD**). Kick off your heels, loosen your tie, and join us for a more casual close to the evening."
+    },
+    {
+      "question": "I still have a question. How do I get in touch?",
+      "answer": "We'd love to hear from you! Email us at [jeffandpaigeplanning@gmail.com](mailto:jeffandpaigeplanning@gmail.com) and we'll get back to you as soon as possible. For day-of emergencies, contact information for the wedding coordinator will be shared with all RSVP'd guests closer to the date."
+    }
+  ],
+  "cta": {
+    "title": "Still Have Questions?",
+    "text": "Drop us a line and we'll get back to you quickly."
+  }
+}

@@ -1,0 +1,17 @@
+---
+permalink: js/guests.js
+eleventyExcludeFromCollections: true
+---
+/* =============================================================
+   Wedding Guest List — generated from src/_data/guests.json.
+   Edit it in the admin (Guest List), not here. Each entry:
+     id          — any unique string
+     name        — full name exactly as on the invitation (case-insensitive matching is applied)
+     plusOne     — true if this guest may bring a +1, false otherwise
+     plusOneName — pre-fill their +1's name if already known, "" if not
+   ============================================================= */
+window.WEDDING_GUESTS = [
+{%- for g in guests.guests %}
+  { id: {{ g.id | string | dump | safe }}, name: {{ g.name | dump | safe }}, plusOne: {{ "true" if g.plus_one else "false" }}{% if g.plus_one %}, plusOneName: {{ (g.plus_one_name or "") | dump | safe }}{% endif %} }{% if not loop.last %},{% endif %}
+{%- endfor %}
+];

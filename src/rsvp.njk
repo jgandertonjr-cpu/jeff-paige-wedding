@@ -1,79 +1,17 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
-  <meta name="theme-color" content="#FBF8F2">
-  <meta name="msapplication-navbutton-color" content="#FBF8F2">
-  <meta name="color-scheme" content="light">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <title>RSVP | Jeff &amp; Paige</title>
-  <meta name="description" content="RSVP for Jeff and Paige's wedding on August 5, 2028 at Holly Hedge Estate in New Hope, PA.">
-  <link rel="canonical" href="https://jeffandpaige.net/rsvp">
-  <meta property="og:title" content="RSVP | Jeff &amp; Paige">
-  <meta property="og:description" content="Let us know you'll be joining us for Jeff and Paige's wedding.">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="https://jeffandpaige.net/rsvp">
-  <meta property="og:image" content="https://jeffandpaige.net/images/hero.jpg">
-  <link rel="icon" href="/favicon.ico" sizes="any">
-  <link rel="icon" type="image/png" href="/images/favicon.png">
-  <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@300;400;500&family=Pinyon+Script&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=17">
-</head>
-<body>
-
-  <a class="skip-link" href="#main-content">Skip to main content</a>
-
-  <!-- ── HEADER ── -->
-  <header class="site-header site-header--dark" role="banner">
-    <div class="header-inner">
-      <a href="index.html" class="site-logo" aria-label="Jeff &amp; Paige — Home">J<span class="amp">&amp;</span>P</a>
-      <nav class="site-nav" aria-label="Primary navigation">
-        <ul class="site-nav__list">
-          <li><a href="index.html" class="site-nav__link">Home</a></li>
-          <li><a href="our-story.html" class="site-nav__link">Our Story</a></li>
-          <li><a href="details.html" class="site-nav__link">Details</a></li>
-          <li><a href="wedding-party.html" class="site-nav__link">Wedding Party</a></li>
-          <li><a href="rsvp.html" class="site-nav__link site-nav__link--rsvp">RSVP</a></li>
-          <li><a href="registry.html" class="site-nav__link">Registry</a></li>
-          <li><a href="travel.html" class="site-nav__link">Travel</a></li>
-          <li><a href="after-party.html" class="site-nav__link">After Party</a></li>
-          <li><a href="faq.html" class="site-nav__link">FAQ</a></li>
-          <li><a href="gallery.html" class="site-nav__link">Gallery</a></li>
-        </ul>
-      </nav>
-      <button class="hamburger" aria-expanded="false" aria-controls="mobile-nav" aria-label="Open menu">
-        <span class="hamburger__line"></span>
-        <span class="hamburger__line"></span>
-        <span class="hamburger__line"></span>
-      </button>
-    </div>
-  </header>
-
-  <nav class="mobile-nav" id="mobile-nav" aria-label="Mobile navigation">
-    <a href="index.html" class="mobile-nav__link">Home</a>
-    <a href="our-story.html" class="mobile-nav__link">Our Story</a>
-    <a href="details.html" class="mobile-nav__link">Details</a>
-    <a href="wedding-party.html" class="mobile-nav__link">Wedding Party</a>
-    <a href="rsvp.html" class="mobile-nav__link">RSVP</a>
-    <a href="registry.html" class="mobile-nav__link">Registry</a>
-    <a href="travel.html" class="mobile-nav__link">Travel</a>
-    <a href="after-party.html" class="mobile-nav__link">After Party</a>
-    <a href="faq.html" class="mobile-nav__link">FAQ</a>
-    <a href="gallery.html" class="mobile-nav__link">Gallery</a>
-  </nav>
-
-  <main id="main-content">
+---
+permalink: rsvp.html
+pageKey: rsvp
+canonical: rsvp
+headerDark: true
+---
+{%- extends "layouts/base.njk" -%}
+{%- block main %}
 
     <!-- ── PAGE HERO ── -->
     <section class="page-hero" aria-label="Page header">
-      <span class="section-label">Kindly Reply</span>
-      <h1 class="page-hero__title">RSVP</h1>
-      <p class="page-hero__subtitle">We can't wait to celebrate with you. RSVPs will open when formal invitations go out.</p>
+      <span class="section-label">{{ rsvp.hero.label }}</span>
+      <h1 class="page-hero__title">{{ rsvp.hero.title }}</h1>
+      <p class="page-hero__subtitle">{{ rsvp.hero.subtitle }}</p>
     </section>
 
     <!-- ── FORM ── -->
@@ -83,35 +21,40 @@
         <!-- Success message (hidden by default) -->
         <div class="form-success" id="rsvp-success" role="alert" aria-live="polite">
           <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
-          <h2 class="form-success__title">Thank You!</h2>
-          <p class="text-muted measure mb-6">We've received your RSVP. Jeff and Paige can't wait to celebrate with you.</p>
+          <h2 class="form-success__title">{{ rsvp.thank_you.title }}</h2>
+          <p class="text-muted measure mb-6">{{ rsvp.thank_you.text }}</p>
           <a href="details.html" class="btn btn--ghost">View Details</a>
         </div>
 
+{%- if not rsvp.rsvp_open %}
         <!-- Save-the-date notice — shown until RSVPs open -->
         <div class="text-center">
           <div class="section-header section-header--tight">
-            <span class="section-label reveal">Saturday, August 5, 2028</span>
-            <h2 class="section-title reveal reveal--delay-1">Save the Date</h2>
+            <span class="section-label reveal">{{ site.wedding_date | dateFormat('weekdayLong') }}</span>
+            <h2 class="section-title reveal reveal--delay-1">{{ rsvp.closed_notice.title }}</h2>
             <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
-            <p class="section-subtitle reveal reveal--delay-2">Holly Hedge Estate &middot; New&nbsp;Hope,&nbsp;PA</p>
+            <p class="section-subtitle reveal reveal--delay-2">{{ site.venue.name }} &middot; {{ (site.venue.city + ", " + site.venue.state) | nbsp | safe }}</p>
           </div>
-          <p class="text-muted measure mb-8 reveal reveal--delay-2">We're still planning the details. Formal invitations — and this RSVP form — will go out closer to the day. For now, please mark your calendar!</p>
+          <p class="text-muted measure mb-8 reveal reveal--delay-2">{{ rsvp.closed_notice.text }}</p>
           <div class="flex flex--center reveal reveal--delay-3">
             <a href="details.html" class="btn btn--primary">See the Details</a>
             <a href="travel.html" class="btn btn--outline">Plan Your Trip</a>
           </div>
           <p class="fine-print mt-6">
-            Questions? Email us at <a href="mailto:jeffandpaigeplanning@gmail.com">jeffandpaigeplanning@gmail.com</a>
+            Questions? Email us at <a href="mailto:{{ site.email }}">{{ site.email }}</a>
           </p>
         </div>
+        {%- endif %}
 
-        <!-- RSVP Form — hidden until RSVPs open; remove `hidden` (and the notice above) to reopen -->
-        <div id="rsvp-form-wrapper" hidden>
+        <!-- RSVP Form — always in the page so Netlify Forms can find it; hidden until RSVPs open -->
+        <div id="rsvp-form-wrapper"{% if not rsvp.rsvp_open %} hidden{% endif %}>
           <div class="section-header section-header--tight">
-            <span class="section-label reveal">One Form Per Guest</span>
-            <h2 id="rsvp-form-heading" class="section-title reveal reveal--delay-1">Your Response</h2>
+            <span class="section-label reveal">{{ rsvp.form_intro.label }}</span>
+            <h2 id="rsvp-form-heading" class="section-title reveal reveal--delay-1">{{ rsvp.form_intro.title }}</h2>
             <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
+            {%- if rsvp.deadline %}
+            <p class="section-subtitle">Kindly reply by {{ rsvp.deadline | dateFormat('weekdayLong') }}.</p>
+            {%- endif %}
           </div>
 
           <form
@@ -200,10 +143,9 @@
               <label class="form-label" for="rsvp-meal">Your Meal Preference</label>
               <select id="rsvp-meal" name="meal" class="form-select">
                 <option value="" disabled selected>Select your meal choice</option>
-                <option value="chicken">Roasted Chicken</option>
-                <option value="salmon">Salmon</option>
-                <option value="steak">Grilled Steak</option>
-                <option value="vegetarian">Vegetarian</option>
+                {%- for meal in rsvp.meal_options %}
+                <option value="{{ meal.value }}">{{ meal.label }}</option>
+                {%- endfor %}
               </select>
             </div>
 
@@ -231,10 +173,9 @@
                 <label class="form-label" for="rsvp-guest-meal">Guest's Meal Preference</label>
                 <select id="rsvp-guest-meal" name="guest_meal" class="form-select">
                   <option value="" disabled selected>Select their meal choice</option>
-                  <option value="chicken">Roasted Chicken</option>
-                  <option value="salmon">Salmon</option>
-                  <option value="steak">Grilled Steak</option>
-                  <option value="vegetarian">Vegetarian</option>
+                  {%- for meal in rsvp.meal_options %}
+                  <option value="{{ meal.value }}">{{ meal.label }}</option>
+                  {%- endfor %}
                 </select>
               </div>
             </div>
@@ -269,7 +210,7 @@
                 Send My RSVP
               </button>
               <p class="fine-print mt-4">
-                Questions? Email us at <a href="mailto:jeffandpaigeplanning@gmail.com">jeffandpaigeplanning@gmail.com</a>
+                Questions? Email us at <a href="mailto:{{ site.email }}">{{ site.email }}</a>
               </p>
             </div>
 
@@ -278,31 +219,8 @@
 
       </div>
     </section>
-
-  </main>
-
-  <footer class="site-footer" role="contentinfo">
-    <div class="container text-center">
-      <span class="footer__monogram">Jeff <span class="amp">&amp;</span> Paige</span>
-      <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
-      <nav class="footer__nav" aria-label="Footer navigation">
-        <a href="index.html" class="footer__nav-link">Home</a>
-        <a href="our-story.html" class="footer__nav-link">Our Story</a>
-        <a href="details.html" class="footer__nav-link">Details</a>
-        <a href="wedding-party.html" class="footer__nav-link">Wedding Party</a>
-        <a href="rsvp.html" class="footer__nav-link">RSVP</a>
-        <a href="registry.html" class="footer__nav-link">Registry</a>
-        <a href="travel.html" class="footer__nav-link">Travel</a>
-        <a href="after-party.html" class="footer__nav-link">After Party</a>
-        <a href="faq.html" class="footer__nav-link">FAQ</a>
-        <a href="gallery.html" class="footer__nav-link">Gallery</a>
-      </nav>
-      <div class="footer__divider"></div>
-      <p class="footer__copy">&copy; 2026 Jeff &amp; Paige. Made with love.</p>
-    </div>
-  </footer>
-
+{% endblock %}
+{%- block scripts %}
   <script src="js/guests.js?v=1" defer></script>
   <script src="js/main.js?v=12" defer></script>
-</body>
-</html>
+{%- endblock %}

@@ -1,5 +1,7 @@
 # Deployment Guide: Getting Your Wedding Website Live
 
+> **Outdated (October 2026):** the site's text and photos now live in `src/_data/*.json` and are edited at **jeffandpaige.net/admin**. Netlify builds the site from GitHub automatically. Don't drag the `src` folder into Netlify any more: it now holds templates, not the finished site. See [ADMIN-SETUP.md](../ADMIN-SETUP.md).
+
 This guide covers two ways to publish your wedding website: **Netlify** (recommended) and **GitHub Pages** (alternative). Netlify is the better choice because it handles your RSVP form submissions automatically with zero extra setup.
 
 ---

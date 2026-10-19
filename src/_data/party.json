@@ -1,0 +1,76 @@
+{
+  "seo": {
+    "title": "Wedding Party | Jeff & Paige",
+    "description": "Meet the wedding party — the bridesmaids and groomsmen standing beside Jeff and Paige.",
+    "social_description": "Meet the bridesmaids and groomsmen standing by our side."
+  },
+  "hero": {
+    "label": "Our People",
+    "title": "Wedding Party",
+    "subtitle": "The people who have shown up for us for years — and who'll be standing beside us when we say I do."
+  },
+  "bridesmaids": {
+    "label": "Paige's Side",
+    "title": "Bridesmaids",
+    "members": [
+      {
+        "name": "Coming Soon",
+        "role": "Maid of Honor",
+        "bio": "Paige's Maid of Honor will be introduced here soon.",
+        "photo": ""
+      },
+      {
+        "name": "Coming Soon",
+        "role": "Bridesmaid",
+        "bio": "She'll be introduced here soon.",
+        "photo": ""
+      },
+      {
+        "name": "Coming Soon",
+        "role": "Bridesmaid",
+        "bio": "She'll be introduced here soon.",
+        "photo": ""
+      },
+      {
+        "name": "Coming Soon",
+        "role": "Bridesmaid",
+        "bio": "She'll be introduced here soon.",
+        "photo": ""
+      }
+    ]
+  },
+  "groomsmen": {
+    "label": "Jeff's Side",
+    "title": "Groomsmen",
+    "members": [
+      {
+        "name": "Coming Soon",
+        "role": "Best Man",
+        "bio": "Jeff's Best Man will be introduced here soon.",
+        "photo": ""
+      },
+      {
+        "name": "Coming Soon",
+        "role": "Groomsman",
+        "bio": "He'll be introduced here soon.",
+        "photo": ""
+      },
+      {
+        "name": "Coming Soon",
+        "role": "Groomsman",
+        "bio": "He'll be introduced here soon.",
+        "photo": ""
+      },
+      {
+        "name": "Coming Soon",
+        "role": "Groomsman",
+        "bio": "He'll be introduced here soon.",
+        "photo": ""
+      }
+    ]
+  },
+  "cta": {
+    "title": "Can't Wait to See You There",
+    "text": "The whole crew will be there. Mark your calendar for August 5, 2028."
+  }
+}

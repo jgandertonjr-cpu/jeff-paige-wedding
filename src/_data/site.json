@@ -1,0 +1,20 @@
+{
+  "couple": {
+    "partner1_first": "Jeff",
+    "partner1_full": "Jeff Ganderton",
+    "partner1_formal": "Jeffrey Ganderton",
+    "partner2_first": "Paige",
+    "partner2_full": "Paige Mullen",
+    "partner2_formal": "Paige Mullen"
+  },
+  "wedding_date": "2028-08-05",
+  "venue": {
+    "name": "Holly Hedge Estate",
+    "street": "6987 Upper York Road",
+    "city": "New Hope",
+    "state": "PA",
+    "zip": "18938"
+  },
+  "email": "jeffandpaigeplanning@gmail.com",
+  "footer_text": "© 2026 Jeff & Paige. Made with love."
+}

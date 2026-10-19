@@ -1,0 +1,114 @@
+---
+permalink: details.html
+pageKey: details
+canonical: details
+headerDark: true
+---
+{%- extends "layouts/base.njk" -%}
+{%- block main %}
+{%- set v = site.venue -%}
+{%- set fullAddress = v.name + ", " + v.street + ", " + v.city + ", " + v.state + " " + v.zip %}
+    <!-- ── PAGE HERO ── -->
+    <section class="page-hero" aria-label="Page header">
+      <span class="section-label">{{ details.hero.label }}</span>
+      <h1 class="page-hero__title">{{ details.hero.title }}</h1>
+      <p class="page-hero__subtitle">{{ details.hero.subtitle }}</p>
+    </section>
+
+    <!-- ── CEREMONY ── -->
+    <section class="section" aria-labelledby="ceremony-heading">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-label reveal">{{ site.wedding_date | dateFormat('weekdayLong') }}</span>
+          <h2 id="ceremony-heading" class="section-title reveal reveal--delay-1">{{ details.ceremony.title }}</h2>
+          <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
+        </div>
+
+        <div class="venue-grid">
+          <div class="detail-block reveal">
+            <h3 class="detail-block__heading">{{ details.ceremony.box_heading }}</h3>
+            <address class="detail-list">
+              <div class="detail-list__item">
+                <span class="detail-list__label">Venue</span>
+                <span class="detail-list__value">{{ v.name }}</span>
+              </div>
+              <div class="detail-list__item">
+                <span class="detail-list__label">Address</span>
+                <span class="detail-list__value">{{ v.street }}<br>{{ v.city }}, {{ v.state }} {{ v.zip }}
+                  <p><a href="{{ fullAddress | mapsSearchUrl }}" target="_blank" rel="noopener">Get directions</a></p>
+                </span>
+              </div>
+              {%- for item in details.ceremony.items %}
+              {% include "detail-item.njk" %}
+              {%- endfor %}
+            </address>
+          </div>
+          <div class="reveal reveal--delay-1">
+            <div class="map-embed">
+              <iframe src="{{ fullAddress | mapsEmbedUrl }}" title="Map of {{ v.name }}, {{ v.city }}, {{ v.state }}" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── RECEPTION ── -->
+    <section class="section section--alt" aria-labelledby="reception-heading">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-label reveal">{{ details.reception.label }}</span>
+          <h2 id="reception-heading" class="section-title reveal reveal--delay-1">{{ details.reception.title }}</h2>
+          <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
+          <p class="section-subtitle">{{ details.reception.subtitle }}</p>
+        </div>
+
+        <div class="detail-block card--centered reveal">
+          <h3 class="detail-block__heading">{{ details.reception.box_heading }}</h3>
+          <div class="detail-list">
+            {%- for item in details.reception.items %}
+            {% include "detail-item.njk" %}
+            {%- endfor %}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── SCHEDULE ── -->
+    <section class="section" aria-labelledby="schedule-heading">
+      <div class="container container--narrow">
+        <div class="section-header">
+          <span class="section-label reveal">{{ details.schedule.label }}</span>
+          <h2 id="schedule-heading" class="section-title reveal reveal--delay-1">{{ details.schedule.title }}</h2>
+          <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
+          {%- if details.schedule.subtitle %}
+          <p class="section-subtitle">{{ details.schedule.subtitle }}</p>
+          {%- endif %}
+        </div>
+
+        <div class="schedule reveal reveal--delay-3">
+          {%- for event in details.schedule.events %}
+          <div class="schedule__item">
+            {%- if event.time %}
+            <span class="schedule__time">{{ event.time }}</span>
+            {%- else %}
+            <span class="schedule__time" aria-hidden="true">{{ loop.index | pad2 }}</span>
+            {%- endif %}
+            <div>
+              <p class="schedule__event-title">{{ event.title }}</p>
+              <p class="schedule__event-desc">{{ event.description }}</p>
+            </div>
+          </div>
+          {%- endfor %}
+        </div>
+      </div>
+    </section>
+
+    <!-- ── CTA ── -->
+    <section class="section section--alt text-center" aria-label="RSVP prompt">
+      <div class="container container--narrow">
+        <h2 class="section-title reveal">{{ details.cta.title }}</h2>
+        <p class="section-subtitle mb-8 reveal reveal--delay-1">{{ details.cta.text }}</p>
+        <a href="travel.html" class="btn btn--primary reveal reveal--delay-2">Plan Your Trip</a>
+      </div>
+    </section>
+{% endblock %}

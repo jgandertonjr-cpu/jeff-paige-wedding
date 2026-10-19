@@ -1,0 +1,58 @@
+{
+  "seo": {
+    "title": "Jeff Ganderton & Paige Mullen's Wedding",
+    "description": "Jeff Ganderton and Paige Mullen are getting married on August 5, 2028 at Holly Hedge Estate in New Hope, PA. View details, RSVP, and celebrate with us.",
+    "social_title": "Jeff and Paige's Wedding",
+    "social_description": "Jeff Ganderton and Paige Mullen are getting married on August 5, 2028 at Holly Hedge Estate in New Hope, PA."
+  },
+  "hero": {
+    "eyebrow": "We're Getting Married",
+    "photo": "/images/gallery12.jpg",
+    "photo_alt": "Jeff and Paige together on vacation"
+  },
+  "countdown": {
+    "label": "Until We Say I Do",
+    "title": "Counting Down the Days"
+  },
+  "welcome": {
+    "label": "Welcome",
+    "title": "You're a Big Part of This",
+    "text": "It started with a tap on the shoulder at a bar — and somehow turned into all of this. We're getting married on August 5, 2028 at Holly Hedge Estate in New Hope — and we can't wait to celebrate with good food, a wide-open dance floor, and the people who got us here. We can't picture it without you."
+  },
+  "photos": {
+    "label": "The Two of Us",
+    "title": "A Few of Our Favorite Moments",
+    "items": [
+      {
+        "image": "/images/gallery7.jpg",
+        "alt": "Jeff and Paige at a concert",
+        "caption": "the adventures",
+        "focus": "center"
+      },
+      {
+        "image": "/images/gallery10.jpg",
+        "alt": "Jeff and Paige on a boat in Boston Harbor",
+        "caption": "the everyday",
+        "focus": "left"
+      },
+      {
+        "image": "/images/gallery1.jpg",
+        "alt": "Paige hugging Jeff at home",
+        "caption": "the forever",
+        "focus": "center"
+      }
+    ]
+  },
+  "quick_links": {
+    "label": "Explore",
+    "title": "Everything You Need to Know",
+    "our_story": "How Jeff and Paige found each other and fell in love.",
+    "details": "Ceremony & reception info, schedule, and venue details.",
+    "rsvp": "RSVPs will open when formal invitations go out.",
+    "wedding_party": "Meet the bridesmaids and groomsmen standing by our side."
+  },
+  "save_the_date": {
+    "label": "Save the Date",
+    "text": "Nothing about this day works without the people we love in the room. Invitations and RSVPs will follow — for now, mark your calendar."
+  }
+}

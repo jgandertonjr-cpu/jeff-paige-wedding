@@ -1,0 +1,9 @@
+{#- One label/value row in a details box. Expects `item` = { label, value, note }. -#}
+              <div class="detail-list__item">
+                <span class="detail-list__label">{{ item.label }}</span>
+                <span class="detail-list__value">{{ item.value }}
+                {%- if item.note %}
+                  <p>{{ item.note }}</p>
+                {% endif -%}
+                </span>
+              </div>
