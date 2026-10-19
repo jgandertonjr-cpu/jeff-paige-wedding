@@ -3,74 +3,102 @@
     {
       "id": "2",
       "name": "Avery Mullen",
-      "plus_one": true,
-      "plus_one_name": "Colton Ellis"
+      "party": [
+        {
+          "name": "Colton Ellis"
+        }
+      ]
     },
     {
       "id": "3",
       "name": "Connor Mullen",
-      "plus_one": false,
-      "plus_one_name": ""
+      "party": []
     },
     {
       "id": "5",
       "name": "Victoria Heigh",
-      "plus_one": true,
-      "plus_one_name": "Chris Heigh"
+      "party": [
+        {
+          "name": "Chris Heigh"
+        }
+      ]
     },
     {
       "id": "6",
       "name": "Devin Mullen",
-      "plus_one": true,
-      "plus_one_name": "Kyle Mullen"
+      "party": [
+        {
+          "name": "Kyle Mullen"
+        }
+      ]
     },
     {
       "id": "10",
       "name": "Jeff Ganderton",
-      "plus_one": true,
-      "plus_one_name": "Test"
+      "party": [
+        {
+          "name": "Test"
+        }
+      ]
     },
     {
       "id": "11",
       "name": "Kristin Slider",
-      "plus_one": true,
-      "plus_one_name": "Kevin Slider"
+      "party": [
+        {
+          "name": "Kevin Slider"
+        }
+      ]
     },
     {
       "id": "12",
       "name": "John Zygmot",
-      "plus_one": true,
-      "plus_one_name": "Alex Zygmot"
+      "party": [
+        {
+          "name": "Alex Zygmot"
+        }
+      ]
     },
     {
       "id": "14",
       "name": "Kyle Long",
-      "plus_one": true,
-      "plus_one_name": "Stasia Evans"
+      "party": [
+        {
+          "name": "Stasia Evans"
+        }
+      ]
     },
     {
       "id": "16",
       "name": "Russ Long",
-      "plus_one": true,
-      "plus_one_name": "Tracie Long"
+      "party": [
+        {
+          "name": "Tracie Long"
+        }
+      ]
     },
     {
       "id": "18",
       "name": "Ryan Long",
-      "plus_one": true,
-      "plus_one_name": "Megan Long"
+      "party": [
+        {
+          "name": "Megan Long"
+        }
+      ]
     },
     {
       "id": "20",
       "name": "Kevin Long",
-      "plus_one": true,
-      "plus_one_name": "Mia Fisher"
+      "party": [
+        {
+          "name": "Mia Fisher"
+        }
+      ]
     },
     {
       "id": "22",
       "name": "Tyler Long",
-      "plus_one": false,
-      "plus_one_name": ""
+      "party": []
     }
   ]
 }

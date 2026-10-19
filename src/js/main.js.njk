@@ -380,8 +380,16 @@ eleventyExcludeFromCollections: true
       var submitBtn = qs('[type="submit"]', form);
       if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Sending…'; }
 
-      var formData = new FormData(form);
-      var body = encode(Object.fromEntries(formData.entries()));
+      var data = Object.fromEntries(new FormData(form).entries());
+      /* Party slots left without a name (a guest-of-their-choice they're not
+         bringing) aren't part of the response. */
+      Object.keys(data).forEach(function (key) {
+        var m = key.match(/^guest_(\d+)_name$/);
+        if (m && !String(data[key]).trim()) {
+          ['name', 'attending', 'meal'].forEach(function (f) { delete data['guest_' + m[1] + '_' + f]; });
+        }
+      });
+      var body = encode(data);
 
       fetch('/', {
         method: 'POST',
@@ -408,7 +416,8 @@ eleventyExcludeFromCollections: true
   }
 
   /* =============================================================
-     9. RSVP GUEST-LIST LOOKUP — autocomplete + conditional +1
+     9. RSVP GUEST-LIST LOOKUP — autocomplete + the guest's party
+        (plus-one, kids…): one block per person on the invitation
      ============================================================= */
   function initRsvpLookup() {
     var nameInput   = qs('#rsvp-name');
@@ -420,7 +429,11 @@ eleventyExcludeFromCollections: true
     var resetBtn    = qs('#rsvp-lookup-reset');
     var guestIdEl   = qs('#rsvp-guest-id');
     var plusSection = qs('#rsvp-plus-section');
-    var plusNameEl  = qs('#rsvp-guest-name');
+    var plusTitle   = qs('#rsvp-plus-title');
+    var partySizeEl = qs('#rsvp-party-size');
+    var partyBlocks = qsa('[data-party-guest]');
+    var form        = nameInput.form;
+    var partyCount  = 0;
 
     var guests       = window.WEDDING_GUESTS || [];
     var activeIndex  = -1;
@@ -484,19 +497,54 @@ eleventyExcludeFromCollections: true
       if (listbox)     { listbox.hidden = true; listbox.innerHTML = ''; }
       nameInput.setAttribute('aria-expanded', 'false');
 
-      if (welcomeSpan) welcomeSpan.textContent = guest.plusOne
-        ? 'Found! Your invitation includes a plus-one.'
-        : 'Found! Your invitation is for 1 guest.';
+      var party = (guest.party || []).slice(0, partyBlocks.length);
+      partyCount = party.length;
+      if (welcomeSpan) welcomeSpan.textContent =
+        partyCount === 0 ? 'Found! Your invitation is for 1 guest.' :
+        partyCount === 1 ? 'Found! Your invitation includes a plus-one.' :
+        'Found! Your invitation is for ' + (partyCount + 1) + ' guests.';
       if (statusBar)   statusBar.hidden = false;
+      if (plusTitle)   plusTitle.textContent = partyCount > 1 ? 'Your Party' : 'Plus-One Details';
 
-      if (plusSection) {
-        if (guest.plusOne) {
-          plusSection.hidden = false;
-          if (plusNameEl && guest.plusOneName) plusNameEl.value = guest.plusOneName;
-        } else {
-          plusSection.hidden = true;
-        }
-      }
+      partyBlocks.forEach(function (block, i) {
+        var nameEl = qs('input', block);
+        if (!nameEl) return;
+        nameEl.value = i < partyCount ? party[i] : '';
+        nameEl.placeholder = (i < partyCount && !party[i])
+          ? "Guest's name, or leave blank"
+          : "Guest's full name";
+      });
+      updateParty();
+    }
+
+    /* Show one block per person on the invitation. Blocks that aren't shown
+       (or the whole party, if the guest declines) are disabled so they're
+       left out of the submission. */
+    function updateParty() {
+      var declined = !!(form && qs('input[name="attending"][value="no"]:checked', form));
+      var showParty = partyCount > 0 && !declined;
+      if (plusSection) plusSection.hidden = !showParty;
+      partyBlocks.forEach(function (block, i) {
+        var on = showParty && i < partyCount;
+        block.hidden = !on;
+        block.disabled = !on;
+      });
+      updatePartySize();
+    }
+
+    /* Head count for this response: the guest (if attending) plus everyone
+       in their party with a name who is marked "Will attend". */
+    function updatePartySize() {
+      if (!partySizeEl || !form) return;
+      var accepted = !!qs('input[name="attending"][value="yes"]:checked', form);
+      if (!accepted) { partySizeEl.value = qs('input[name="attending"]:checked', form) ? '0' : ''; return; }
+      var n = 1;
+      partyBlocks.forEach(function (block) {
+        var att = qs('select[name$="_attending"]', block);
+        var nm  = qs('input', block);
+        if (!block.disabled && att && att.value === 'yes' && nm && nm.value.trim()) n++;
+      });
+      partySizeEl.value = String(n);
     }
 
     function resetLookup() {
@@ -505,10 +553,12 @@ eleventyExcludeFromCollections: true
       nameInput.classList.remove('guest-confirmed');
       if (guestIdEl)   guestIdEl.value = '';
       if (statusBar)   statusBar.hidden = true;
-      if (plusSection) plusSection.hidden = true;
-      if (plusNameEl)  plusNameEl.value = '';
-      var guestMealEl = qs('#rsvp-guest-meal');
-      if (guestMealEl) guestMealEl.selectedIndex = 0;
+      partyCount = 0;
+      partyBlocks.forEach(function (block) {
+        qsa('input', block).forEach(function (el) { el.value = ''; });
+        qsa('select', block).forEach(function (el) { el.selectedIndex = 0; });
+      });
+      updateParty();
       nameInput.focus();
     }
 
@@ -546,6 +596,19 @@ eleventyExcludeFromCollections: true
     });
 
     if (resetBtn) resetBtn.addEventListener('click', resetLookup);
+
+    if (form) {
+      qsa('input[name="attending"]', form).forEach(function (r) {
+        r.addEventListener('change', updateParty);
+      });
+      partyBlocks.forEach(function (block) {
+        var att = qs('select[name$="_attending"]', block);
+        if (att) att.addEventListener('change', updatePartySize);
+        var nm = qs('input', block);
+        if (nm) nm.addEventListener('input', updatePartySize);
+      });
+    }
+    updateParty();
   }
 
   /* =============================================================

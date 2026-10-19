@@ -3135,6 +3135,24 @@ main { overflow-x: clip; }
 .rsvp-plus-header .section-ornament { margin: 0; width: auto; flex: 1; }
 .rsvp-plus-header .section-label    { margin: 0; white-space: nowrap; }
 
+/* One block per person in the guest's party (plus-one, kids…) */
+.rsvp-party-guest {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.rsvp-party-guest + .rsvp-party-guest {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-6);
+}
+.rsvp-party-guest__title {
+  float: left;            /* lets the legend sit inside the flex column */
+  width: 100%;
+  padding: 0;
+  color: var(--color-accent-dark);
+}
+
 .fieldset-reset { border: none; padding: 0; margin: 0; }
 .form-actions   { text-align: center; padding-top: var(--space-4); }
 

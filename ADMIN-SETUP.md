@@ -97,12 +97,15 @@ The left sidebar has three sections:
 
 **Things to know**
 
-- **Saving publishes.** Each **Save** goes live in about a minute. There's no draft stage, so read before you save. Everything is kept in GitHub history, so any change can be undone.
+- **Saving publishes.** Each **Save** goes live in about a minute. There's no draft stage, so read before you save. Everything is kept in GitHub history (each change is labelled like "Website edit: Pages → faq (by your-github-name)"), so any change can be undone.
+- **See your change:** on any page entry, the editor has a link (in its toolbar or the **⋮** menu) that opens that page on jeffandpaige.net. Give it about a minute after saving.
 - **Lists** (FAQ questions, schedule events, wedding party, hotels, gallery photos, timeline moments, and more): use **Add** to add one, the **⋮** menu to delete one, and drag the handle to reorder.
-- **Photos:** click the photo field → **Upload** (or pick an existing photo). Photos are saved in `src/images/`. Phone photos are large, so shrink them to about 2000 pixels on the long side before uploading, or pages will load slowly. Always fill in the **Photo description**; screen readers use it.
+- **Photos:** click the photo field → **Upload** (or pick an existing photo). Uploads are automatically shrunk to at most 2000 pixels on the long side, compressed to WebP, and given a web-safe file name, so phone photos are fine as-is (up to 25 MB). Photos are saved in `src/images/`. Always fill in the **Photo description**; screen readers use it. iPhone HEIC photos may not upload from Chrome; export them as JPEG first, or upload from Safari.
 - **Formatting** (bold, italic, links) is only available in the Our Story moments and FAQ answers. Every other field is plain text, so the design stays consistent.
 - **Wedding date** (Site Settings) updates the countdown, the home page, the Details and RSVP pages, and the search-engine info. Sentences you wrote yourself that mention the date need updating by hand. Search for "August 5" in the Welcome text, Wedding Party bottom section, Gallery note, and the Search & Sharing descriptions.
 - **Opening RSVPs:** Pages → **RSVP** → turn on **RSVPs are open**, optionally set a **Reply-by date**, then **Save**. Also update the RSVP card text on the Home page and the RSVP page subtitle. Responses still arrive in Netlify under **Forms**.
+- **Guest list & parties:** in **Guest List**, each guest has **Others on this invitation**: add one entry per extra person (a plus-one, a spouse, four kids, anyone). Names are optional. Leave a name blank to give them a guest of their choosing. When that guest finds their name on the RSVP form, the form shows one block per person (name, attending, meal), with names pre-filled. If the guest declines, the party is skipped.
+- **Reading RSVP responses** (Netlify → **Forms** → **rsvp**): `name`, `attending` and `meal` are the guest. `guest_1_…`, `guest_2_…` are the people in their party, in the order you listed them. `party_size` is the head count for that response (everyone marked as attending). Use **Download as CSV** to total it up in a spreadsheet.
 - **Empty "coming soon" spots:** Registry links, Nearby hotels, the hotel booking link, and the After Party map all show their current "coming soon" text until you fill them in. Then they appear automatically.
 - **Guest list privacy:** the guest list has always been part of the public site code (the RSVP form needs it). Anyone who knows where to look can read the names.
 - **Don't drag-and-drop deploy any more.** Netlify now builds the site from GitHub. Dragging the `src` folder into Netlify would publish raw templates instead of the finished site.
@@ -161,7 +164,7 @@ All editable content is in `src/_data/`, one JSON file per page or section. The 
 | `faq.json` | FAQ questions and answers | Pages → FAQ |
 | `gallery.json` | Gallery photos and the wedding-photos note | Pages → Gallery |
 | `notfound.json` | The "Page Not Found" message | Pages → Page Not Found |
-| `guests.json` | Guest list for the RSVP name lookup (becomes `js/guests.js`) | Guest List |
+| `guests.json` | Guest list for the RSVP name lookup, with everyone on each invitation (becomes `js/guests.js`) | Guest List |
 
 Each page also has a **Search & Sharing** group (browser-tab title, Google description, link-preview text).
 

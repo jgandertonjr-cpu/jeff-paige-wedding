@@ -150,34 +150,51 @@ headerDark: true
             </div>
 
             <!-- Plus-one section — revealed by JS when guest has entitlement -->
+            <!-- Party — the other people on this guest's invitation. One block per
+                 person; the guest-list lookup shows as many as the invitation has. -->
+            <input type="hidden" name="party_size" id="rsvp-party-size">
             <div class="rsvp-plus-section" id="rsvp-plus-section" hidden>
               <div class="rsvp-plus-header">
                 <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
-                <span class="section-label">Plus-One Details</span>
+                <span class="section-label" id="rsvp-plus-title">Plus-One Details</span>
                 <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
               </div>
+              {%- for i in range(1, (guests.guests | maxPartySize) + 1) %}
 
-              <div class="form-group">
-                <label class="form-label" for="rsvp-guest-name">Guest's Full Name</label>
-                <input
-                  type="text"
-                  id="rsvp-guest-name"
-                  name="guest_name"
-                  class="form-input"
-                  placeholder="Guest's full name"
-                  autocomplete="off"
-                >
-              </div>
+              <fieldset class="fieldset-reset rsvp-party-guest" data-party-guest="{{ i }}" hidden>
+                <legend class="form-label rsvp-party-guest__title">Guest {{ i }}</legend>
 
-              <div class="form-group">
-                <label class="form-label" for="rsvp-guest-meal">Guest's Meal Preference</label>
-                <select id="rsvp-guest-meal" name="guest_meal" class="form-select">
-                  <option value="" disabled selected>Select their meal choice</option>
-                  {%- for meal in rsvp.meal_options %}
-                  <option value="{{ meal.value }}">{{ meal.label }}</option>
-                  {%- endfor %}
-                </select>
-              </div>
+                <div class="form-group">
+                  <label class="form-label" for="rsvp-guest-{{ i }}-name">Full Name</label>
+                  <input
+                    type="text"
+                    id="rsvp-guest-{{ i }}-name"
+                    name="guest_{{ i }}_name"
+                    class="form-input"
+                    placeholder="Guest's full name"
+                    autocomplete="off"
+                  >
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="rsvp-guest-{{ i }}-attending">Attending?</label>
+                  <select id="rsvp-guest-{{ i }}-attending" name="guest_{{ i }}_attending" class="form-select">
+                    <option value="yes" selected>Will attend</option>
+                    <option value="no">Can't make it</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="rsvp-guest-{{ i }}-meal">Meal Preference</label>
+                  <select id="rsvp-guest-{{ i }}-meal" name="guest_{{ i }}_meal" class="form-select">
+                    <option value="" disabled selected>Select their meal choice</option>
+                    {%- for meal in rsvp.meal_options %}
+                    <option value="{{ meal.value }}">{{ meal.label }}</option>
+                    {%- endfor %}
+                  </select>
+                </div>
+              </fieldset>
+              {%- endfor %}
             </div>
 
             <!-- Dietary Restrictions -->
@@ -221,6 +238,6 @@ headerDark: true
     </section>
 {% endblock %}
 {%- block scripts %}
-  <script src="js/guests.js?v=1" defer></script>
-  <script src="js/main.js?v=12" defer></script>
+  <script src="js/guests.js?v=2" defer></script>
+  <script src="js/main.js?v=13" defer></script>
 {%- endblock %}

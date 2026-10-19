@@ -5,13 +5,13 @@ eleventyExcludeFromCollections: true
 /* =============================================================
    Wedding Guest List — generated from src/_data/guests.json.
    Edit it in the admin (Guest List), not here. Each entry:
-     id          — any unique string
-     name        — full name exactly as on the invitation (case-insensitive matching is applied)
-     plusOne     — true if this guest may bring a +1, false otherwise
-     plusOneName — pre-fill their +1's name if already known, "" if not
+     id    — any unique string
+     name  — full name exactly as on the invitation (case-insensitive matching is applied)
+     party — the other people on this invitation (plus-one, kids…), in order.
+             A name of "" means a guest of their choosing; they type the name.
    ============================================================= */
 window.WEDDING_GUESTS = [
 {%- for g in guests.guests %}
-  { id: {{ g.id | string | dump | safe }}, name: {{ g.name | dump | safe }}, plusOne: {{ "true" if g.plus_one else "false" }}{% if g.plus_one %}, plusOneName: {{ (g.plus_one_name or "") | dump | safe }}{% endif %} }{% if not loop.last %},{% endif %}
+  { id: {{ g.id | string | dump | safe }}, name: {{ g.name | dump | safe }}, party: [{% for p in (g.party or []) %}{{ (p.name or "") | dump | safe }}{% if not loop.last %}, {% endif %}{% endfor %}] }{% if not loop.last %},{% endif %}
 {%- endfor %}
 ];
