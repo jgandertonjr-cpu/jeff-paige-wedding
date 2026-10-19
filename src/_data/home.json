@@ -7,7 +7,7 @@
   },
   "hero": {
     "eyebrow": "We're Getting Married",
-    "photo": "/images/gallery12.jpg",
+    "photo": "/images/119812256_unknown.webp",
     "photo_alt": "Jeff and Paige together on vacation"
   },
   "countdown": {
@@ -30,13 +30,13 @@
         "focus": "center"
       },
       {
-        "image": "/images/gallery10.jpg",
+        "image": "/images/img_5076.webp",
         "alt": "Jeff and Paige on a boat in Boston Harbor",
         "caption": "the everyday",
         "focus": "left"
       },
       {
-        "image": "/images/gallery1.jpg",
+        "image": "/images/img_0440.webp",
         "alt": "Paige hugging Jeff at home",
         "caption": "the forever",
         "focus": "center"
