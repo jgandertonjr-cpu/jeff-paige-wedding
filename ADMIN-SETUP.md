@@ -126,11 +126,18 @@ The left sidebar has three sections:
 - **Opening RSVPs:** Pages → **RSVP** → turn on **RSVPs are open**, optionally set a **Reply-by date**, then **Save**. Also update the RSVP card text on the Home page and the RSVP page subtitle. Responses still arrive in Netlify under **Forms**.
 - **Guest list & parties:** in **Guest List**, each guest has **Others on this invitation**: add one entry per extra person (a plus-one, a spouse, four kids, anyone). Names are optional. Leave a name blank to give them a guest of their choosing. When that guest finds their name on the RSVP form, the form shows one block per person (name, attending, meal), with names pre-filled. If the guest declines, the party is skipped.
 - **RSVP dashboard:** **https://jeffandpaige.net/admin/rsvps/**. It's also linked from Pages → RSVP and from Guest List in the editor.
-  - **Totals:** people attending, declined, and still awaiting a reply, plus how many invitations have been answered.
+  - **Filters** (top row): Everyone / Attending / Declined / Awaiting, meal, dietary group, and a search box (names, emails, notes, songs). Every number, chart, list and the table below follow the filters. **Clicking a bar or a segment in any chart filters by it**; click it again to undo. **Clear filters** resets everything.
+  - **Totals:** people attending, declined and awaiting, plus the response rate for the guest list.
+  - **Where replies stand:** everyone invited, split by reply.
+  - **Replies over time:** how many invitations have been answered each day, with the reply-by date marked when it's set (Pages → RSVP). Hover, or use the arrow keys, to see a day.
+  - **Meals:** counts among people attending, for the caterer.
+  - **Dietary needs:** what guests typed, grouped (nut allergy, gluten-free, vegetarian, dairy, shellfish…), with allergies flagged. One reply can fall in several groups. Hover a bar to see who.
+  - **Song requests:** most-requested first. The same song typed differently ("Mr. Brightside - The Killers", "mr brightside") counts once. Click a song to see who asked.
   - **Haven't replied yet:** everyone on the Guest List who hasn't responded, with their party.
-  - **Meals:** counts among everyone attending, ready for the caterer.
-  - **Responses:** every reply with party, meals, dietary needs and song requests, plus a search box. If someone replies twice, the latest answer counts (marked "Updated"). Replies from names that aren't on the Guest List are flagged.
-  - **Download CSV:** one row per person (attending, declined or no reply yet), for the caterer or a spreadsheet.
+  - **Every invitation:** one row per invitation, including those still waiting. Sort by clicking a column heading. If someone replies twice, the latest answer counts (marked "Updated"). Replies from names that aren't on the Guest List are flagged.
+  - **Download Excel:** a workbook with Summary, People (one row per person), Invitations, Not replied, Dietary and Songs sheets, each with filter buttons on the header row. **Downloads follow your current filters**, so filter to "Attending" first for a caterer-only sheet.
+  - **Google Sheets:** in Google Sheets choose **File → Import → Upload** and pick the Excel file (or drag it into Google Drive and open it with Google Sheets).
+  - **CSV:** the People sheet as a plain CSV.
   - Click **Refresh** to load new responses.
 - **Raw responses** are still in Netlify → **Forms** → **rsvp** if you ever need them. There, `guest_1_…`, `guest_2_…` are the people in each party in the order you listed them, and `party_size` is that response's head count.
 - **Empty "coming soon" spots:** Registry links, Nearby hotels, the hotel booking link, and the After Party map all show their current "coming soon" text until you fill them in. Then they appear automatically.
