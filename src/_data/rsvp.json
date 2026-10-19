@@ -2,6 +2,7 @@
   "seo": {
     "title": "RSVP | Jeff & Paige",
     "description": "RSVP for Jeff and Paige's wedding on August 5, 2028 at Holly Hedge Estate in New Hope, PA.",
+    "social_title": "",
     "social_description": "Let us know you'll be joining us for Jeff and Paige's wedding."
   },
   "hero": {
@@ -9,7 +10,7 @@
     "title": "RSVP",
     "subtitle": "We can't wait to celebrate with you. RSVPs will open when formal invitations go out."
   },
-  "rsvp_open": false,
+  "rsvp_open": true,
   "deadline": "",
   "closed_notice": {
     "title": "Save the Date",
