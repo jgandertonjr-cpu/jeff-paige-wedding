@@ -1,0 +1,490 @@
+---
+permalink: admin/rsvps/index.html
+eleventyExcludeFromCollections: true
+---
+{%- set c = site.couple -%}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="color-scheme" content="light">
+  <title>RSVP Responses | {{ c.partner1_first }} &amp; {{ c.partner2_first }}</title>
+  <link rel="icon" type="image/png" href="/images/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    /* Colors and type from DESIGN.md */
+    :root {
+      --sage: #BCCAB3; --sage-mist: #EBECE2; --ivory: #FBF8F2; --white: #FFFFFF;
+      --hairline: #E4DCCA; --blush: #F3DCD5; --champagne: rgba(201, 160, 74, 0.14);
+      --gold: #C9A04A; --deep-gold: #7E5C2E; --evergreen: #243022; --deep-evergreen: #1F2A20;
+      --sage-gray: #56634F; --muted-on-sage: #3E4A39;
+      --display: "Cormorant Garamond", Georgia, serif; --body: "Jost", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--ivory); color: var(--evergreen); font-family: var(--body); font-weight: 300; font-size: 16px; line-height: 1.55; }
+    a { color: var(--deep-gold); }
+    .band { background: var(--sage); color: var(--deep-evergreen); padding: 28px 16px 24px; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+    .band .wrap { padding: 0; }
+    .eyebrow, .label { font-size: 12px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; }
+    .band .eyebrow { color: var(--muted-on-sage); }
+    h1 { font-family: var(--display); font-weight: 300; font-style: italic; font-size: clamp(34px, 6vw, 48px); line-height: 1.1; margin: 4px 0 8px; }
+    h2 { font-family: var(--display); font-weight: 400; font-style: italic; font-size: 28px; margin: 0 0 4px; }
+    .band-row { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; }
+    .meta { color: var(--muted-on-sage); font-size: 14px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .btn { font: 500 12px/1 var(--body); letter-spacing: 0.16em; text-transform: uppercase; border-radius: 999px; padding: 12px 18px; border: 1px solid var(--evergreen); background: var(--evergreen); color: var(--ivory); cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+    .btn--ghost { background: transparent; color: var(--evergreen); }
+    .btn:disabled { opacity: 0.5; cursor: default; }
+    main.wrap { padding-top: 24px; padding-bottom: 64px; }
+    .notice { background: var(--white); border: 1px solid var(--hairline); border-radius: 12px; padding: 24px; max-width: 640px; margin: 24px auto; text-align: center; }
+    .notice p { margin: 8px 0 16px; color: var(--sage-gray); }
+    .notice .actions { justify-content: center; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .stat { background: var(--white); border: 1px solid var(--hairline); border-radius: 12px; padding: 18px 20px; }
+    .stat .label { color: var(--deep-gold); }
+    .stat .num { font-family: var(--display); font-size: 46px; line-height: 1.05; font-weight: 400; margin: 6px 0 2px; }
+    .stat .sub { color: var(--sage-gray); font-size: 14px; }
+    .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .card { background: var(--white); border: 1px solid var(--hairline); border-radius: 12px; padding: 20px; margin-bottom: 24px; }
+    .grid2 .card { margin-bottom: 0; }
+    .card-head { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+    .card-head .count { color: var(--sage-gray); font-size: 14px; }
+    .empty { color: var(--sage-gray); font-style: italic; margin: 4px 0; }
+    ul.plain { list-style: none; margin: 0; padding: 0; }
+    ul.plain li { padding: 10px 0; border-top: 1px solid var(--hairline); }
+    ul.plain li:first-child { border-top: 0; padding-top: 2px; }
+    .meal-row { display: flex; justify-content: space-between; gap: 12px; }
+    .meal-row strong { font-weight: 500; }
+    .small { font-size: 14px; color: var(--sage-gray); }
+    .table-wrap { overflow-x: auto; margin: 0 -20px; padding: 0 20px; }
+    table { width: 100%; border-collapse: collapse; font-size: 15px; min-width: 720px; }
+    th { text-align: left; font-size: 12px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--deep-gold); padding: 8px 10px; border-bottom: 1px solid var(--hairline); white-space: nowrap; }
+    td { padding: 12px 10px; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+    tr:last-child td { border-bottom: 0; }
+    td .name { font-weight: 500; }
+    .pill { display: inline-block; font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
+    .pill--yes { background: var(--sage-mist); color: var(--deep-evergreen); border: 1px solid var(--sage); }
+    .pill--no { background: var(--blush); color: var(--evergreen); }
+    .pill--warn { background: var(--champagne); color: var(--deep-gold); }
+    .party { margin: 0; padding: 0; list-style: none; }
+    .party li { padding: 1px 0; }
+    .party .no { color: var(--sage-gray); text-decoration: line-through; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .toolbar input { font: 400 15px var(--body); padding: 9px 12px; border: 1px solid var(--hairline); border-radius: 8px; min-width: 220px; background: var(--ivory); color: var(--evergreen); }
+    [hidden] { display: none !important; }
+    @media (max-width: 600px) { .stat .num { font-size: 40px; } .toolbar input { min-width: 0; width: 100%; } }
+  </style>
+</head>
+<body>
+  <header class="band">
+    <div class="wrap band-row">
+      <div>
+        <div class="eyebrow">{{ c.partner1_first }} &amp; {{ c.partner2_first }} · {{ site.wedding_date | dateFormat('long') }}</div>
+        <h1>RSVP Responses</h1>
+        <div class="meta" id="meta">Loading…</div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="refresh" type="button">Refresh</button>
+        <button class="btn btn--ghost" id="csv" type="button" disabled>Download CSV</button>
+        <a class="btn btn--ghost" href="/admin/">Back to editor</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="notice" id="signin" hidden>
+      <h2>Sign in to see responses</h2>
+      <p>Use the same GitHub account you use for the website editor. Only people who can edit the website can see RSVPs.</p>
+      <div class="actions">
+        <button class="btn" id="signin-btn" type="button">Sign in with GitHub</button>
+        <a class="btn btn--ghost" href="/admin/">Open the editor</a>
+      </div>
+    </div>
+
+    <div class="notice" id="error" hidden>
+      <h2 id="error-title">Something went wrong</h2>
+      <p id="error-text"></p>
+      <div class="actions">
+        <button class="btn" id="retry" type="button">Try again</button>
+        <button class="btn btn--ghost" id="signout" type="button">Sign in with a different account</button>
+      </div>
+    </div>
+
+    <div id="dashboard" hidden>
+      <section class="stats" aria-label="Totals">
+        <div class="stat"><div class="label">Attending</div><div class="num" id="s-attending">–</div><div class="sub" id="s-attending-sub"></div></div>
+        <div class="stat"><div class="label">Declined</div><div class="num" id="s-declined">–</div><div class="sub" id="s-declined-sub"></div></div>
+        <div class="stat"><div class="label">Awaiting reply</div><div class="num" id="s-awaiting">–</div><div class="sub" id="s-awaiting-sub"></div></div>
+        <div class="stat"><div class="label">Invitations answered</div><div class="num" id="s-answered">–</div><div class="sub" id="s-answered-sub"></div></div>
+      </section>
+
+      <div class="grid2">
+        <section class="card" aria-labelledby="h-waiting">
+          <div class="card-head"><h2 id="h-waiting">Haven't replied yet</h2><span class="count" id="waiting-count"></span></div>
+          <ul class="plain" id="waiting"></ul>
+        </section>
+        <section class="card" aria-labelledby="h-meals">
+          <div class="card-head"><h2 id="h-meals">Meals</h2><span class="count">people attending</span></div>
+          <ul class="plain" id="meals"></ul>
+        </section>
+      </div>
+
+      <section class="card" aria-labelledby="h-responses">
+        <div class="card-head">
+          <h2 id="h-responses">Responses</h2>
+          <div class="toolbar">
+            <label class="small" for="filter">Search</label>
+            <input id="filter" type="search" placeholder="Name, email, meal…" autocomplete="off">
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Guest</th><th>Reply</th><th>Party</th><th>Meal</th><th>Notes</th><th>Received</th></tr></thead>
+            <tbody id="responses"></tbody>
+          </table>
+        </div>
+        <p class="empty" id="responses-empty" hidden>No responses yet.</p>
+      </section>
+
+      <div class="grid2">
+        <section class="card" aria-labelledby="h-diet">
+          <div class="card-head"><h2 id="h-diet">Dietary needs</h2></div>
+          <ul class="plain" id="dietary"></ul>
+        </section>
+        <section class="card" aria-labelledby="h-songs">
+          <div class="card-head"><h2 id="h-songs">Song requests</h2></div>
+          <ul class="plain" id="songs"></ul>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script>
+  (function () {
+    'use strict';
+
+    /* Built into the page from the site's data (src/_data/guests.json, rsvp.json). */
+    var GUESTS = {{ guests.guests | jsonScript | safe }};
+    var MEALS = {{ rsvp.meal_options | jsonScript | safe }};
+
+    var API = '/api/rsvp-responses';
+    var DASH_TOKEN_KEY = 'rsvp-dashboard.github-token';
+
+    var $ = function (id) { return document.getElementById(id); };
+    var lastRows = [];
+    var lastPayload = null;
+
+    function norm(s) { return String(s || '').toLowerCase().trim().replace(/\s+/g, ' '); }
+    function el(tag, attrs, children) {
+      var node = document.createElement(tag);
+      Object.keys(attrs || {}).forEach(function (k) {
+        if (k === 'text') node.textContent = attrs[k];
+        else if (k === 'className') node.className = attrs[k];
+        else node.setAttribute(k, attrs[k]);
+      });
+      (children || []).forEach(function (child) {
+        if (child == null) return;
+        node.appendChild(typeof child === 'string' ? document.createTextNode(child) : child);
+      });
+      return node;
+    }
+    function mealLabel(value) {
+      if (!value) return '';
+      var m = MEALS.filter(function (x) { return x.value === value; })[0];
+      return m ? m.label : value;
+    }
+    function fmtDate(iso) {
+      var d = new Date(iso);
+      return isNaN(d) ? '' : d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    }
+    function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
+
+    /* ── Sign-in ────────────────────────────────────────────────────────
+       Reuse the website editor's GitHub sign-in when there is one; otherwise
+       sign in here through the same Netlify GitHub provider. */
+    function getToken() {
+      try {
+        var u = JSON.parse(localStorage.getItem('sveltia-cms.user') || 'null');
+        if (u && u.token && (!u.backendName || u.backendName === 'github')) return u.token;
+      } catch (e) { /* ignore */ }
+      try { return sessionStorage.getItem(DASH_TOKEN_KEY) || ''; } catch (e) { return ''; }
+    }
+
+    function signIn() {
+      var popup = window.open(
+        'https://api.netlify.com/auth?provider=github&site_id=' + encodeURIComponent(location.hostname) + '&scope=repo',
+        'rsvp-dashboard-signin', 'width=960,height=640');
+      if (!popup) { showError('Allow pop-ups', 'Your browser blocked the sign-in window. Allow pop-ups for this site and try again.'); return; }
+      function onMessage(e) {
+        if (e.origin !== 'https://api.netlify.com' || typeof e.data !== 'string') return;
+        if (e.data === 'authorizing:github') { popup.postMessage(e.data, e.origin); return; }
+        var m = /^authorization:github:(success|error):(.*)$/.exec(e.data);
+        if (!m) return;
+        window.removeEventListener('message', onMessage);
+        try { popup.close(); } catch (err) { /* ignore */ }
+        var info = {};
+        try { info = JSON.parse(m[2]); } catch (err) { /* ignore */ }
+        if (m[1] === 'success' && info.token) {
+          try { sessionStorage.setItem(DASH_TOKEN_KEY, info.token); } catch (err) { /* ignore */ }
+          load();
+        } else {
+          showError('Sign-in failed', (info && info.message) || 'GitHub sign-in did not complete. Please try again.');
+        }
+      }
+      window.addEventListener('message', onMessage);
+    }
+
+    function signOutHere() {
+      try { sessionStorage.removeItem(DASH_TOKEN_KEY); } catch (e) { /* ignore */ }
+      show('signin');
+    }
+
+    /* ── Loading ───────────────────────────────────────────────────── */
+    function show(which) {
+      ['signin', 'error', 'dashboard'].forEach(function (id) { $(id).hidden = id !== which; });
+    }
+    function showError(title, text) {
+      $('error-title').textContent = title;
+      $('error-text').textContent = text;
+      $('meta').textContent = '';
+      show('error');
+    }
+
+    function load() {
+      var token = getToken();
+      if (!token) { $('meta').textContent = ''; show('signin'); return; }
+      $('refresh').disabled = true;
+      $('meta').textContent = 'Loading…';
+      fetch(API, { headers: { Authorization: 'Bearer ' + token }, cache: 'no-store' })
+        .then(function (res) {
+          return res.json().catch(function () { return {}; }).then(function (body) { return { res: res, body: body }; });
+        })
+        .then(function (r) {
+          if (r.res.status === 401) {
+            try { sessionStorage.removeItem(DASH_TOKEN_KEY); } catch (e) { /* ignore */ }
+            $('meta').textContent = '';
+            $('signin').querySelector('p').textContent = r.body.error || 'Your sign-in has expired. Sign in again.';
+            show('signin');
+            return;
+          }
+          if (!r.res.ok) {
+            showError(r.body.setup ? 'Almost there' : 'Couldn’t load responses',
+              r.body.error || ('The server answered ' + r.res.status + '.'));
+            return;
+          }
+          lastPayload = r.body;
+          render(r.body);
+        })
+        .catch(function () {
+          showError('Couldn’t load responses', 'Check your connection and try again.');
+        })
+        .then(function () { $('refresh').disabled = false; });
+    }
+
+    /* ── Turning submissions into responses ─────────────────────────── */
+    function partyFrom(data) {
+      var party = [];
+      for (var i = 1; i <= 50; i++) {
+        if (!('guest_' + i + '_name' in data) && !('guest_' + i + '_attending' in data)) {
+          if (i > 1) break; else continue;
+        }
+        var name = String(data['guest_' + i + '_name'] || '').trim();
+        if (!name) continue;
+        party.push({ name: name, attending: data['guest_' + i + '_attending'] !== 'no', meal: data['guest_' + i + '_meal'] || '' });
+      }
+      // Responses sent before parties existed had one plus-one field.
+      if (!party.length && data.guest_name && String(data.guest_name).trim()) {
+        party.push({ name: String(data.guest_name).trim(), attending: true, meal: data.guest_meal || '' });
+      }
+      return party;
+    }
+
+    function buildRows(submissions) {
+      var byId = {}, byName = {};
+      GUESTS.forEach(function (g) { byId[String(g.id)] = g; byName[norm(g.name)] = g; });
+
+      var sorted = submissions.slice().sort(function (a, b) { return new Date(a.created_at) - new Date(b.created_at); });
+      var latest = {};
+      sorted.forEach(function (s) {
+        var d = s.data || {};
+        var guest = byId[String(d.guest_id || '')] || byName[norm(d.name)] || null;
+        var key = guest ? 'g:' + guest.id : 'u:' + (norm(d.email) || norm(d.name) || s.id);
+        var attending = String(d.attending || '').toLowerCase() === 'yes';
+        var party = partyFrom(d);
+        var row = {
+          key: key, guest: guest, name: String(d.name || (guest && guest.name) || '(no name)'),
+          email: String(d.email || ''), attending: attending, replied: !!d.attending,
+          meal: d.meal || '', party: attending ? party : [],
+          dietary: String(d.dietary_restrictions || '').trim(), song: String(d.song_request || '').trim(),
+          received: s.created_at, earlier: latest[key] ? latest[key].earlier + 1 : 0
+        };
+        row.headcount = attending ? 1 + row.party.filter(function (p) { return p.attending; }).length : 0;
+        latest[key] = row;
+      });
+      return Object.keys(latest).map(function (k) { return latest[k]; })
+        .sort(function (a, b) { return new Date(b.received) - new Date(a.received); });
+    }
+
+    /* ── Rendering ─────────────────────────────────────────────────── */
+    function render(payload) {
+      var rows = buildRows(payload.submissions || []);
+      lastRows = rows;
+      var answered = {};
+      rows.forEach(function (r) { if (r.guest) answered[r.guest.id] = r; });
+
+      var waiting = GUESTS.filter(function (g) { return !answered[g.id]; });
+      var invitedPeople = function (g) { return 1 + (g.party || []).length; };
+      var attendingPeople = rows.reduce(function (n, r) { return n + r.headcount; }, 0);
+      var declinedPeople = rows.reduce(function (n, r) {
+        if (!r.attending) return n + (r.guest ? invitedPeople(r.guest) : 1);
+        return n + r.party.filter(function (p) { return !p.attending; }).length;
+      }, 0);
+      var waitingPeople = waiting.reduce(function (n, g) { return n + invitedPeople(g); }, 0);
+      var answeredCount = GUESTS.length - waiting.length;
+      var unlisted = rows.filter(function (r) { return !r.guest; }).length;
+
+      $('s-attending').textContent = attendingPeople;
+      $('s-attending-sub').textContent = plural(rows.filter(function (r) { return r.attending; }).length, 'invitation', 'invitations') + ' accepted';
+      $('s-declined').textContent = declinedPeople;
+      $('s-declined-sub').textContent = 'people not coming';
+      $('s-awaiting').textContent = waitingPeople;
+      $('s-awaiting-sub').textContent = plural(waiting.length, 'invitation', 'invitations');
+      $('s-answered').textContent = answeredCount + ' / ' + GUESTS.length;
+      $('s-answered-sub').textContent = unlisted ? plural(unlisted, 'reply', 'replies') + ' from people not on the guest list' : 'from the guest list';
+
+      // Haven't replied yet
+      var w = $('waiting'); w.textContent = '';
+      $('waiting-count').textContent = waiting.length ? plural(waitingPeople, 'person', 'people') : '';
+      if (!waiting.length) w.appendChild(el('li', { className: 'empty', text: 'Everyone on the guest list has replied. 🎉' }));
+      waiting.forEach(function (g) {
+        var names = (g.party || []).map(function (p) { return p.name || 'guest of their choice'; });
+        w.appendChild(el('li', {}, [
+          el('span', { className: 'name', text: g.name }),
+          names.length ? el('div', { className: 'small', text: '+ ' + names.join(', ') }) : null
+        ]));
+      });
+
+      // Meals among people attending
+      var counts = {};
+      rows.forEach(function (r) {
+        if (!r.attending) return;
+        counts[r.meal || ''] = (counts[r.meal || ''] || 0) + 1;
+        r.party.forEach(function (p) { if (p.attending) counts[p.meal || ''] = (counts[p.meal || ''] || 0) + 1; });
+      });
+      var m = $('meals'); m.textContent = '';
+      var order = MEALS.map(function (x) { return x.value; });
+      Object.keys(counts).forEach(function (v) { if (v && order.indexOf(v) < 0) order.push(v); });
+      if (counts['']) order.push('');
+      var anyMeal = false;
+      order.forEach(function (v) {
+        if (!counts[v] && v !== '' && MEALS.every(function (x) { return x.value !== v; })) return;
+        if (!counts[v] && v === '') return;
+        anyMeal = anyMeal || !!counts[v];
+        m.appendChild(el('li', { className: 'meal-row' }, [
+          el('span', { text: v ? mealLabel(v) : 'Not chosen yet' }), el('strong', { text: String(counts[v] || 0) })
+        ]));
+      });
+      if (!anyMeal && !rows.some(function (r) { return r.attending; })) {
+        m.textContent = '';
+        m.appendChild(el('li', { className: 'empty', text: 'No one has accepted yet.' }));
+      }
+
+      // Responses table + notes
+      renderTable();
+      var diet = $('dietary'), songs = $('songs');
+      diet.textContent = ''; songs.textContent = '';
+      rows.forEach(function (r) {
+        if (r.dietary) diet.appendChild(el('li', {}, [el('span', { className: 'name', text: r.name }), el('div', { className: 'small', text: r.dietary })]));
+        if (r.song) songs.appendChild(el('li', {}, [el('span', { text: r.song }), el('div', { className: 'small', text: 'from ' + r.name })]));
+      });
+      if (!diet.children.length) diet.appendChild(el('li', { className: 'empty', text: 'None so far.' }));
+      if (!songs.children.length) songs.appendChild(el('li', { className: 'empty', text: 'None so far.' }));
+
+      var count = (payload.submissions || []).length;
+      $('meta').textContent = plural(count, 'submission', 'submissions') + ' · updated ' + fmtDate(payload.fetchedAt) +
+        (payload.viewer ? ' · signed in as ' + payload.viewer : '');
+      $('csv').disabled = !rows.length;
+      show('dashboard');
+    }
+
+    function renderTable() {
+      var q = norm($('filter').value);
+      var body = $('responses'); body.textContent = '';
+      var shown = lastRows.filter(function (r) {
+        if (!q) return true;
+        var hay = [r.name, r.email, mealLabel(r.meal), r.dietary, r.song].concat(r.party.map(function (p) { return p.name + ' ' + mealLabel(p.meal); })).join(' ');
+        return norm(hay).indexOf(q) >= 0;
+      });
+      shown.forEach(function (r) {
+        var replyPill = r.attending ? el('span', { className: 'pill pill--yes', text: 'Attending' }) : el('span', { className: 'pill pill--no', text: 'Declined' });
+        var guestCell = el('td', {}, [
+          el('div', { className: 'name', text: r.name }),
+          r.email ? el('div', { className: 'small' }, [el('a', { href: 'mailto:' + r.email, text: r.email })]) : null,
+          !r.guest ? el('div', {}, [el('span', { className: 'pill pill--warn', text: 'Not on guest list' })]) : null,
+          r.earlier ? el('div', { className: 'small', text: 'Updated ' + plural(r.earlier, 'time', 'times') }) : null
+        ]);
+        var partyList = el('ul', { className: 'party' }, r.party.map(function (p) {
+          return el('li', { className: p.attending ? '' : 'no', text: p.name + (p.attending ? (p.meal ? ' — ' + mealLabel(p.meal) : '') : ' (not coming)') });
+        }));
+        var notes = [];
+        if (r.dietary) notes.push(el('div', {}, [el('span', { className: 'label', text: 'Diet ' }), document.createTextNode(r.dietary)]));
+        if (r.song) notes.push(el('div', {}, [el('span', { className: 'label', text: 'Song ' }), document.createTextNode(r.song)]));
+        body.appendChild(el('tr', {}, [
+          guestCell,
+          el('td', {}, [replyPill, el('div', { className: 'small', text: r.attending ? plural(r.headcount, 'person', 'people') : (r.guest && (r.guest.party || []).length ? plural(1 + r.guest.party.length, 'person', 'people') : '') })]),
+          el('td', {}, [r.party.length ? partyList : el('span', { className: 'small', text: '—' })]),
+          el('td', { text: r.attending ? (mealLabel(r.meal) || '—') : '—' }),
+          el('td', {}, notes.length ? notes : [el('span', { className: 'small', text: '—' })]),
+          el('td', { className: 'small', text: fmtDate(r.received) })
+        ]));
+      });
+      $('responses-empty').hidden = lastRows.length > 0;
+      if (lastRows.length && !shown.length) {
+        body.appendChild(el('tr', {}, [el('td', { colspan: '6', className: 'empty', text: 'No responses match “' + $('filter').value + '”.' })]));
+      }
+    }
+
+    /* ── CSV: one row per person, for the caterer or a spreadsheet ───── */
+    function downloadCsv() {
+      var lines = [['Invitation', 'Person', 'Attending', 'Meal', 'Dietary needs', 'Email', 'Song request', 'Received', 'On guest list']];
+      lastRows.forEach(function (r) {
+        lines.push([r.name, r.name, r.attending ? 'Yes' : 'No', r.attending ? mealLabel(r.meal) : '', r.dietary, r.email, r.song, r.received, r.guest ? 'Yes' : 'No']);
+        r.party.forEach(function (p) {
+          lines.push([r.name, p.name, p.attending ? 'Yes' : 'No', p.attending ? mealLabel(p.meal) : '', '', '', '', r.received, r.guest ? 'Yes' : 'No']);
+        });
+      });
+      GUESTS.forEach(function (g) {
+        if (lastRows.some(function (r) { return r.guest && r.guest.id === g.id; })) return;
+        lines.push([g.name, g.name, 'No reply yet', '', '', '', '', '', 'Yes']);
+        (g.party || []).forEach(function (p) { lines.push([g.name, p.name || 'Guest of their choice', 'No reply yet', '', '', '', '', '', 'Yes']); });
+      });
+      var csv = lines.map(function (cols) {
+        return cols.map(function (v) {
+          v = String(v == null ? '' : v);
+          if (/^[=+\-@]/.test(v)) v = "'" + v; // stop spreadsheets treating text as a formula
+          return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+        }).join(',');
+      }).join('\r\n');
+      var a = el('a', { href: URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })), download: 'rsvps-' + new Date().toISOString().slice(0, 10) + '.csv' });
+      document.body.appendChild(a); a.click(); a.remove();
+    }
+
+    $('refresh').addEventListener('click', load);
+    $('retry').addEventListener('click', load);
+    $('signin-btn').addEventListener('click', signIn);
+    $('signout').addEventListener('click', signOutHere);
+    $('csv').addEventListener('click', downloadCsv);
+    $('filter').addEventListener('input', renderTable);
+
+    // For testing from the browser console.
+    window.rsvpDashboard = { reload: load, render: render };
+    load();
+  })();
+  </script>
+</body>
+</html>

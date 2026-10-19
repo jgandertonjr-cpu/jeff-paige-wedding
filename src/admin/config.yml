@@ -350,7 +350,7 @@ collections:
             label: RSVPs are open
             widget: boolean
             default: false
-            hint: "Off: guests see a Save the Date message. On: guests see the RSVP form. Responses arrive in Netlify under Forms."
+            hint: "Off: guests see a Save the Date message. On: guests see the RSVP form. **[See RSVP responses →](/admin/rsvps/)**"
           - name: deadline
             label: Reply-by date
             widget: datetime
@@ -664,7 +664,7 @@ collections:
             widget: list
             collapsed: true
             summary: "{{fields.name}}"
-            hint: "One entry per invitation. When this person RSVPs, the form also asks about everyone listed under \"Others on this invitation\"."
+            hint: "One entry per invitation. When this person RSVPs, the form also asks about everyone listed under \"Others on this invitation\". **[See who has replied →](/admin/rsvps/)**"
             fields:
               - { name: id, label: Guest number, widget: string, hint: "Any number not used by another guest — just use the next one." }
               - { name: name, label: Full name, widget: string, hint: "Exactly as written on the invitation." }

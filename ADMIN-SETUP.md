@@ -69,6 +69,26 @@ This lets the admin page ask GitHub "is this really Jeff?"
 6. Open **https://jeffandpaige.net/faq** and scroll to the bottom. You should see `TEST`. If you don't, refresh.
 7. Go back to the admin, remove `TEST`, and **Save** again. 🎉 Setup is done.
 
+### D. Connect the RSVP dashboard
+
+The dashboard at **https://jeffandpaige.net/admin/rsvps/** shows live totals, meal counts, every response, and **who hasn't replied yet**. It reads responses from Netlify, so it needs a Netlify access token. This takes about 3 minutes.
+
+1. **Create the token.** In Netlify, click your **avatar** (bottom left) → **User settings** → **Applications**. Under **Personal access tokens**, click **New access token**.
+   - Description: `RSVP dashboard`
+   - Expiration: the longest option offered. Put a reminder in your calendar to renew it; when it expires, the dashboard tells you.
+   - Click **Generate token** and copy it. Netlify only shows it once.
+
+   > This token can manage your Netlify account, so treat it like a password. Don't put it in the repo, an email or a chat. It only goes into the next step, where only the server can read it.
+2. **Store it as a secret.** Open the **jeffandpaige.net** project → **Project configuration** → **Environment variables** → **Add a variable** → **Add a single variable**.
+   - Key: `NETLIFY_RSVP_TOKEN`
+   - Value: paste the token
+   - If offered, tick **Contains secret values**, and limit the scope to **Functions**.
+   - Click **Create variable**.
+3. **Redeploy** so the server picks it up: **Deploys** → **Trigger deploy** → **Deploy project** (or **Deploy site**).
+4. Open **https://jeffandpaige.net/admin/rsvps/**. If you're signed in to the editor, you're signed in here too. Otherwise click **Sign in with GitHub**.
+
+**Who can see it:** only GitHub accounts that can edit the website repo (you, and Paige once she's a collaborator). Everyone else gets "no access", even after the site goes public. Guests' IP addresses and other Netlify metadata are never sent to the page.
+
 ---
 
 ## 2. Giving Paige access
@@ -105,7 +125,14 @@ The left sidebar has three sections:
 - **Wedding date** (Site Settings) updates the countdown, the home page, the Details and RSVP pages, and the search-engine info. Sentences you wrote yourself that mention the date need updating by hand. Search for "August 5" in the Welcome text, Wedding Party bottom section, Gallery note, and the Search & Sharing descriptions.
 - **Opening RSVPs:** Pages → **RSVP** → turn on **RSVPs are open**, optionally set a **Reply-by date**, then **Save**. Also update the RSVP card text on the Home page and the RSVP page subtitle. Responses still arrive in Netlify under **Forms**.
 - **Guest list & parties:** in **Guest List**, each guest has **Others on this invitation**: add one entry per extra person (a plus-one, a spouse, four kids, anyone). Names are optional. Leave a name blank to give them a guest of their choosing. When that guest finds their name on the RSVP form, the form shows one block per person (name, attending, meal), with names pre-filled. If the guest declines, the party is skipped.
-- **Reading RSVP responses** (Netlify → **Forms** → **rsvp**): `name`, `attending` and `meal` are the guest. `guest_1_…`, `guest_2_…` are the people in their party, in the order you listed them. `party_size` is the head count for that response (everyone marked as attending). Use **Download as CSV** to total it up in a spreadsheet.
+- **RSVP dashboard:** **https://jeffandpaige.net/admin/rsvps/**. It's also linked from Pages → RSVP and from Guest List in the editor.
+  - **Totals:** people attending, declined, and still awaiting a reply, plus how many invitations have been answered.
+  - **Haven't replied yet:** everyone on the Guest List who hasn't responded, with their party.
+  - **Meals:** counts among everyone attending, ready for the caterer.
+  - **Responses:** every reply with party, meals, dietary needs and song requests, plus a search box. If someone replies twice, the latest answer counts (marked "Updated"). Replies from names that aren't on the Guest List are flagged.
+  - **Download CSV:** one row per person (attending, declined or no reply yet), for the caterer or a spreadsheet.
+  - Click **Refresh** to load new responses.
+- **Raw responses** are still in Netlify → **Forms** → **rsvp** if you ever need them. There, `guest_1_…`, `guest_2_…` are the people in each party in the order you listed them, and `party_size` is that response's head count.
 - **Empty "coming soon" spots:** Registry links, Nearby hotels, the hotel booking link, and the After Party map all show their current "coming soon" text until you fill them in. Then they appear automatically.
 - **Guest list privacy:** the guest list has always been part of the public site code (the RSVP form needs it). Anyone who knows where to look can read the names.
 - **Don't drag-and-drop deploy any more.** Netlify now builds the site from GitHub. Dragging the `src` folder into Netlify would publish raw templates instead of the finished site.
@@ -174,7 +201,7 @@ Each page also has a **Search & Sharing** group (browser-tab title, Google descr
 - `src/js/main.js.njk` and `src/js/guests.js.njk` generate `js/main.js` (the countdown date) and `js/guests.js`.
 - Everything else in `src/` (CSS, images, the `study/` and `pd-tracker/` apps, the other tool pages, `_headers`, `_redirects`, `sitemap.xml`) is copied through unchanged.
 - Netlify runs `npm run build` and publishes `_site/` (see `netlify.toml`).
-- The admin is `src/admin/index.html` plus `src/admin/config.yml`. Sveltia CMS is pinned to an exact version in `index.html`. To upgrade, change the version number and test `/admin` locally first.
+- The admin is `src/admin/index.html` plus `src/admin/config.yml`. The RSVP dashboard is `src/rsvp-dashboard.njk` (published at `/admin/rsvps/`), backed by the Netlify Function `netlify/functions/rsvp-responses.mjs` (`/api/rsvp-responses`). Sveltia CMS is pinned to an exact version in `index.html`. To upgrade, change the version number and test `/admin` locally first.
 
 ---
 
@@ -187,4 +214,6 @@ Each page also has a **Search & Sharing** group (browser-tab title, Google descr
 | Signed in, but saving fails with a permissions error | That GitHub account doesn't have write access. See [Giving Paige access](#2-giving-paige-access). |
 | Saved, but the live site didn't change | Check Netlify → **Deploys**. If the newest deploy says **Failed**, open it and read the log; the error usually names the problem, e.g. `Image not found: src/images/….jpg` when a photo still in use was deleted. The previous version stays live until a build succeeds, so guests never see a broken site. Fix the field in the admin and save again. |
 | "A repository root directory could not be selected" in local mode | Use Chrome, Edge or Brave, and select the top `jeff-paige-wedding` folder, not `src`. |
+| RSVP dashboard says "Almost there" or that the token is invalid | Do (or redo) [step D](#d-connect-the-rsvp-dashboard): create a new Netlify access token, update `NETLIFY_RSVP_TOKEN`, and trigger a deploy. |
+| RSVP dashboard says this account has no access | Sign in with a GitHub account that's a collaborator on the repo ([Giving Paige access](#2-giving-paige-access)). |
 | Want to undo a change | Edit the field back in the admin and save. To restore an older version of a whole file, use GitHub's history for that file in `src/_data/`, or ask Claude. |
