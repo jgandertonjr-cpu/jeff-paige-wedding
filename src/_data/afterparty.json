@@ -1,22 +1,22 @@
 {
   "seo": {
     "title": "After Party | Jeff & Paige",
-    "description": "After party details for Jeff and Paige's wedding. Location and time to be announced.",
+    "description": "After party details for Jeff and Paige's wedding: the Stone Barn at Holly Hedge Estate, 11:00 PM to 1:00 AM.",
     "social_description": "The night doesn't have to end. Join us for the after party — all wedding guests welcome."
   },
   "hero": {
     "label": "Keep the Celebration Going",
     "title": "After Party",
-    "subtitle": "The reception ends — the night doesn't. Join us for a proper send-off. Location and time TBD."
+    "subtitle": "The reception ends — the night doesn't. Head to the Stone Barn for a proper send-off."
   },
   "details": {
     "label": "The Details",
     "title": "Where & When",
-    "venue_name": "TBD",
-    "address": "TBD",
-    "map_address": "",
-    "time": "TBD",
-    "time_note": "Right after the reception send-off",
+    "venue_name": "The Stone Barn at Holly Hedge Estate",
+    "address": "6987 Upper York Road, New Hope, PA 18938",
+    "map_address": "Holly Hedge Estate, 6987 Upper York Road, New Hope, PA 18938",
+    "time": "11:00 PM – 1:00 AM",
+    "time_note": "Starts as soon as the reception ends — no travel needed",
     "dress_code": "Keep your cocktail look or dress it down — you've earned it.",
     "open_to": "All wedding guests — no separate RSVP needed.",
     "map_note": "Map & directions coming soon — location TBD"
@@ -49,6 +49,6 @@
   },
   "cta": {
     "title": "See You There",
-    "text": "Save the date — we'll share after-party details here once they're set."
+    "text": "No need to go anywhere — when the reception wraps up, just follow the crowd to the Stone Barn."
   }
 }
