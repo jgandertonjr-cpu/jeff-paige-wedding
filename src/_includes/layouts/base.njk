@@ -13,6 +13,8 @@
     "notfound": notfound } -%}
 {%- set seo = pages[pageKey].seo -%}
 {%- set c = site.couple -%}
+{#- Changes whenever main.js or the site settings it uses change. -#}
+{%- set mainJsVersion = [mainJsSource, site] | fingerprint -%}
 {%- set navigation = [
   { "label": "Home", "url": "index.html" },
   { "label": "Our Story", "url": "our-story.html" },
@@ -110,7 +112,7 @@
   </footer>
 {%- endif %}
 {% block scripts %}
-  <script src="js/main.js?v=13" defer></script>
+  <script src="js/main.js?v={{ mainJsVersion }}" defer></script>
 {%- endblock %}
 </body>
 </html>

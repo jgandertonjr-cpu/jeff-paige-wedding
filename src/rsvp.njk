@@ -238,6 +238,6 @@ headerDark: true
     </section>
 {% endblock %}
 {%- block scripts %}
-  <script src="js/guests.js?v=2" defer></script>
-  <script src="js/main.js?v=13" defer></script>
+  <script src="js/guests.js?v={{ guests | fingerprint }}" defer></script>
+  <script src="js/main.js?v={{ [mainJsSource, site] | fingerprint }}" defer></script>
 {%- endblock %}

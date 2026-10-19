@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { imageSize } from "image-size";
@@ -116,6 +117,12 @@ export default function (eleventyConfig) {
     "https://maps.google.com/maps?q=" + String(query).replace(/ /g, "+") + "&output=embed");
 
   eleventyConfig.addFilter("pad2", (n) => String(n).padStart(2, "0"));
+
+  // Short fingerprint of any value, for cache-busting script URLs: when the
+  // guest list or wedding date changes, the URL changes, so no browser or CDN
+  // can keep serving an old copy.
+  eleventyConfig.addFilter("fingerprint", (...values) =>
+    crypto.createHash("sha256").update(JSON.stringify(values)).digest("hex").slice(0, 10));
 
   // Largest number of extra people on any one invitation (at least 1). The
   // RSVP form renders this many guest blocks so Netlify Forms knows every
