@@ -2,6 +2,7 @@
   "seo": {
     "title": "FAQ | Jeff & Paige",
     "description": "Frequently asked questions about Jeff and Paige's wedding — dress code, parking, hotel block, kids policy, registry, after party, and more.",
+    "social_title": "",
     "social_description": "Everything you need to know about the wedding weekend — dress code, parking, hotels, after party, and more."
   },
   "hero": {
@@ -69,6 +70,6 @@
   ],
   "cta": {
     "title": "Still Have Questions?",
-    "text": "Drop us a line and we'll get back to you quickly."
+    "text": "Drop us a line and we'll get back to you quickly. TEST"
   }
 }
