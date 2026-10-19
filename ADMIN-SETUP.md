@@ -32,8 +32,10 @@ This lets the admin page ask GitHub "is this really Jeff?"
    | Application name | `Jeff & Paige Website Admin` |
    | Homepage URL | `https://jeffandpaige.net` |
    | Application description | *(leave empty)* |
-   | Authorization callback URL | `https://api.netlify.com/auth/done` |
+   | Redirect URI (older form: "Authorization callback URL") | `https://api.netlify.com/auth/done` |
+   | Allow wildcard matching | *(leave unchecked)* |
    | Enable Device Flow | *(leave unchecked)* |
+   | Expire user access tokens | *(leave checked — more secure; you may need to sign in again after about 8 hours)* |
 
 6. Click **Register application**.
 7. You're now on the app's page. Copy the **Client ID** into a temporary note.
@@ -177,7 +179,8 @@ Each page also has a **Search & Sharing** group (browser-tab title, Google descr
 
 | Problem | Fix |
 |---|---|
-| The sign-in popup shows an error or closes with nothing happening | Check that step A's callback URL is exactly `https://api.netlify.com/auth/done` and that step B's provider is installed. Allow popups for jeffandpaige.net. |
+| The sign-in popup shows an error or closes with nothing happening | Check that step A's Redirect URI is exactly `https://api.netlify.com/auth/done` and that step B's provider is installed. Allow popups for jeffandpaige.net. |
+| The admin suddenly asks you to sign in again | Normal after a few hours with expiring tokens (step A). Click **Sign In with GitHub** again. |
 | Signed in, but saving fails with a permissions error | That GitHub account doesn't have write access. See [Giving Paige access](#2-giving-paige-access). |
 | Saved, but the live site didn't change | Check Netlify → **Deploys**. If the newest deploy says **Failed**, open it and read the log; the error usually names the problem, e.g. `Image not found: src/images/….jpg` when a photo still in use was deleted. The previous version stays live until a build succeeds, so guests never see a broken site. Fix the field in the admin and save again. |
 | "A repository root directory could not be selected" in local mode | Use Chrome, Edge or Brave, and select the top `jeff-paige-wedding` folder, not `src`. |
