@@ -15,8 +15,8 @@
     "items": [
       {
         "label": "Time",
-        "value": "To be announced",
-        "note": ""
+        "value": "5:30 PM",
+        "note": "Please arrive between 5:00 and 5:30 PM. The ceremony is held in the Circle Garden."
       },
       {
         "label": "Dress Code",
@@ -61,47 +61,57 @@
   "schedule": {
     "label": "Day Of",
     "title": "The Flow of the Day",
-    "subtitle": "Exact times will be shared closer to the day.",
+    "subtitle": "Times are approximate and may shift a little on the day.",
     "events": [
       {
-        "time": "",
-        "title": "Guests Arrive & Be Seated",
-        "description": "Find your seat for our outdoor ceremony on the grounds of Holly Hedge Estate."
+        "time": "5:00 PM",
+        "title": "Guests Arrive",
+        "description": "Arrive between 5:00 and 5:30 PM and find your seat for our outdoor ceremony on the grounds of Holly Hedge Estate."
       },
       {
-        "time": "",
-        "title": "Ceremony Begins",
-        "description": "The wedding ceremony commences. Please silence your phones."
+        "time": "5:30 PM",
+        "title": "Ceremony",
+        "description": "The wedding ceremony begins in the Circle Garden. Please silence your phones."
       },
       {
-        "time": "",
-        "title": "Ceremony Concludes",
-        "description": "Head to cocktail hour while Jeff & Paige sneak away for a few photos."
+        "time": "6:00 PM",
+        "title": "Group Photo & Cocktail Hour",
+        "description": "Stay put for a group photo from the balcony, then head to the Stone Barn for drinks and bites, inside and out."
       },
       {
-        "time": "",
-        "title": "Cocktail Hour",
-        "description": "Drinks, bites, and a toast to the newlyweds."
+        "time": "7:00 PM",
+        "title": "Dinner Is Served",
+        "description": "Cocktail hour wraps up and the Holly Hedge team will guide everyone to the reception in the New Barn."
       },
       {
-        "time": "",
+        "time": "7:10 PM",
+        "title": "Grand Entrance & First Dance",
+        "description": "The wedding party and the newlyweds are introduced, and Jeff & Paige share their first dance."
+      },
+      {
+        "time": "7:30 PM",
         "title": "Dinner & Toasts",
-        "description": "Dinner is served, followed by toasts from the wedding party."
+        "description": "Toasts begin during the first course, followed by the main course."
       },
       {
-        "time": "",
-        "title": "First Dance & Dancing Opens",
-        "description": "Jeff & Paige take the floor, then the dance floor opens for everyone."
+        "time": "8:30 PM",
+        "title": "Dancing",
+        "description": "Parent dances kick things off, then the dance floor opens for everyone."
       },
       {
-        "time": "",
+        "time": "9:00 PM",
         "title": "Cake Cutting",
-        "description": "Dessert service follows the cake cutting ceremony."
+        "description": "Jeff & Paige cut the cake. Dessert is served around 9:30 while the dancing continues."
       },
       {
-        "time": "",
-        "title": "Grand Send-off",
-        "description": "Help us send off Jeff & Paige in style as we close out the evening."
+        "time": "10:55 PM",
+        "title": "Last Song & Last Call",
+        "description": "One more song on the dance floor and last call at the bar."
+      },
+      {
+        "time": "11:00 PM",
+        "title": "Reception Ends",
+        "description": "Thank you for celebrating with us!"
       }
     ]
   },
