@@ -118,6 +118,10 @@ export default function (eleventyConfig) {
 
   eleventyConfig.addFilter("pad2", (n) => String(n).padStart(2, "0"));
 
+  // JSON that is safe to embed inside a <script> element.
+  eleventyConfig.addFilter("jsonScript", (value) =>
+    JSON.stringify(value ?? null).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029"));
+
   // Short fingerprint of any value, for cache-busting script URLs: when the
   // guest list or wedding date changes, the URL changes, so no browser or CDN
   // can keep serving an old copy.

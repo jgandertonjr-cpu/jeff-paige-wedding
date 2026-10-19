@@ -165,7 +165,7 @@ headerDark: true
                 <legend class="form-label rsvp-party-guest__title">Guest {{ i }}</legend>
 
                 <div class="form-group">
-                  <label class="form-label" for="rsvp-guest-{{ i }}-name">Full Name</label>
+                  <label class="form-label" for="rsvp-guest-{{ i }}-name"><span class="sr-only">Guest {{ i }} </span>Full Name</label>
                   <input
                     type="text"
                     id="rsvp-guest-{{ i }}-name"
@@ -177,7 +177,7 @@ headerDark: true
                 </div>
 
                 <div class="form-group">
-                  <label class="form-label" for="rsvp-guest-{{ i }}-attending">Attending?</label>
+                  <label class="form-label" for="rsvp-guest-{{ i }}-attending"><span class="sr-only">Guest {{ i }} </span>Attending?</label>
                   <select id="rsvp-guest-{{ i }}-attending" name="guest_{{ i }}_attending" class="form-select">
                     <option value="yes" selected>Will attend</option>
                     <option value="no">Can't make it</option>
@@ -185,7 +185,7 @@ headerDark: true
                 </div>
 
                 <div class="form-group">
-                  <label class="form-label" for="rsvp-guest-{{ i }}-meal">Meal Preference</label>
+                  <label class="form-label" for="rsvp-guest-{{ i }}-meal"><span class="sr-only">Guest {{ i }} </span>Meal Preference</label>
                   <select id="rsvp-guest-{{ i }}-meal" name="guest_{{ i }}_meal" class="form-select">
                     <option value="" disabled selected>Select their meal choice</option>
                     {%- for meal in rsvp.meal_options %}
