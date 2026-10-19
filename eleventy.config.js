@@ -117,6 +117,12 @@ export default function (eleventyConfig) {
 
   eleventyConfig.addFilter("pad2", (n) => String(n).padStart(2, "0"));
 
+  // Largest number of extra people on any one invitation (at least 1). The
+  // RSVP form renders this many guest blocks so Netlify Forms knows every
+  // field name in advance.
+  eleventyConfig.addFilter("maxPartySize", (guests) =>
+    Math.max(1, ...(guests || []).map((g) => (g.party || []).length)));
+
   return {
     dir: { input: INPUT, output: "_site", includes: "_includes", data: "_data" },
     htmlTemplateEngine: "njk",

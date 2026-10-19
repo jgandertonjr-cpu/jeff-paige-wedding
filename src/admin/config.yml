@@ -11,13 +11,36 @@ backend:
   branch: main
   # base_url is intentionally not set, so sign-in uses Netlify's built-in
   # GitHub OAuth provider (see ADMIN-SETUP.md).
+  # Readable history on GitHub: who changed which page.
+  commit_messages:
+    create: "Website edit: add {{collection}} → {{slug}} (by {{author-login}})"
+    update: "Website edit: {{collection}} → {{slug}} (by {{author-login}})"
+    delete: "Website edit: delete {{collection}} → {{slug}} (by {{author-login}})"
+    uploadMedia: "Website edit: upload photo {{path}} (by {{author-login}})"
+    deleteMedia: "Website edit: delete photo {{path}} (by {{author-login}})"
 
+app_title: "Jeff & Paige — Website Editor"
+logo_url: /images/apple-touch-icon.png
 site_url: https://jeffandpaige.net
 
 # Photo uploads go next to the site's existing photos, so old and new photos
 # can all be picked from the same media library.
 media_folder: src/images
 public_folder: /images
+media_libraries:
+  default:
+    config:
+      # Phone photos are huge. Shrink every uploaded photo to at most 2000px on
+      # its long side and save it as a compressed WebP, so pages stay fast.
+      transformations:
+        raster_image:
+          format: webp
+          quality: 85
+          width: 2000
+          height: 2000
+      # Rename uploads to safe, web-friendly names (e.g. "IMG 0412.JPG" → "img-0412.webp").
+      slugify_filename: true
+      max_file_size: 26214400 # 25 MB
 
 collections:
   # ── Site-wide ────────────────────────────────────────────────────────────
@@ -26,6 +49,8 @@ collections:
     icon: settings
     description: Names, wedding date, venue and contact email. These appear on many pages at once.
     format: json
+    editor:
+      preview: false
     files:
       - name: site
         label: Names, Date & Venue
@@ -56,7 +81,7 @@ collections:
               - { name: city, label: City, widget: string }
               - { name: state, label: State, widget: string, hint: "Two letters, e.g. PA" }
               - { name: zip, label: ZIP code, widget: string }
-          - { name: email, label: Contact email, widget: string, hint: "Every \"Email us\" link on the site uses this address." }
+          - { name: email, label: Contact email, widget: string, pattern: ['^[^\s@]+@[^\s@]+\.[^\s@]+$', "Enter an email address like name@example.com"], hint: "Every \"Email us\" link on the site uses this address." }
           - { name: footer_text, label: Footer text, widget: string, hint: "The small line at the bottom of every page." }
 
   # ── Pages ────────────────────────────────────────────────────────────────
@@ -65,6 +90,8 @@ collections:
     icon: description
     description: The text and photos on each page of the website.
     format: json
+    editor:
+      preview: false
     files:
       # Home ------------------------------------------------------------------
       - name: home
@@ -78,10 +105,10 @@ collections:
             collapsed: true
             hint: How this page appears in Google results, browser tabs and link previews (texts, iMessage, Facebook). Rarely needs changing.
             fields:
-              - { name: title, label: Browser tab title, widget: string }
-              - { name: description, label: Google description, widget: text, hint: "One or two sentences shown under the link in Google results." }
+              - { name: title, label: Browser tab title, widget: string, maxlength: 70 }
+              - { name: description, label: Google description, widget: text, maxlength: 160, hint: "One or two sentences shown under the link in Google results. Google cuts off anything past about 160 characters." }
               - { name: social_title, label: Link preview title, widget: string, required: false, hint: "Leave empty to use the browser tab title." }
-              - { name: social_description, label: Link preview description, widget: text, required: false, hint: "Shown when the link is shared in a text or on social media. Leave empty to use the Google description." }
+              - { name: social_description, label: Link preview description, widget: text, required: false, maxlength: 200, hint: "Shown when the link is shared in a text or on social media. Leave empty to use the Google description." }
           - name: hero
             label: Top of page
             widget: object
@@ -155,6 +182,7 @@ collections:
 
       # Our Story -------------------------------------------------------------
       - name: story
+        preview_path: our-story
         label: Our Story
         file: src/_data/story.json
         fields:
@@ -204,6 +232,7 @@ collections:
 
       # Details ---------------------------------------------------------------
       - name: details
+        preview_path: details
         label: Details (ceremony, reception, schedule)
         file: src/_data/details.json
         fields:
@@ -270,6 +299,7 @@ collections:
 
       # Wedding Party ---------------------------------------------------------
       - name: party
+        preview_path: wedding-party
         label: Wedding Party
         file: src/_data/party.json
         fields:
@@ -310,6 +340,7 @@ collections:
 
       # RSVP ------------------------------------------------------------------
       - name: rsvp
+        preview_path: rsvp
         label: RSVP
         file: src/_data/rsvp.json
         fields:
@@ -357,6 +388,7 @@ collections:
 
       # Registry --------------------------------------------------------------
       - name: registry
+        preview_path: registry
         label: Registry
         file: src/_data/registry.json
         fields:
@@ -378,10 +410,11 @@ collections:
             hint: Each one becomes a button under the message. Leave empty for no buttons.
             fields:
               - { name: name, label: Button text, widget: string, hint: "e.g. Zola, Amazon, Honeymoon Fund" }
-              - { name: url, label: Link, widget: string, hint: "The full web address, starting with https://" }
+              - { name: url, label: Link, widget: string, pattern: ['^https?://\S+$', "Paste the full web address, starting with https://"], hint: "The full web address, starting with https://" }
 
       # Travel ----------------------------------------------------------------
       - name: travel
+        preview_path: travel
         label: Travel & Hotels
         file: src/_data/travel.json
         fields:
@@ -404,7 +437,7 @@ collections:
                 required: false
                 hint: 'Leave empty to show "To be announced".'
               - { name: booking_note, label: Group code / booking note, widget: string }
-              - { name: booking_url, label: Booking link, widget: string, required: false, hint: "The full web address, starting with https://" }
+              - { name: booking_url, label: Booking link, widget: string, required: false, pattern: ['^https?://\S+$', "Paste the full web address, starting with https://"], hint: "The full web address, starting with https://" }
           - name: nearby
             label: Nearby hotels
             widget: object
@@ -423,7 +456,7 @@ collections:
                   - { name: address, label: Address, widget: string, required: false }
                   - { name: distance, label: Distance from the venue, widget: string, required: false, hint: "e.g. 10 minutes, 4 miles" }
                   - { name: note, label: Note, widget: string, required: false }
-                  - { name: url, label: Website, widget: string, required: false, hint: "The full web address, starting with https://" }
+                  - { name: url, label: Website, widget: string, required: false, pattern: ['^https?://\S+$', "Paste the full web address, starting with https://"], hint: "The full web address, starting with https://" }
           - name: airports
             label: Airports
             widget: object
@@ -473,6 +506,7 @@ collections:
 
       # After Party -----------------------------------------------------------
       - name: afterparty
+        preview_path: after-party
         label: After Party
         file: src/_data/afterparty.json
         fields:
@@ -518,6 +552,7 @@ collections:
 
       # FAQ -------------------------------------------------------------------
       - name: faq
+        preview_path: faq
         label: FAQ
         file: src/_data/faq.json
         fields:
@@ -562,6 +597,7 @@ collections:
 
       # Gallery ---------------------------------------------------------------
       - name: gallery
+        preview_path: gallery
         label: Gallery
         file: src/_data/gallery.json
         fields:
@@ -612,10 +648,13 @@ collections:
   - name: guest_list
     label: Guest List
     icon: group
-    description: "Names the RSVP form recognizes as guests type. Note: this list is part of the public website code, so anyone who knows where to look can see it."
+    description: "Names the RSVP form recognizes as guests type, and who's on each invitation. Note: this list is part of the public website code, so anyone who knows where to look can see it."
     format: json
+    editor:
+      preview: false
     files:
       - name: guests
+        preview_path: rsvp
         label: Guest List
         file: src/_data/guests.json
         fields:
@@ -625,8 +664,16 @@ collections:
             widget: list
             collapsed: true
             summary: "{{fields.name}}"
+            hint: "One entry per invitation. When this person RSVPs, the form also asks about everyone listed under \"Others on this invitation\"."
             fields:
               - { name: id, label: Guest number, widget: string, hint: "Any number not used by another guest — just use the next one." }
               - { name: name, label: Full name, widget: string, hint: "Exactly as written on the invitation." }
-              - { name: plus_one, label: Can bring a plus-one, widget: boolean, default: false }
-              - { name: plus_one_name, label: "Plus-one's name", widget: string, required: false, hint: "Optional. Fills in their guest's name for them." }
+              - name: party
+                label: Others on this invitation
+                label_singular: Person
+                widget: list
+                required: false
+                summary: "{{fields.name}}"
+                hint: "Plus-one, spouse, kids — add one entry per extra person, in any number. Leave a name blank if they can bring a guest of their choosing. Leave the list empty if the invitation is just for them."
+                fields:
+                  - { name: name, label: Name, widget: string, required: false, hint: "Optional. Fills in this person's name on the RSVP form; the guest can still correct it." }
