@@ -212,6 +212,7 @@ eleventyExcludeFromCollections: true
         <div class="stat"><div class="label">Attending</div><div class="num" id="s-attending">–</div><div class="sub" id="s-attending-sub"></div></div>
         <div class="stat"><div class="label">Declined</div><div class="num" id="s-declined">–</div><div class="sub" id="s-declined-sub"></div></div>
         <div class="stat"><div class="label">Awaiting reply</div><div class="num" id="s-awaiting">–</div><div class="sub" id="s-awaiting-sub"></div></div>
+        <div class="stat"><div class="label">After party</div><div class="num" id="s-ap">–</div><div class="sub" id="s-ap-sub"></div></div>
         <div class="stat"><div class="label">Response rate</div><div class="num" id="s-rate">–</div><div class="sub" id="s-rate-sub"></div><div class="meter" aria-hidden="true"><span id="s-rate-bar" style="width:0"></span></div></div>
       </section>
 
@@ -233,18 +234,25 @@ eleventyExcludeFromCollections: true
           <div class="card-head"><h2 id="h-meals">Meals</h2><span class="count">people attending</span></div>
           <ul class="bars" id="meals"></ul>
         </section>
+        <section class="card" aria-labelledby="h-ap">
+          <div class="card-head"><h2 id="h-ap">After party</h2><span class="count">people attending</span></div>
+          <ul class="bars" id="afterparty"></ul>
+        </section>
+      </div>
+
+      <div class="grid2">
         <section class="card" aria-labelledby="h-diet">
           <div class="card-head"><h2 id="h-diet">Dietary needs</h2><span class="count" id="diet-count"></span></div>
           <ul class="bars" id="diet"></ul>
           <p class="hint" style="margin:12px 0 0">Grouped from what guests typed; one reply can fall in more than one group.</p>
         </section>
-      </div>
-
-      <div class="grid2">
         <section class="card" aria-labelledby="h-songs">
           <div class="card-head"><h2 id="h-songs">Song requests</h2><span class="count" id="songs-count"></span></div>
           <ul class="bars bars--stacked" id="songs"></ul>
         </section>
+      </div>
+
+      <div class="grid2">
         <section class="card" aria-labelledby="h-waiting">
           <div class="card-head"><h2 id="h-waiting">Haven't replied yet</h2><span class="count" id="waiting-count"></span></div>
           <ul class="plain" id="waiting"></ul>
@@ -299,7 +307,9 @@ eleventyExcludeFromCollections: true
     };
 
     var $ = function (id) { return document.getElementById(id); };
-    var state = { status: '', meal: '', diet: '', q: '', sort: 'received', dir: 'desc' };
+    var state = { status: '', meal: '', diet: '', ap: '', q: '', sort: 'received', dir: 'desc' };
+    var AFTER_PARTY = { yes: 'Joining', maybe: 'Maybe', no: 'Not joining', __none: 'No answer' };
+    function apLabel(v) { return AFTER_PARTY[v || '__none'] || String(v); }
     var model = null;      // { invitations, people } from the latest load
     var view = null;       // the filtered slice, for export
     var payload = null;
@@ -438,7 +448,7 @@ eleventyExcludeFromCollections: true
         var hasName = ('guest_' + i + '_name') in d, hasAtt = ('guest_' + i + '_attending') in d;
         if (!hasName && !hasAtt) { if (i > 1) break; else continue; }
         var name = String(d['guest_' + i + '_name'] || '').trim();
-        if (name) party.push({ name: name, attending: d['guest_' + i + '_attending'] !== 'no', meal: d['guest_' + i + '_meal'] || '' });
+        if (name) party.push({ name: name, attending: d['guest_' + i + '_attending'] !== 'no', meal: d['guest_' + i + '_meal'] || '', afterparty: d['guest_' + i + '_afterparty'] || '' });
       }
       if (!party.length && d.guest_name && String(d.guest_name).trim()) party.push({ name: String(d.guest_name).trim(), attending: true, meal: d.guest_meal || '' });
       return party;
@@ -470,20 +480,21 @@ eleventyExcludeFromCollections: true
       var inv = {
         id: guest ? 'g:' + guest.id : reply.key, guest: guest, onList: !!guest, name: name, status: status,
         email: String(d.email || ''), meal: status === 'attending' ? (d.meal || '') : '',
+        afterparty: status === 'attending' ? (d.afterparty || '') : '',
         diet: dietInfo(d.dietary_restrictions), song: String(d.song_request || '').trim(),
         received: reply ? reply.received : '', first: reply ? reply.first : '', updates: reply ? reply.updates : 0,
         party: [], people: []
       };
-      inv.people.push({ inv: inv, name: name, role: 'Guest', status: status, meal: inv.meal });
+      inv.people.push({ inv: inv, name: name, role: 'Guest', status: status, meal: inv.meal, afterparty: inv.afterparty });
       if (status === 'attending') {
         partyFrom(d).forEach(function (p) {
-          var person = { inv: inv, name: p.name, role: 'Party', status: p.attending ? 'attending' : 'declined', meal: p.attending ? p.meal : '' };
+          var person = { inv: inv, name: p.name, role: 'Party', status: p.attending ? 'attending' : 'declined', meal: p.attending ? p.meal : '', afterparty: p.attending ? p.afterparty : '' };
           inv.party.push(person); inv.people.push(person);
         });
       } else {
         // Declined, or no reply yet: everyone on the invitation shares that status.
         ((guest && guest.party) || []).forEach(function (p) {
-          var person = { inv: inv, name: p.name || 'Guest of their choice', role: 'Party', status: status, meal: '' };
+          var person = { inv: inv, name: p.name || 'Guest of their choice', role: 'Party', status: status, meal: '', afterparty: '' };
           inv.party.push(person); inv.people.push(person);
         });
       }
@@ -497,6 +508,7 @@ eleventyExcludeFromCollections: true
       if (!opts.ignoreStatus && state.status && p.status !== state.status) return false;
       if (!opts.ignoreMeal && state.meal && (p.status !== 'attending' || (p.meal || '__none') !== state.meal)) return false;
       if (!opts.ignoreDiet && state.diet && p.inv.diet.groups.indexOf(state.diet) < 0) return false;
+      if (!opts.ignoreAp && state.ap && (p.status !== 'attending' || (p.afterparty || '__none') !== state.ap)) return false;
       if (state.q) {
         var inv = p.inv;
         var hay = [inv.name, inv.email, inv.diet.text, inv.song, mealLabel(p.meal)].concat(inv.people.map(function (x) { return x.name; })).join(' ');
@@ -516,7 +528,7 @@ eleventyExcludeFromCollections: true
     function render() {
       var s = slice();
       view = s;
-      var filtered = !!(state.status || state.meal || state.diet || state.q);
+      var filtered = !!(state.status || state.meal || state.diet || state.ap || state.q);
       var onListInvs = s.invitations.filter(function (i) { return i.onList; });
       var onListAnswered = onListInvs.filter(function (i) { return i.status !== 'awaiting'; });
       var unlisted = s.invitations.filter(function (i) { return !i.onList; }).length;
@@ -528,6 +540,11 @@ eleventyExcludeFromCollections: true
       $('s-awaiting').textContent = count(s.people, 'awaiting');
       $('s-awaiting-sub').textContent = plural(s.invitations.filter(function (i) { return i.status === 'awaiting'; }).length, 'invitation', 'invitations');
       var rate = pct(onListAnswered.length, onListInvs.length);
+      var attendingPeople = s.people.filter(function (p) { return p.status === 'attending'; });
+      var apYes = attendingPeople.filter(function (p) { return p.afterparty === 'yes'; }).length;
+      var apMaybe = attendingPeople.filter(function (p) { return p.afterparty === 'maybe'; }).length;
+      $('s-ap').textContent = apYes;
+      $('s-ap-sub').textContent = 'joining' + (apMaybe ? ' · ' + apMaybe + ' maybe' : '');
       $('s-rate').textContent = rate + '%';
       $('s-rate-sub').textContent = onListAnswered.length + ' of ' + onListInvs.length + ' invitations' + (unlisted ? ' · +' + unlisted + ' not on list' : '');
       $('s-rate-bar').style.width = rate + '%';
@@ -535,6 +552,7 @@ eleventyExcludeFromCollections: true
       renderStatus(slice({ ignoreStatus: true }).people);
       renderTimeline(s.invitations);
       renderMeals();
+      renderAfterParty();
       renderDiet();
       renderSongs(s.invitations);
       renderWaiting(s.invitations);
@@ -547,6 +565,7 @@ eleventyExcludeFromCollections: true
       if (state.status) parts.push(STATUS[state.status].label);
       if (state.meal) parts.push(state.meal === '__none' ? 'No meal chosen' : mealLabel(state.meal));
       if (state.diet) parts.push(dietLabel(state.diet));
+      if (state.ap) parts.push('After party: ' + apLabel(state.ap));
       if (state.q) parts.push('“' + $('f-search').value.trim() + '”');
       $('active-filters').textContent = filtered ? 'Showing ' + plural(s.people.length, 'person', 'people') + ' matching: ' + parts.join(' · ') : '';
 
@@ -607,6 +626,20 @@ eleventyExcludeFromCollections: true
         return { key: k, label: label, value: n, tip: [String(n), label + ' · ' + pct(n, people.length) + '% of people attending'] };
       });
       barList($('meals'), people.length ? items : [], { selected: state.meal, empty: 'No one attending matches these filters yet.', onClick: function (it) { setFilter('meal', it.key); } });
+    }
+
+    function renderAfterParty() {
+      var people = slice({ ignoreAp: true }).people.filter(function (p) { return p.status === 'attending'; });
+      var counts = {};
+      people.forEach(function (p) { var k = p.afterparty || '__none'; counts[k] = (counts[k] || 0) + 1; });
+      var keys = ['yes', 'maybe', 'no'];
+      Object.keys(counts).forEach(function (k) { if (k !== '__none' && keys.indexOf(k) < 0) keys.push(k); });
+      if (counts.__none) keys.push('__none');
+      var items = keys.map(function (k) {
+        var n = counts[k] || 0, label = apLabel(k);
+        return { key: k, label: label, value: n, tip: [String(n), label + ' · ' + pct(n, people.length) + '% of people attending'] };
+      });
+      barList($('afterparty'), people.length ? items : [], { selected: state.ap, empty: 'No one attending matches these filters yet.', onClick: function (it) { setFilter('ap', it.key); } });
     }
 
     function renderDiet() {
@@ -703,10 +736,11 @@ eleventyExcludeFromCollections: true
             i.updates ? el('div', { className: 'small', text: 'Updated ' + plural(i.updates, 'time', 'times') }) : null
           ]),
           el('td', {}, [el('span', { className: 'pill' }, [el('span', { className: 'key', style: 'background:' + st.color }), st.label]),
-            el('div', { className: 'small', text: i.status === 'attending' ? plural(i.headcount, 'person', 'people') : plural(i.people.length, 'person', 'people') })]),
+            el('div', { className: 'small', text: i.status === 'attending' ? plural(i.headcount, 'person', 'people') : plural(i.people.length, 'person', 'people') }),
+            i.status === 'attending' ? el('div', { className: 'small', text: 'After party: ' + apLabel(i.afterparty) }) : null]),
           el('td', {}, [i.party.length ? el('ul', { className: 'party' }, i.party.map(function (p) {
             var cls = p.status === 'declined' ? 'no' : (p.status === 'awaiting' ? 'wait' : '');
-            return el('li', { className: cls, text: p.name + (p.status === 'attending' && p.meal ? ' — ' + mealLabel(p.meal) : '') + (p.status === 'declined' && i.status === 'attending' ? ' (not coming)' : '') });
+            return el('li', { className: cls, text: p.name + (p.status === 'attending' && p.meal ? ' — ' + mealLabel(p.meal) : '') + (p.status === 'attending' ? ' · After party: ' + apLabel(p.afterparty) : '') + (p.status === 'declined' && i.status === 'attending' ? ' (not coming)' : '') });
           })) : el('span', { className: 'small', text: '—' })]),
           el('td', { text: i.status === 'attending' ? (mealLabel(i.meal) || 'Not chosen') : '—' }),
           el('td', {}, notes.length ? notes : [el('span', { className: 'small', text: '—' })]),
@@ -838,7 +872,7 @@ eleventyExcludeFromCollections: true
     $('f-diet').addEventListener('change', function (e) { state.diet = e.target.value; render(); });
     var searchTimer;
     $('f-search').addEventListener('input', function (e) { clearTimeout(searchTimer); searchTimer = setTimeout(function () { state.q = norm(e.target.value); render(); }, 150); });
-    $('f-clear').addEventListener('click', function () { state.status = state.meal = state.diet = state.q = ''; $('f-search').value = ''; render(); });
+    $('f-clear').addEventListener('click', function () { state.status = state.meal = state.diet = state.ap = state.q = ''; $('f-search').value = ''; render(); });
     document.querySelectorAll('th button').forEach(function (b) {
       b.addEventListener('click', function () {
         if (state.sort === b.dataset.sort) state.dir = state.dir === 'asc' ? 'desc' : 'asc';
@@ -853,6 +887,7 @@ eleventyExcludeFromCollections: true
       if (state.status) parts.push('Status: ' + STATUS[state.status].label);
       if (state.meal) parts.push('Meal: ' + (state.meal === '__none' ? 'Not chosen yet' : mealLabel(state.meal)));
       if (state.diet) parts.push('Dietary: ' + dietLabel(state.diet));
+      if (state.ap) parts.push('After party: ' + apLabel(state.ap));
       if (state.q) parts.push('Search: ' + $('f-search').value.trim());
       return parts.length ? parts.join('; ') : '';
     }
@@ -862,6 +897,7 @@ eleventyExcludeFromCollections: true
         return {
           'Invitation': i.name, 'Person': p.name, 'Role': p.role === 'Guest' ? 'Invited guest' : 'Party member',
           'Status': STATUS[p.status].label, 'Meal': p.status === 'attending' ? (mealLabel(p.meal) || 'Not chosen') : '',
+          'After party': p.status === 'attending' ? apLabel(p.afterparty) : '',
           'Dietary needs (whole invitation)': i.diet.text, 'Allergy mentioned': i.diet.allergy ? 'Yes' : '',
           'Email': i.email, 'Song request': p.role === 'Guest' ? i.song : '', 'Replied': i.received ? new Date(i.received) : '',
           'On guest list': i.onList ? 'Yes' : 'No'
@@ -873,7 +909,9 @@ eleventyExcludeFromCollections: true
         return {
           'Invitation': i.name, 'Status': STATUS[i.status].label, 'People on invitation': i.people.length, 'Attending': i.headcount,
           'Party': i.party.map(function (p) { return p.name + (p.status === 'attending' ? (p.meal ? ' (' + mealLabel(p.meal) + ')' : '') : (p.status === 'declined' && i.status === 'attending' ? ' (not coming)' : '')); }).join('; '),
-          'Meal': i.status === 'attending' ? (mealLabel(i.meal) || 'Not chosen') : '', 'Email': i.email, 'Dietary needs': i.diet.text,
+          'Meal': i.status === 'attending' ? (mealLabel(i.meal) || 'Not chosen') : '',
+          'After party (joining)': i.people.filter(function (p) { return p.status === 'attending' && p.afterparty === 'yes'; }).length,
+          'Email': i.email, 'Dietary needs': i.diet.text,
           'Dietary groups': i.diet.text ? i.diet.groups.map(dietLabel).join(', ') : '', 'Allergy mentioned': i.diet.allergy ? 'Yes' : '',
           'Song request': i.song, 'Replied': i.received ? new Date(i.received) : '', 'Times updated': i.updates || '', 'On guest list': i.onList ? 'Yes' : 'No'
         };
@@ -891,6 +929,11 @@ eleventyExcludeFromCollections: true
       s.people.forEach(function (p) { if (p.status === 'attending') { var k = mealLabel(p.meal) || 'Not chosen yet'; mealCounts[k] = (mealCounts[k] || 0) + 1; } });
       MEALS.forEach(function (m) { aoa.push([m.label, mealCounts[m.label] || 0]); delete mealCounts[m.label]; });
       Object.keys(mealCounts).forEach(function (k) { aoa.push([k, mealCounts[k]]); });
+      aoa.push([], ['After party (people attending)', 'People']);
+      var apCounts = {};
+      s.people.forEach(function (p) { if (p.status === 'attending') { var k = p.afterparty || '__none'; apCounts[k] = (apCounts[k] || 0) + 1; } });
+      ['yes', 'maybe', 'no', '__none'].forEach(function (k) { aoa.push([apLabel(k), apCounts[k] || 0]); delete apCounts[k]; });
+      Object.keys(apCounts).forEach(function (k) { aoa.push([apLabel(k), apCounts[k]]); });
       aoa.push([], ['Dietary groups', 'Replies']);
       var dg = {};
       s.invitations.forEach(function (i) { if (i.diet.text) i.diet.groups.forEach(function (g) { dg[g] = (dg[g] || 0) + 1; }); });
@@ -931,8 +974,8 @@ eleventyExcludeFromCollections: true
       sum['!cols'] = [{ wch: 38 }, { wch: 22 }];
       if (sum.B2) sum.B2.z = 'mmm d, yyyy h:mm AM/PM';
       XLSX.utils.book_append_sheet(wb, sum, 'Summary');
-      XLSX.utils.book_append_sheet(wb, sheetFrom(XLSX, peopleRows(s.people), [24, 24, 14, 12, 18, 36, 10, 28, 28, 20, 12], ['Person']), 'People');
-      XLSX.utils.book_append_sheet(wb, sheetFrom(XLSX, invitationRows(s.invitations), [24, 12, 10, 10, 44, 18, 28, 36, 24, 10, 28, 20, 8, 12], ['Invitation']), 'Invitations');
+      XLSX.utils.book_append_sheet(wb, sheetFrom(XLSX, peopleRows(s.people), [24, 24, 14, 12, 18, 14, 36, 10, 28, 28, 20, 12], ['Person']), 'People');
+      XLSX.utils.book_append_sheet(wb, sheetFrom(XLSX, invitationRows(s.invitations), [24, 12, 10, 10, 44, 18, 12, 28, 36, 24, 10, 28, 20, 8, 12], ['Invitation']), 'Invitations');
       var waiting = s.invitations.filter(function (i) { return i.status === 'awaiting'; }).map(function (i) { return { 'Invitation': i.name, 'People': i.people.map(function (p) { return p.name; }).join(', '), 'Count': i.people.length }; });
       XLSX.utils.book_append_sheet(wb, sheetFrom(XLSX, waiting, [26, 60, 8], ['Invitation', 'People', 'Count']), 'Not replied');
       var diet = s.invitations.filter(function (i) { return i.diet.text; }).map(function (i) { return { 'Invitation': i.name, 'Dietary needs': i.diet.text, 'Groups': i.diet.groups.map(dietLabel).join(', '), 'Allergy mentioned': i.diet.allergy ? 'Yes' : '', 'Attending': i.headcount }; });

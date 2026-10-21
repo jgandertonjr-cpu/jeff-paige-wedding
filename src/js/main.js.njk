@@ -316,6 +316,32 @@ eleventyExcludeFromCollections: true
       return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
     }
 
+    /* A required radio question. Questions that are switched off (a disabled
+       fieldset) don't count. The message goes in the question's form-group. */
+    function radioErrorEl(name) {
+      var first = qs('input[name="' + name + '"]', form);
+      var group = first && first.closest('.form-group');
+      return group ? qs('.form-error-msg', group) : null;
+    }
+    function requireRadio(name, msg) {
+      var radios = qsa('input[name="' + name + '"]', form).filter(function (r) { return !r.matches(':disabled'); });
+      var errEl = radioErrorEl(name);
+      if (!radios.length || radios.some(function (r) { return r.checked; })) {
+        if (errEl) { errEl.textContent = ''; errEl.classList.remove('visible'); }
+        return true;
+      }
+      if (errEl) { errEl.textContent = msg; errEl.classList.add('visible'); }
+      return false;
+    }
+    ['attending', 'afterparty'].forEach(function (name) {
+      qsa('input[name="' + name + '"]', form).forEach(function (r) {
+        r.addEventListener('change', function () {
+          var errEl = radioErrorEl(name);
+          if (errEl) { errEl.textContent = ''; errEl.classList.remove('visible'); }
+        });
+      });
+    });
+
     qsa('.form-input, .form-select, .form-textarea', form).forEach(function (field) {
       field.addEventListener('blur', function () {
         if (field.required && !field.value.trim()) {
@@ -338,9 +364,11 @@ eleventyExcludeFromCollections: true
       e.preventDefault();
       var valid = true;
 
+      /* Only names picked from the guest list can reply. */
       var nameField = qs('#rsvp-name', form);
-      if (nameField && !nameField.value.trim()) {
-        showError(nameField, 'Please enter your full name.');
+      var guestIdField = qs('#rsvp-guest-id', form);
+      if (nameField && !(guestIdField && guestIdField.value)) {
+        showError(nameField, 'Please choose your name from the guest list.');
         valid = false;
       }
 
@@ -355,24 +383,11 @@ eleventyExcludeFromCollections: true
         }
       }
 
-      var attendingRadios = qsa('input[name="attending"]', form);
-      if (attendingRadios.length) {
-        var anyChecked = attendingRadios.some(function (r) { return r.checked; });
-        if (!anyChecked) {
-          var radioGroup = qs('.radio-group', form);
-          if (radioGroup) {
-            var errMsg = radioGroup.nextElementSibling;
-            if (errMsg && errMsg.classList.contains('form-error-msg')) {
-              errMsg.textContent = 'Please let us know if you can attend.';
-              errMsg.classList.add('visible');
-            }
-          }
-          valid = false;
-        }
-      }
+      if (!requireRadio('attending', 'Please let us know if you can attend.')) valid = false;
+      if (!requireRadio('afterparty', 'Please let us know about the after party.')) valid = false;
 
       if (!valid) {
-        var firstErr = qs('.form-input.error, .form-select.error, .form-textarea.error', form);
+        var firstErr = qs('.form-input.error, .form-select.error, .form-textarea.error, .form-error-msg.visible', form);
         if (firstErr) { firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' }); firstErr.focus(); }
         return;
       }
@@ -386,7 +401,7 @@ eleventyExcludeFromCollections: true
       Object.keys(data).forEach(function (key) {
         var m = key.match(/^guest_(\d+)_name$/);
         if (m && !String(data[key]).trim()) {
-          ['name', 'attending', 'meal'].forEach(function (f) { delete data['guest_' + m[1] + '_' + f]; });
+          ['name', 'attending', 'meal', 'afterparty'].forEach(function (f) { delete data['guest_' + m[1] + '_' + f]; });
         }
       });
       var body = encode(data);
@@ -432,6 +447,11 @@ eleventyExcludeFromCollections: true
     var plusTitle   = qs('#rsvp-plus-title');
     var partySizeEl = qs('#rsvp-party-size');
     var partyBlocks = qsa('[data-party-guest]');
+    var detailsEl   = qs('#rsvp-details');
+    var noMatchEl   = qs('#rsvp-lookup-nomatch');
+    var hintEl      = qs('#rsvp-name-hint');
+    var apGroup     = qs('#rsvp-afterparty-group');
+    var apFieldset  = qs('#rsvp-afterparty');
     var form        = nameInput.form;
     var partyCount  = 0;
 
@@ -496,6 +516,12 @@ eleventyExcludeFromCollections: true
       if (guestIdEl)   guestIdEl.value = guest.id;
       if (listbox)     { listbox.hidden = true; listbox.innerHTML = ''; }
       nameInput.setAttribute('aria-expanded', 'false');
+      if (noMatchEl)   noMatchEl.hidden = true;
+      if (hintEl)      hintEl.hidden = true;
+      if (detailsEl)   detailsEl.hidden = false;
+      var nameErr = form && form.querySelector('[data-error-for="rsvp-name"]');
+      nameInput.classList.remove('error');
+      if (nameErr) { nameErr.textContent = ''; nameErr.classList.remove('visible'); }
 
       var party = (guest.party || []).slice(0, partyBlocks.length);
       partyCount = party.length;
@@ -522,6 +548,7 @@ eleventyExcludeFromCollections: true
        left out of the submission. */
     function updateParty() {
       var declined = !!(form && qs('input[name="attending"][value="no"]:checked', form));
+      var accepted = !!(form && qs('input[name="attending"][value="yes"]:checked', form));
       var showParty = partyCount > 0 && !declined;
       if (plusSection) plusSection.hidden = !showParty;
       partyBlocks.forEach(function (block, i) {
@@ -529,7 +556,23 @@ eleventyExcludeFromCollections: true
         block.hidden = !on;
         block.disabled = !on;
       });
+      /* The after-party question is for people who are coming. */
+      if (apGroup)    apGroup.hidden = !accepted;
+      if (apFieldset) apFieldset.disabled = !accepted;
+      updatePartyAfterParty();
       updatePartySize();
+    }
+
+    function updatePartyAfterParty() {
+      partyBlocks.forEach(function (block) {
+        var att = qs('select[name$="_attending"]', block);
+        var wrap = qs('[data-party-afterparty]', block);
+        var sel = wrap && qs('select', wrap);
+        if (!wrap || !sel) return;
+        var coming = !block.disabled && att && att.value === 'yes';
+        wrap.hidden = !coming;
+        sel.disabled = !coming;
+      });
     }
 
     /* Head count for this response: the guest (if attending) plus everyone
@@ -553,6 +596,8 @@ eleventyExcludeFromCollections: true
       nameInput.classList.remove('guest-confirmed');
       if (guestIdEl)   guestIdEl.value = '';
       if (statusBar)   statusBar.hidden = true;
+      if (detailsEl)   detailsEl.hidden = true;
+      if (hintEl)      hintEl.hidden = false;
       partyCount = 0;
       partyBlocks.forEach(function (block) {
         qsa('input', block).forEach(function (el) { el.value = ''; });
@@ -564,7 +609,9 @@ eleventyExcludeFromCollections: true
 
     nameInput.addEventListener('input', function () {
       if (nameInput.readOnly) return;
-      renderSuggestions(search(nameInput.value));
+      var results = search(nameInput.value);
+      renderSuggestions(results);
+      if (noMatchEl) noMatchEl.hidden = !(norm(nameInput.value).length >= 3 && !results.length);
     });
 
     nameInput.addEventListener('keydown', function (e) {
@@ -603,7 +650,7 @@ eleventyExcludeFromCollections: true
       });
       partyBlocks.forEach(function (block) {
         var att = qs('select[name$="_attending"]', block);
-        if (att) att.addEventListener('change', updatePartySize);
+        if (att) att.addEventListener('change', function () { updatePartyAfterParty(); updatePartySize(); });
         var nm = qs('input', block);
         if (nm) nm.addEventListener('input', updatePartySize);
       });

@@ -3119,6 +3119,17 @@ main { overflow-x: clip; }
   cursor: default;
 }
 
+/* Everything after the name field, shown once a guest-list name is chosen */
+.rsvp-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.rsvp-afterparty-where {
+  margin-top: var(--space-1);
+}
+
 .rsvp-plus-section {
   display: flex;
   flex-direction: column;
