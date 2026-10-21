@@ -17,11 +17,11 @@
   "questions": [
     {
       "question": "What is the dress code?",
-      "answer": "Cocktail attire is requested for the ceremony and reception. Think garden-party elegant — sundresses, midi dresses, jumpsuits, suits, or blazers with dress trousers all work beautifully. Our colors are dusty sage and soft rose, so florals, greens, blush, and warm neutrals will fit right in. Please avoid white, ivory, or cream out of respect for the bride. The after party is more relaxed — feel free to change into something more comfortable."
+      "answer": "Cocktail and Semi-Formal Attire. Please avoid jeans. \n\nThe after party is more relaxed — feel free to change into something more comfortable."
     },
     {
       "question": "Is parking available at the venue?",
-      "answer": "Parking details for Holly Hedge Estate will be shared closer to the date. If you plan to drink, we encourage you to arrange a rideshare or designate a driver in advance."
+      "answer": "Valet parking is available on site! When you arrive, drive up to the first barn and the HollyHedge team will be there to assist you."
     },
     {
       "question": "Are children welcome at the wedding?",
@@ -29,27 +29,23 @@
     },
     {
       "question": "Where are you registered? Can I bring a gift to the wedding?",
-      "answer": "We haven't set up a registry yet — if we do, we'll share it on our [Registry page](registry.html). We kindly ask that physical gifts not be brought to the venue — shipping directly to us is preferred. If you'd like to give a card or cash envelope, there will be a designated box at the reception."
+      "answer": "We haven't set up a registry yet — if we do, we'll share it on our [Registry page](registry.html)."
     },
     {
       "question": "Is there a hotel room block for guests?",
-      "answer": "We're planning a courtesy room block near Holly Hedge Estate. Booking details and the group code will be shared soon. Visit our [Travel page](travel.html) for updates."
-    },
-    {
-      "question": "Will there be a shuttle between the hotel and venue?",
-      "answer": "We haven't arranged a shuttle yet — if we do, we'll share the details here. Questions? Email us at [jeffandpaigeplanning@gmail.com](mailto:jeffandpaigeplanning@gmail.com). Uber and Lyft operate in the area, but rides can take a while to arrive late at night, so plan your ride home ahead of time."
+      "answer": "HollyHedge has rooms on-site for booking! Breakfast is included with all booked rooms. More details on the room block will be provided soon. \n\n Visit our [Travel page](travel.html) for updates."
     },
     {
       "question": "What time should I arrive?",
-      "answer": "The ceremony begins at **5:30 PM** in the Circle Garden. Please plan to arrive between 5:00 and 5:30 PM so you have time to park and find your seat. Latecomers may not be seated until a suitable break in the ceremony."
+      "answer": "More details about the ceremony time will be provided soon."
     },
     {
       "question": "Will the ceremony be indoors or outdoors?",
-      "answer": "Outdoors! The ceremony will be held outside on the grounds of Holly Hedge Estate, weather permitting. We'll confirm the indoor rain backup plan with Holly Hedge Estate closer to the date."
+      "answer": "Outdoors! The ceremony will be held outside on the grounds of Holly Hedge Estate, weather permitting. We'll confirm the indoor rain backup plan with HollyHedge Estate closer to the date."
     },
     {
       "question": "Can I take photos and post on social media?",
-      "answer": "We are having an **unplugged ceremony** — please keep phones and cameras away during the ceremony so our photographer can capture the moment and so you can be fully present. After the ceremony, photos are warmly encouraged! Feel free to share with **#JeffAndPaige**."
+      "answer": "We are having an **unplugged ceremony** — please keep phones and cameras away during the ceremony so our photographer can capture the moment and so you can be fully present. After the ceremony, photos are warmly encouraged! Feel free to share with **#PaigetookaGander**."
     },
     {
       "question": "I have a food allergy or dietary restriction. Will you accommodate me?",
@@ -57,15 +53,15 @@
     },
     {
       "question": "Can I bring a plus one?",
-      "answer": "Plus ones are noted on your invitation. If your invitation says \"and guest,\" you are welcome to bring one. Due to venue capacity, we are unable to accommodate additional guests beyond what is listed on your invitation. If you have questions, please reach out to us directly."
+      "answer": "Plus ones are noted on your invitation. Due to venue capacity, we are unable to accommodate additional guests beyond what is listed on your invitation. If you have questions, please reach out to us directly."
     },
     {
       "question": "Is there an after party?",
-      "answer": "Yes — and all guests are welcome! After the reception, the party continues in the **Stone Barn** at Holly Hedge Estate from **11:00 PM to 1:00 AM**. Kick off your heels, loosen your tie, and join us for a more casual close to the evening."
+      "answer": "Yes — and all guests are welcome! After the reception, the party continues in the **Stone Barn** at HollyHedge Estate from **11:00 PM to 1:00 AM**. Kick off your heels, loosen your tie, and join us for a more casual close to the evening."
     },
     {
       "question": "I still have a question. How do I get in touch?",
-      "answer": "We'd love to hear from you! Email us at [jeffandpaigeplanning@gmail.com](mailto:jeffandpaigeplanning@gmail.com) and we'll get back to you as soon as possible. For day-of emergencies, contact information for the wedding coordinator will be shared with all RSVP'd guests closer to the date."
+      "answer": "We'd love to hear from you! Email us at [jeffandpaigeplanning@gmail.com](mailto:jeffandpaigeplanning@gmail.com) or send us a text and we'll get back to you as soon as possible. For day-of emergencies, contact information for the wedding coordinator will be shared with all RSVP'd guests closer to the date."
     }
   ],
   "cta": {
