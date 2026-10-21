@@ -2,6 +2,7 @@
   "seo": {
     "title": "After Party | Jeff & Paige",
     "description": "After party details for Jeff and Paige's wedding: the Stone Barn at Holly Hedge Estate, 11:00 PM to 1:00 AM.",
+    "social_title": "",
     "social_description": "The night doesn't have to end. Join us for the after party — all wedding guests welcome."
   },
   "hero": {
@@ -12,9 +13,9 @@
   "details": {
     "label": "The Details",
     "title": "Where & When",
-    "venue_name": "The Stone Barn at Holly Hedge Estate",
+    "venue_name": "The Stone Barn at HollyHedge Estate",
     "address": "6987 Upper York Road, New Hope, PA 18938",
-    "map_address": "Holly Hedge Estate, 6987 Upper York Road, New Hope, PA 18938",
+    "map_address": "HollyHedge Estate, 6987 Upper York Road, New Hope, PA 18938",
     "time": "11:00 PM – 1:00 AM",
     "time_note": "Starts as soon as the reception ends — no travel needed",
     "dress_code": "Keep your cocktail look or dress it down — you've earned it.",
