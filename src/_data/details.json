@@ -2,6 +2,7 @@
   "seo": {
     "title": "The Details | Jeff & Paige",
     "description": "Ceremony and reception details for Jeff and Paige's wedding on August 5, 2028 at Holly Hedge Estate in New Hope, PA.",
+    "social_title": "",
     "social_description": "Ceremony and reception details, schedule, dress code, and venue information."
   },
   "hero": {
@@ -20,25 +21,25 @@
       },
       {
         "label": "Dress Code",
-        "value": "Cocktail Attire",
-        "note": "Garden-party elegant. Florals, soft greens, blush, and warm neutrals fit right in."
+        "value": "Cocktail/Semi-Formal Attire",
+        "note": "Please no jeans."
       },
       {
         "label": "Parking",
         "value": "On-site at Holly Hedge Estate",
-        "note": "Parking details will be shared closer to the day."
+        "note": "Valet parking will be available. Pull up to the first barn and someone will be there to assist you."
       }
     ]
   },
   "reception": {
-    "label": "Same Venue",
+    "label": "HollyHedge Estate",
     "title": "Reception",
     "subtitle": "The reception immediately follows the ceremony at the same venue — no travel required!",
     "box_heading": "Reception Details",
     "items": [
       {
         "label": "Location",
-        "value": "Holly Hedge Estate",
+        "value": "HollyHedge Estate",
         "note": ""
       },
       {
@@ -66,12 +67,12 @@
       {
         "time": "5:00 PM",
         "title": "Guests Arrive",
-        "description": "Arrive between 5:00 and 5:30 PM and find your seat for our outdoor ceremony on the grounds of Holly Hedge Estate."
+        "description": "Arrive between 5:00 and 5:30 PM and find your seat for our outdoor ceremony on the grounds of HollyHedge Estate."
       },
       {
         "time": "5:30 PM",
         "title": "Ceremony",
-        "description": "The wedding ceremony begins in the Circle Garden. Please silence your phones."
+        "description": "The wedding ceremony begins in the Circle Garden. Please silence and put away your phones. Please enjoy the ceremony and allow our photographers to capture the moment."
       },
       {
         "time": "6:00 PM",
