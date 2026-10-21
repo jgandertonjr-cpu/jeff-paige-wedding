@@ -4,7 +4,7 @@
 
 **Couple:** Jeff & Paige
 **Wedding Date:** August 5, 2028
-**Venue:** Holly Hedge Estate, New Hope, PA
+**Venue:** HollyHedge Estate, New Hope, PA
 **Aesthetic:** Modern Minimalist
 
 ---

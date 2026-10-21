@@ -1,7 +1,7 @@
 {
   "seo": {
     "title": "Travel & Stay | Jeff & Paige",
-    "description": "Hotel blocks, nearby accommodations, airport info, and local tips for guests travelling to Jeff and Paige's wedding at Holly Hedge Estate in New Hope, PA.",
+    "description": "Hotel blocks, nearby accommodations, airport info, and local tips for guests travelling to Jeff and Paige's wedding at HollyHedge Estate in New Hope, PA.",
     "social_description": "Everything you need to plan your trip for the wedding weekend in New Hope, PA."
   },
   "hero": {
@@ -12,10 +12,10 @@
   "room_block": {
     "label": "Reserved Just for You",
     "title": "Our Room Block",
-    "intro": "We're planning a courtesy room block at a hotel near Holly Hedge Estate. Details and booking links will be shared here once it's set — be sure to book before the deadline to get the group rate.",
+    "intro": "We're planning a courtesy room block at a hotel near HollyHedge Estate. Details and booking links will be shared here once it's set — be sure to book before the deadline to get the group rate.",
     "hotel_name": "Details Coming Soon",
     "badge": "Room Block",
-    "hotel_details": "Hotel TBD — we're planning a room block near Holly Hedge Estate",
+    "hotel_details": "Hotel TBD — we're planning a room block near HollyHedge Estate",
     "deadline": "",
     "booking_note": "Group code and booking link coming soon — check back closer to the date",
     "booking_url": ""
@@ -23,7 +23,7 @@
   "nearby": {
     "label": "Other Options",
     "title": "Nearby Hotels",
-    "empty_text": "We'll list hotel options near Holly Hedge Estate here. Check back soon!",
+    "empty_text": "We'll list hotel options near HollyHedge Estate here. Check back soon!",
     "hotels": []
   },
   "airports": {
@@ -44,7 +44,7 @@
         "details": "about 1 hr 10 min, 58 miles. Another major hub, handy if you're coming from the New York area."
       }
     ],
-    "footnote": "Drive times are estimates to Holly Hedge Estate in normal traffic."
+    "footnote": "Drive times are estimates to HollyHedge Estate in normal traffic."
   },
   "tips": {
     "label": "From the Locals",
@@ -58,7 +58,7 @@
       {
         "icon": "car",
         "title": "Getting Around",
-        "text": "A car is the easiest way to get to Holly Hedge Estate and around New Hope. Uber and Lyft work in the area but can take longer to arrive out in the countryside, especially late at night, so plan your ride home ahead of time."
+        "text": "A car is the easiest way to get to HollyHedge Estate and around New Hope. Uber and Lyft work in the area but can take longer to arrive out in the countryside, especially late at night, so plan your ride home ahead of time."
       },
       {
         "icon": "compass",
