@@ -386,10 +386,10 @@ collections:
             fields:
               - { name: afterparty_show, label: Ask about the after party, widget: boolean, default: true, hint: "Asks the guest and everyone in their party who's coming. The place and timing note under it come from Pages → After Party." }
               - { name: afterparty_label, label: After party question, widget: string }
-              - { name: wedding_song_show, label: Ask married guests for their wedding song, widget: boolean, default: true, hint: "Optional for guests. For the cocktail-hour playlist. Shown in its own box, and the song field only opens when the guest answers Yes." }
-              - { name: wedding_song_married_label, label: Married question, widget: string, hint: "Answered Yes or Not yet." }
+              - { name: wedding_song_show, label: Ask married guests for their wedding song, widget: boolean, default: true, hint: "Optional for guests. For the cocktail-hour playlist. Shown in its own \"For Married Guests\" box." }
+              - { name: wedding_song_heading, label: Wedding song box heading, widget: string }
               - { name: wedding_song_label, label: Wedding song field label, widget: string }
-              - { name: wedding_song_hint, label: Text under the wedding song question, widget: string, required: false }
+              - { name: wedding_song_hint, label: Text under the wedding song heading, widget: string, required: false }
               - { name: wedding_song_placeholder, label: Example text inside the box, widget: string, required: false }
           - name: thank_you
             label: Thank-you message after sending

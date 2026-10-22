@@ -3142,6 +3142,14 @@ main { overflow-x: clip; }
   border-radius: var(--radius-card);
 }
 .rsvp-panel .section-label { margin: 0; text-indent: 0; }
+.rsvp-panel__title {
+  font-family: var(--font-display);
+  font-weight: var(--fw-light);
+  font-size: var(--fs-xl);
+  line-height: 1.2;
+  color: var(--color-text);
+  margin: var(--space-2) 0;
+}
 
 .rsvp-plus-section {
   display: flex;

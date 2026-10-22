@@ -453,8 +453,6 @@ eleventyExcludeFromCollections: true
     var apGroup     = qs('#rsvp-afterparty-group');
     var apFieldset  = qs('#rsvp-afterparty');
     var songGroup   = qs('#rsvp-wedding-song-group');
-    var marriedSet  = qs('#rsvp-married');
-    var songField   = qs('#rsvp-wedding-song-field');
     var songInput   = qs('#rsvp-wedding-song');
     var form        = nameInput.form;
     var partyCount  = 0;
@@ -568,19 +566,9 @@ eleventyExcludeFromCollections: true
       if (apGroup)    apGroup.hidden = !accepted;
       if (apFieldset) apFieldset.disabled = !accepted;
       if (songGroup)  songGroup.hidden = !accepted;
-      if (marriedSet) marriedSet.disabled = !accepted;
-      updateWeddingSong();
+      if (songInput)  songInput.disabled = !accepted;
       updatePartyAfterParty();
       updatePartySize();
-    }
-
-    /* The wedding-song box only opens for guests who say they're married. */
-    function updateWeddingSong() {
-      if (!songField || !songInput) return;
-      var married = !!(form && marriedSet && !marriedSet.disabled &&
-        qs('input[name="married"][value="yes"]:checked', form));
-      songField.hidden = !married;
-      songInput.disabled = !married;
     }
 
     function updatePartyAfterParty() {
@@ -667,9 +655,6 @@ eleventyExcludeFromCollections: true
     if (form) {
       qsa('input[name="attending"]', form).forEach(function (r) {
         r.addEventListener('change', updateParty);
-      });
-      qsa('input[name="married"]', form).forEach(function (r) {
-        r.addEventListener('change', updateWeddingSong);
       });
       partyBlocks.forEach(function (block) {
         var att = qs('select[name$="_attending"]', block);
