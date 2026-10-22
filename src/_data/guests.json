@@ -386,7 +386,7 @@
       "name": "Christopher Quintin",
       "party": [
         {
-          "name": "Hannah Quintin"
+          "name": "Hanna Quintin"
         }
       ]
     },
@@ -406,7 +406,7 @@
     },
     {
       "id": "57",
-      "name": "Tom Schultz",
+      "name": "Thomas Schultz",
       "party": []
     },
     {
@@ -497,6 +497,15 @@
       "party": [
         {
           "name": "Debbie Hefner"
+        }
+      ]
+    },
+    {
+      "id": "68",
+      "name": "James Jazz",
+      "party": [
+        {
+          "name": "Nancy Jazz"
         }
       ]
     }
