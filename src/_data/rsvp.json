@@ -10,7 +10,7 @@
     "title": "RSVP",
     "subtitle": "We can't wait to celebrate with you. RSVPs will open when formal invitations go out."
   },
-  "rsvp_open": true,
+  "rsvp_open": false,
   "deadline": "",
   "closed_notice": {
     "title": "Save the Date",
