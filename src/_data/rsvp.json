@@ -42,9 +42,10 @@
     "afterparty_show": true,
     "afterparty_label": "Will you join us at the after party?",
     "wedding_song_show": true,
-    "wedding_song_label": "Married? What's your wedding song?",
-    "wedding_song_hint": "We'd love to play it during cocktail hour. Optional.",
-    "wedding_song_placeholder": "Song and artist"
+    "wedding_song_married_label": "Are you already married?",
+    "wedding_song_label": "Your wedding song",
+    "wedding_song_hint": "We'll play married guests' own wedding songs during cocktail hour. This isn't a dance-floor request; there's a spot for that further down.",
+    "wedding_song_placeholder": "Your first-dance song and artist"
   },
   "thank_you": {
     "title": "Thank You!",

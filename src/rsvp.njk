@@ -185,6 +185,42 @@ headerDark: true
             </div>
             {%- endif %}
 
+            {%- if xq.wedding_song_show %}
+            <!-- Wedding song for married guests — its own panel, away from the
+                 dance-floor song request so the two don't get mixed up -->
+            <div class="rsvp-panel" id="rsvp-wedding-song-group" hidden>
+              <span class="section-label">For Married Guests</span>
+              <fieldset class="fieldset-reset form-group" id="rsvp-married" disabled>
+                <legend class="form-label">{{ xq.wedding_song_married_label or "Are you already married?" }}</legend>
+                <div class="radio-group">
+                  <label class="radio-label">
+                    <input type="radio" name="married" value="yes">
+                    Yes, we are
+                  </label>
+                  <label class="radio-label">
+                    <input type="radio" name="married" value="no">
+                    Not yet
+                  </label>
+                </div>
+              </fieldset>
+              <div class="form-group" id="rsvp-wedding-song-field" hidden>
+                <label class="form-label" for="rsvp-wedding-song">{{ xq.wedding_song_label or "Your wedding song" }}</label>
+                {%- if xq.wedding_song_hint %}
+                <p class="fine-print" id="rsvp-wedding-song-hint">{{ xq.wedding_song_hint }}</p>
+                {%- endif %}
+                <input
+                  type="text"
+                  id="rsvp-wedding-song"
+                  name="wedding_song"
+                  class="form-input"
+                  placeholder="{{ xq.wedding_song_placeholder or 'Song and artist' }}"
+                  {%- if xq.wedding_song_hint %} aria-describedby="rsvp-wedding-song-hint"{% endif %}
+                  disabled
+                >
+              </div>
+            </div>
+            {%- endif %}
+
             <!-- Plus-one section — revealed by JS when guest has entitlement -->
             <!-- Party — the other people on this guest's invitation. One block per
                  person; the guest-list lookup shows as many as the invitation has. -->
@@ -268,25 +304,6 @@ headerDark: true
                 placeholder="What song will get you on the dance floor?"
               >
             </div>
-
-            {%- if xq.wedding_song_show %}
-            <!-- Wedding song (optional, for married guests) — shown once the guest accepts -->
-            <div class="form-group" id="rsvp-wedding-song-group" hidden>
-              <label class="form-label" for="rsvp-wedding-song">{{ xq.wedding_song_label or "Married? What's your wedding song?" }}</label>
-              {%- if xq.wedding_song_hint %}
-              <p class="fine-print" id="rsvp-wedding-song-hint">{{ xq.wedding_song_hint }}</p>
-              {%- endif %}
-              <input
-                type="text"
-                id="rsvp-wedding-song"
-                name="wedding_song"
-                class="form-input"
-                placeholder="{{ xq.wedding_song_placeholder or 'Song and artist' }}"
-                {%- if xq.wedding_song_hint %} aria-describedby="rsvp-wedding-song-hint"{% endif %}
-                disabled
-              >
-            </div>
-            {%- endif %}
 
             <!-- Submit -->
             <div class="form-actions">
