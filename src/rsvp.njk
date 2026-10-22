@@ -157,13 +157,15 @@ headerDark: true
               </select>
             </div>
 
-            <!-- After party — shown once the guest accepts -->
+            {%- set xq = rsvp.extra_questions or {} %}
+            {%- if xq.afterparty_show %}
+            <!-- After party — shown once the guest accepts (wording: admin → Pages → RSVP → Extra questions) -->
             <div class="form-group" id="rsvp-afterparty-group" hidden>
               <fieldset class="fieldset-reset" id="rsvp-afterparty" disabled>
                 <legend class="form-label">
-                  Will you join us at the <a href="after-party.html">after party</a>? <span class="required" aria-hidden="true">*</span>
+                  {{ xq.afterparty_label or "Will you join us at the after party?" }} <span class="required" aria-hidden="true">*</span>
                 </legend>
-                <p class="fine-print rsvp-afterparty-where">{{ afterparty.details.venue_name }}{% if afterparty.details.time_note %} · {{ afterparty.details.time_note }}{% endif %}</p>
+                <p class="fine-print rsvp-afterparty-where">{{ afterparty.details.venue_name }}{% if afterparty.details.time_note %} · {{ afterparty.details.time_note }}{% endif %} · <a href="after-party.html">Details</a></p>
                 <div class="radio-group">
                   <label class="radio-label">
                     <input type="radio" name="afterparty" value="yes">
@@ -181,6 +183,7 @@ headerDark: true
               </fieldset>
               <span class="form-error-msg" role="alert"></span>
             </div>
+            {%- endif %}
 
             <!-- Plus-one section — revealed by JS when guest has entitlement -->
             <!-- Party — the other people on this guest's invitation. One block per
@@ -227,6 +230,7 @@ headerDark: true
                   </select>
                 </div>
 
+                {%- if xq.afterparty_show %}
                 <div class="form-group" data-party-afterparty>
                   <label class="form-label" for="rsvp-guest-{{ i }}-afterparty"><span class="sr-only">Guest {{ i }} </span>Joining the After Party?</label>
                   <select id="rsvp-guest-{{ i }}-afterparty" name="guest_{{ i }}_afterparty" class="form-select">
@@ -236,6 +240,7 @@ headerDark: true
                     <option value="no">No</option>
                   </select>
                 </div>
+                {%- endif %}
               </fieldset>
               {%- endfor %}
             </div>
@@ -263,6 +268,25 @@ headerDark: true
                 placeholder="What song will get you on the dance floor?"
               >
             </div>
+
+            {%- if xq.wedding_song_show %}
+            <!-- Wedding song (optional, for married guests) — shown once the guest accepts -->
+            <div class="form-group" id="rsvp-wedding-song-group" hidden>
+              <label class="form-label" for="rsvp-wedding-song">{{ xq.wedding_song_label or "Married? What's your wedding song?" }}</label>
+              {%- if xq.wedding_song_hint %}
+              <p class="fine-print" id="rsvp-wedding-song-hint">{{ xq.wedding_song_hint }}</p>
+              {%- endif %}
+              <input
+                type="text"
+                id="rsvp-wedding-song"
+                name="wedding_song"
+                class="form-input"
+                placeholder="{{ xq.wedding_song_placeholder or 'Song and artist' }}"
+                {%- if xq.wedding_song_hint %} aria-describedby="rsvp-wedding-song-hint"{% endif %}
+                disabled
+              >
+            </div>
+            {%- endif %}
 
             <!-- Submit -->
             <div class="form-actions">

@@ -127,6 +127,8 @@ The left sidebar has three sections:
 - **Guest list & parties:** in **Guest List**, each guest has **Others on this invitation**: add one entry per extra person (a plus-one, a spouse, four kids, anyone). Names are optional. Leave a name blank to give them a guest of their choosing. When that guest finds their name on the RSVP form, the form shows one block per person (name, attending, meal, after party), with names pre-filled. If the guest declines, the party is skipped.
 - **Only names on the Guest List can RSVP.** Guests start typing and must choose their name from the list; the rest of the form stays hidden until they do. If a name can't be found, the form asks them to email you, so add them to the Guest List (spelled as on the invitation) and they can reply right away after the next deploy.
 - **After party question:** everyone who accepts is asked whether they'll join the after party (yes, maybe, or no), and so is each person in their party who's coming. The line under the question shows the after party's place and timing note from Pages → **After Party**.
+- **Wedding song question:** guests who accept can share their own wedding song if they're married (optional), so you can play it during cocktail hour.
+- **Changing or turning off these questions:** Pages → **RSVP** → **Extra questions**. You can reword the after-party and wedding-song questions or switch either one off.
 - **RSVP dashboard:** **https://jeffandpaige.net/admin/rsvps/**. It's also linked from Pages → RSVP and from Guest List in the editor.
   - **Filters** (top row): Everyone / Attending / Declined / Awaiting, meal, dietary group, and a search box (names, emails, notes, songs). Every number, chart, list and the table below follow the filters. **Clicking a bar or a segment in any chart filters by it**; click it again to undo. **Clear filters** resets everything.
   - **Totals:** people attending, declined and awaiting, plus the response rate for the guest list.
@@ -134,11 +136,12 @@ The left sidebar has three sections:
   - **Replies over time:** how many invitations have been answered each day, with the reply-by date marked when it's set (Pages → RSVP). Hover, or use the arrow keys, to see a day.
   - **Meals:** counts among people attending, for the caterer.
   - **After party:** how many people attending are joining, maybe, or not joining (and who hasn't answered). The **After party** total at the top counts people joining.
+  - **Wedding songs:** each married couple's wedding song with their names, for the cocktail-hour playlist.
   - **Dietary needs:** what guests typed, grouped (nut allergy, gluten-free, vegetarian, dairy, shellfish…), with allergies flagged. One reply can fall in several groups. Hover a bar to see who.
   - **Song requests:** most-requested first. The same song typed differently ("Mr. Brightside - The Killers", "mr brightside") counts once. Click a song to see who asked.
   - **Haven't replied yet:** everyone on the Guest List who hasn't responded, with their party.
   - **Every invitation:** one row per invitation, including those still waiting. Sort by clicking a column heading. If someone replies twice, the latest answer counts (marked "Updated"). Replies from names that aren't on the Guest List are flagged.
-  - **Download Excel:** a workbook with Summary (including after-party counts), People (one row per person, with their after-party answer), Invitations, Not replied, Dietary and Songs sheets, each with filter buttons on the header row. **Downloads follow your current filters**, so filter to "Attending" first for a caterer-only sheet.
+  - **Download Excel:** a workbook with Summary (including after-party counts), People (one row per person, with their after-party answer), Invitations, Not replied, Dietary, Songs and Wedding songs sheets, each with filter buttons on the header row. **Downloads follow your current filters**, so filter to "Attending" first for a caterer-only sheet.
   - **Google Sheets:** in Google Sheets choose **File → Import → Upload** and pick the Excel file (or drag it into Google Drive and open it with Google Sheets).
   - **CSV:** the People sheet as a plain CSV.
   - Click **Refresh** to load new responses.
@@ -194,7 +197,7 @@ All editable content is in `src/_data/`, one JSON file per page or section. The 
 | `story.json` | Our Story timeline (date, title, story, photo for each moment) | Pages → Our Story |
 | `details.json` | Ceremony details, reception details, schedule of the day | Pages → Details |
 | `party.json` | Bridesmaids and groomsmen (name, role, bio, photo) | Pages → Wedding Party |
-| `rsvp.json` | RSVP open/closed, reply-by date, messages, meal choices | Pages → RSVP |
+| `rsvp.json` | RSVP open/closed, reply-by date, messages, meal choices, extra questions (after party, wedding song) | Pages → RSVP |
 | `registry.json` | Registry message and registry links | Pages → Registry |
 | `travel.json` | Room block, nearby hotels, airports, local tips | Pages → Travel & Hotels |
 | `afterparty.json` | After party place, time, dress code, what to expect | Pages → After Party |

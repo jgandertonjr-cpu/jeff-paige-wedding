@@ -452,6 +452,8 @@ eleventyExcludeFromCollections: true
     var hintEl      = qs('#rsvp-name-hint');
     var apGroup     = qs('#rsvp-afterparty-group');
     var apFieldset  = qs('#rsvp-afterparty');
+    var songGroup   = qs('#rsvp-wedding-song-group');
+    var songInput   = qs('#rsvp-wedding-song');
     var form        = nameInput.form;
     var partyCount  = 0;
 
@@ -560,9 +562,11 @@ eleventyExcludeFromCollections: true
         block.hidden = !on;
         block.disabled = !on;
       });
-      /* The after-party question is for people who are coming. */
+      /* The after-party and wedding-song questions are for people who are coming. */
       if (apGroup)    apGroup.hidden = !accepted;
       if (apFieldset) apFieldset.disabled = !accepted;
+      if (songGroup)  songGroup.hidden = !accepted;
+      if (songInput)  songInput.disabled = !accepted;
       updatePartyAfterParty();
       updatePartySize();
     }

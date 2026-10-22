@@ -253,6 +253,11 @@ eleventyExcludeFromCollections: true
       </div>
 
       <div class="grid2">
+        <section class="card" aria-labelledby="h-wsongs">
+          <div class="card-head"><h2 id="h-wsongs">Wedding songs</h2><span class="count" id="wsongs-count"></span></div>
+          <ul class="plain" id="wsongs"></ul>
+          <p class="hint" style="margin:12px 0 0">Married guests' own wedding songs, for the cocktail-hour playlist.</p>
+        </section>
         <section class="card" aria-labelledby="h-waiting">
           <div class="card-head"><h2 id="h-waiting">Haven't replied yet</h2><span class="count" id="waiting-count"></span></div>
           <ul class="plain" id="waiting"></ul>
@@ -482,6 +487,7 @@ eleventyExcludeFromCollections: true
         email: String(d.email || ''), meal: status === 'attending' ? (d.meal || '') : '',
         afterparty: status === 'attending' ? (d.afterparty || '') : '',
         diet: dietInfo(d.dietary_restrictions), song: String(d.song_request || '').trim(),
+        weddingSong: status === 'attending' ? String(d.wedding_song || '').trim() : '',
         received: reply ? reply.received : '', first: reply ? reply.first : '', updates: reply ? reply.updates : 0,
         party: [], people: []
       };
@@ -511,7 +517,7 @@ eleventyExcludeFromCollections: true
       if (!opts.ignoreAp && state.ap && (p.status !== 'attending' || (p.afterparty || '__none') !== state.ap)) return false;
       if (state.q) {
         var inv = p.inv;
-        var hay = [inv.name, inv.email, inv.diet.text, inv.song, mealLabel(p.meal)].concat(inv.people.map(function (x) { return x.name; })).join(' ');
+        var hay = [inv.name, inv.email, inv.diet.text, inv.song, inv.weddingSong, mealLabel(p.meal)].concat(inv.people.map(function (x) { return x.name; })).join(' ');
         if (norm(hay).indexOf(state.q) < 0) return false;
       }
       return true;
@@ -555,6 +561,7 @@ eleventyExcludeFromCollections: true
       renderAfterParty();
       renderDiet();
       renderSongs(s.invitations);
+      renderWeddingSongs(s.invitations);
       renderWaiting(s.invitations);
       renderTable(s.invitations);
 
@@ -695,6 +702,17 @@ eleventyExcludeFromCollections: true
       if (list.length > 12) $('songs').appendChild(el('li', { className: 'small', style: 'padding:8px 4px 0', text: '+ ' + (list.length - 12) + ' more in the Excel download (Songs sheet)' }));
     }
 
+    function renderWeddingSongs(invs) {
+      var list = invs.filter(function (i) { return i.weddingSong; });
+      var box = $('wsongs'); box.textContent = '';
+      $('wsongs-count').textContent = list.length ? plural(list.length, 'song', 'songs') : '';
+      if (!list.length) { box.appendChild(el('li', { className: 'empty', text: 'No wedding songs in these replies yet.' })); return; }
+      list.slice().sort(function (a, b) { return a.name.localeCompare(b.name); }).forEach(function (i) {
+        var coming = i.party.filter(function (p) { return p.status === 'attending'; }).map(function (p) { return p.name; });
+        box.appendChild(el('li', {}, [el('span', { className: 'name', text: i.weddingSong }), el('div', { className: 'small', text: [i.name].concat(coming).join(' & ') })]));
+      });
+    }
+
     function renderWaiting(invs) {
       var waiting = invs.filter(function (i) { return i.status === 'awaiting'; });
       var w = $('waiting'); w.textContent = '';
@@ -728,6 +746,7 @@ eleventyExcludeFromCollections: true
         var notes = [];
         if (i.diet.text) notes.push(el('div', {}, [el('span', { className: 'label', text: 'Diet ' }), i.diet.text, i.diet.allergy ? el('span', { className: 'flag', text: 'allergy' }) : null]));
         if (i.song) notes.push(el('div', {}, [el('span', { className: 'label', text: 'Song ' }), i.song]));
+        if (i.weddingSong) notes.push(el('div', {}, [el('span', { className: 'label', text: 'Wedding song ' }), i.weddingSong]));
         body.appendChild(el('tr', {}, [
           el('td', {}, [
             el('div', { className: 'name', text: i.name }),
@@ -899,7 +918,7 @@ eleventyExcludeFromCollections: true
           'Status': STATUS[p.status].label, 'Meal': p.status === 'attending' ? (mealLabel(p.meal) || 'Not chosen') : '',
           'After party': p.status === 'attending' ? apLabel(p.afterparty) : '',
           'Dietary needs (whole invitation)': i.diet.text, 'Allergy mentioned': i.diet.allergy ? 'Yes' : '',
-          'Email': i.email, 'Song request': p.role === 'Guest' ? i.song : '', 'Replied': i.received ? new Date(i.received) : '',
+          'Email': i.email, 'Song request': p.role === 'Guest' ? i.song : '', 'Wedding song': p.role === 'Guest' ? i.weddingSong : '', 'Replied': i.received ? new Date(i.received) : '',
           'On guest list': i.onList ? 'Yes' : 'No'
         };
       });
@@ -913,7 +932,7 @@ eleventyExcludeFromCollections: true
           'After party (joining)': i.people.filter(function (p) { return p.status === 'attending' && p.afterparty === 'yes'; }).length,
           'Email': i.email, 'Dietary needs': i.diet.text,
           'Dietary groups': i.diet.text ? i.diet.groups.map(dietLabel).join(', ') : '', 'Allergy mentioned': i.diet.allergy ? 'Yes' : '',
-          'Song request': i.song, 'Replied': i.received ? new Date(i.received) : '', 'Times updated': i.updates || '', 'On guest list': i.onList ? 'Yes' : 'No'
+          'Song request': i.song, 'Wedding song': i.weddingSong, 'Replied': i.received ? new Date(i.received) : '', 'Times updated': i.updates || '', 'On guest list': i.onList ? 'Yes' : 'No'
         };
       });
     }
@@ -944,6 +963,7 @@ eleventyExcludeFromCollections: true
       var songs = songGroups(s.invitations);
       songs.slice(0, 10).forEach(function (g) { aoa.push([g.label, g.names.length]); });
       if (!songs.length) aoa.push(['None so far', 0]);
+      aoa.push([], ['Wedding songs shared', s.invitations.filter(function (i) { return i.weddingSong; }).length]);
       return aoa;
     }
     function fileStem() { return 'rsvps-' + new Date().toISOString().slice(0, 10) + (filterSummary() ? '-filtered' : ''); }
@@ -974,14 +994,18 @@ eleventyExcludeFromCollections: true
       sum['!cols'] = [{ wch: 38 }, { wch: 22 }];
       if (sum.B2) sum.B2.z = 'mmm d, yyyy h:mm AM/PM';
       XLSX.utils.book_append_sheet(wb, sum, 'Summary');
-      XLSX.utils.book_append_sheet(wb, sheetFrom(XLSX, peopleRows(s.people), [24, 24, 14, 12, 18, 14, 36, 10, 28, 28, 20, 12], ['Person']), 'People');
-      XLSX.utils.book_append_sheet(wb, sheetFrom(XLSX, invitationRows(s.invitations), [24, 12, 10, 10, 44, 18, 12, 28, 36, 24, 10, 28, 20, 8, 12], ['Invitation']), 'Invitations');
+      XLSX.utils.book_append_sheet(wb, sheetFrom(XLSX, peopleRows(s.people), [24, 24, 14, 12, 18, 14, 36, 10, 28, 28, 28, 20, 12], ['Person']), 'People');
+      XLSX.utils.book_append_sheet(wb, sheetFrom(XLSX, invitationRows(s.invitations), [24, 12, 10, 10, 44, 18, 12, 28, 36, 24, 10, 28, 28, 20, 8, 12], ['Invitation']), 'Invitations');
       var waiting = s.invitations.filter(function (i) { return i.status === 'awaiting'; }).map(function (i) { return { 'Invitation': i.name, 'People': i.people.map(function (p) { return p.name; }).join(', '), 'Count': i.people.length }; });
       XLSX.utils.book_append_sheet(wb, sheetFrom(XLSX, waiting, [26, 60, 8], ['Invitation', 'People', 'Count']), 'Not replied');
       var diet = s.invitations.filter(function (i) { return i.diet.text; }).map(function (i) { return { 'Invitation': i.name, 'Dietary needs': i.diet.text, 'Groups': i.diet.groups.map(dietLabel).join(', '), 'Allergy mentioned': i.diet.allergy ? 'Yes' : '', 'Attending': i.headcount }; });
       XLSX.utils.book_append_sheet(wb, sheetFrom(XLSX, diet, [26, 50, 28, 10, 10], ['Invitation', 'Dietary needs', 'Groups', 'Allergy mentioned', 'Attending']), 'Dietary');
       var songs = songGroups(s.invitations).map(function (g) { return { 'Song': g.label, 'Requests': g.names.length, 'Requested by': g.names.join(', ') }; });
       XLSX.utils.book_append_sheet(wb, sheetFrom(XLSX, songs, [40, 10, 60], ['Song', 'Requests', 'Requested by']), 'Songs');
+      var wsongs = s.invitations.filter(function (i) { return i.weddingSong; }).map(function (i) {
+        return { 'Wedding song': i.weddingSong, 'Couple': [i.name].concat(i.party.filter(function (p) { return p.status === 'attending'; }).map(function (p) { return p.name; })).join(' & ') };
+      });
+      XLSX.utils.book_append_sheet(wb, sheetFrom(XLSX, wsongs, [44, 44], ['Wedding song', 'Couple']), 'Wedding songs');
       return wb;
     }
     function downloadXlsx() {
