@@ -1,0 +1,16 @@
+{#- "Add to Calendar" button. Opens a short menu of calendar apps; main.js puts
+    the best one for the visitor's phone or computer first. The event itself
+    is built from Site Settings in src/_data/calendar.js.
+    Usage: {%- from "add-to-calendar.njk" import addToCalendar -%}
+           {{ addToCalendar(calendar) }} -#}
+{%- macro addToCalendar(calendar, extraClass="") -%}
+<details class="add-cal {{ extraClass }}" data-add-cal>
+  <summary class="btn btn--outline add-cal__toggle">Add to Calendar</summary>
+  <ul class="add-cal__menu" aria-label="Choose your calendar">
+    <li data-cal="apple"><a href="/{{ calendar.icsPath }}">Apple Calendar<span>iPhone, iPad and Mac</span></a></li>
+    <li data-cal="google"><a href="{{ calendar.googleUrl }}" target="_blank" rel="noopener">Google Calendar<span>Android and Gmail</span></a></li>
+    <li data-cal="outlook"><a href="{{ calendar.outlookUrl }}" target="_blank" rel="noopener">Outlook<span>Outlook.com and Hotmail</span></a></li>
+    <li data-cal="other"><a href="/{{ calendar.icsPath }}" download="jeff-and-paige-wedding.ics">Other calendar<span>Download the event file</span></a></li>
+  </ul>
+</details>
+{%- endmacro -%}

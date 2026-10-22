@@ -1440,6 +1440,68 @@ main p a:not(.btn):hover,
   box-shadow: 0 0 0 2px var(--color-ivory), 0 0 0 3px var(--color-gold), var(--shadow-md);
 }
 
+/* Add to Calendar — a secondary button that opens a short menu of
+   calendar apps (src/_includes/add-to-calendar.njk) */
+.add-cal { position: relative; display: inline-block; }
+.add-cal__toggle { list-style: none; user-select: none; }
+.add-cal__toggle::-webkit-details-marker { display: none; }
+.add-cal[open] .add-cal__toggle {
+  background-color: var(--color-text);
+  border-color: var(--color-text);
+  color: var(--color-background);
+}
+.add-cal__menu {
+  position: absolute;
+  top: calc(100% + var(--space-2));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  width: max-content;
+  min-width: 240px;
+  max-width: calc(100vw - 32px);
+  margin: 0;
+  padding: var(--space-2);
+  list-style: none;
+  text-align: left;
+  background: var(--color-white);
+  border: 1px solid var(--color-hairline);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-md);
+}
+.add-cal__menu a {
+  display: block;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: var(--fs-base);
+  text-decoration: none;
+}
+.add-cal__menu a span {
+  display: block;
+  font-size: var(--fs-xs);
+  color: var(--color-text-muted);
+}
+.add-cal__menu a:hover,
+.add-cal__menu a:focus-visible { background-color: var(--color-blush); }
+/* Scroll-reveal wrappers form their own layer; lift the one holding an open
+   menu so the menu isn't drawn under the next section or the footer. */
+.reveal:has(.add-cal[open]),
+.flex:has(> .add-cal[open]) { position: relative; z-index: 40; }
+
+/* Phones: full width like the other stacked buttons, and the menu opens in
+   place (pushing the next button down) instead of covering it. */
+@media (max-width: 699px) {
+  .add-cal { display: block; width: 100%; }
+  .add-cal__menu {
+    position: static;
+    transform: none;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    margin-top: var(--space-2);
+  }
+}
+
 /* =============================================================
    IMAGE PLACEHOLDER
    ============================================================= */

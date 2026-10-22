@@ -123,6 +123,7 @@ The left sidebar has three sections:
 - **Photos:** click the photo field → **Upload** (or pick an existing photo). Uploads are automatically shrunk to at most 2000 pixels on the long side, compressed to WebP, and given a web-safe file name, so phone photos are fine as-is (up to 25 MB). Photos are saved in `src/images/`. Always fill in the **Photo description**; screen readers use it. iPhone HEIC photos may not upload from Chrome; export them as JPEG first, or upload from Safari.
 - **Formatting** (bold, italic, links) is only available in the Our Story moments and FAQ answers. Every other field is plain text, so the design stays consistent.
 - **Wedding date** (Site Settings) updates the countdown, the home page, the Details and RSVP pages, and the search-engine info. Sentences you wrote yourself that mention the date need updating by hand. Search for "August 5" in the Welcome text, Wedding Party bottom section, Gallery note, and the Search & Sharing descriptions.
+- **Add to Calendar:** the home page, Details, Wedding Party and the RSVP save-the-date message have an **Add to Calendar** button. Guests pick Apple Calendar, Google Calendar, Outlook or a plain event file, with the best one for their phone listed first. The event uses the wedding date and venue address, plus Site Settings → **Calendar event** (title, times and note). With no start time it's an all-day event. Guests who already added it keep their copy, so let them know if the time changes.
 - **Opening RSVPs:** Pages → **RSVP** → turn on **RSVPs are open**, optionally set a **Reply-by date**, then **Save**. Also update the RSVP card text on the Home page and the RSVP page subtitle. Responses still arrive in Netlify under **Forms**.
 - **Guest list & parties:** in **Guest List**, each guest has **Others on this invitation**: add one entry per extra person (a plus-one, a spouse, four kids, anyone). Names are optional. Leave a name blank to give them a guest of their choosing. When that guest finds their name on the RSVP form, the form shows one block per person (name, attending, meal, after party), with names pre-filled. If the guest declines, the party is skipped.
 - **Only names on the Guest List can RSVP.** Guests start typing and must choose their name from the list; the rest of the form stays hidden until they do. If a name can't be found, the form asks them to email you, so add them to the Guest List (spelled as on the invitation) and they can reply right away after the next deploy.
@@ -192,7 +193,7 @@ All editable content is in `src/_data/`, one JSON file per page or section. The 
 
 | File | Content | Admin entry |
 |---|---|---|
-| `site.json` | Couple's names, wedding date, venue and address, contact email, footer text | Site Settings |
+| `site.json` | Couple's names, wedding date, venue and address, calendar event, contact email, footer text | Site Settings |
 | `home.json` | Home page: hero photo, welcome text, three photos, quick-link cards, save-the-date text | Pages → Home |
 | `story.json` | Our Story timeline (date, title, story, photo for each moment) | Pages → Our Story |
 | `details.json` | Ceremony details, reception details, schedule of the day | Pages → Details |

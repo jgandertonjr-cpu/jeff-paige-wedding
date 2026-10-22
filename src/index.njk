@@ -4,6 +4,7 @@ pageKey: home
 canonical: ""
 ---
 {%- extends "layouts/base.njk" -%}
+{%- from "add-to-calendar.njk" import addToCalendar -%}
 {%- set c = site.couple -%}
 {%- set v = site.venue -%}
 {%- block preload %}
@@ -194,7 +195,10 @@ canonical: ""
         <p class="section-subtitle mb-8 reveal reveal--delay-2">
           {{ home.save_the_date.text }}
         </p>
-        <a href="travel.html" class="btn btn--primary reveal reveal--delay-3">Plan Your Trip</a>
+        <div class="flex flex--center reveal reveal--delay-3">
+          {{ addToCalendar(calendar) }}
+          <a href="travel.html" class="btn btn--primary">Plan Your Trip</a>
+        </div>
       </div>
     </section>
 {% endblock %}

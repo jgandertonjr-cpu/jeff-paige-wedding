@@ -81,6 +81,16 @@ collections:
               - { name: city, label: City, widget: string }
               - { name: state, label: State, widget: string, hint: "Two letters, e.g. PA" }
               - { name: zip, label: ZIP code, widget: string }
+          - name: calendar
+            label: Calendar event
+            widget: object
+            collapsed: true
+            hint: "What guests get from the Add to Calendar buttons. The date and venue address come from above. Guests who already added the event keep their copy, so tell them if the time changes."
+            fields:
+              - { name: title, label: Event title, widget: string }
+              - { name: start_time, label: Start time (Eastern), widget: datetime, type: time, required: false, hint: "Leave empty for an all-day event, e.g. until the ceremony time is set. Use when guests should arrive." }
+              - { name: end_time, label: End time (Eastern), widget: datetime, type: time, required: false, hint: "Optional. If empty, the event lasts six hours. A time after midnight counts as the next day." }
+              - { name: description, label: Note in the event, widget: text, hint: "The website link is added automatically." }
           - { name: email, label: Contact email, widget: string, pattern: ['^[^\s@]+@[^\s@]+\.[^\s@]+$', "Enter an email address like name@example.com"], hint: "Every \"Email us\" link on the site uses this address." }
           - { name: footer_text, label: Footer text, widget: string, hint: "The small line at the bottom of every page." }
 

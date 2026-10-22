@@ -17,6 +17,11 @@
 /images/*
   Cache-Control: public, max-age=2592000
 
+# Add to Calendar file: always fetch the latest event details
+/wedding.ics
+  Content-Type: text/calendar; charset=utf-8
+  Cache-Control: public, no-cache
+
 # Exam-prep app: keep out of search results
 /study/*
   X-Robots-Tag: noindex, nofollow

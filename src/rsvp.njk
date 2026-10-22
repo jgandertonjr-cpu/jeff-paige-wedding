@@ -5,6 +5,7 @@ canonical: rsvp
 headerDark: true
 ---
 {%- extends "layouts/base.njk" -%}
+{%- from "add-to-calendar.njk" import addToCalendar -%}
 {%- block main %}
 
     <!-- ── PAGE HERO ── -->
@@ -37,6 +38,7 @@ headerDark: true
           </div>
           <p class="text-muted measure mb-8 reveal reveal--delay-2">{{ rsvp.closed_notice.text }}</p>
           <div class="flex flex--center reveal reveal--delay-3">
+            {{ addToCalendar(calendar) }}
             <a href="details.html" class="btn btn--primary">See the Details</a>
             <a href="travel.html" class="btn btn--outline">Plan Your Trip</a>
           </div>

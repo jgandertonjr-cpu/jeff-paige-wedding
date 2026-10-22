@@ -5,6 +5,7 @@ canonical: wedding-party
 headerDark: true
 ---
 {%- extends "layouts/base.njk" -%}
+{%- from "add-to-calendar.njk" import addToCalendar -%}
 {%- macro partyGrid(members) %}
         <div class="party-grid">
           {%- for person in members %}
@@ -60,7 +61,10 @@ headerDark: true
       <div class="container container--narrow">
         <h2 class="section-title reveal">{{ party.cta.title }}</h2>
         <p class="section-subtitle mb-8 reveal reveal--delay-1">{{ party.cta.text }}</p>
-        <a href="details.html" class="btn btn--primary reveal reveal--delay-2">See the Details</a>
+        <div class="flex flex--center reveal reveal--delay-2">
+          {{ addToCalendar(calendar) }}
+          <a href="details.html" class="btn btn--primary">See the Details</a>
+        </div>
       </div>
     </section>
 {% endblock %}

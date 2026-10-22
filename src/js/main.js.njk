@@ -795,6 +795,48 @@ eleventyExcludeFromCollections: true
   }
 
   /* =============================================================
+     ADD TO CALENDAR — put the best calendar for this device first,
+     and close the menu on an outside click, Escape, or a choice
+     ============================================================= */
+  function initAddToCalendar() {
+    var menus = qsa('[data-add-cal]');
+    if (!menus.length) return;
+
+    var ua = navigator.userAgent || '';
+    var apple = /iPhone|iPad|iPod|Macintosh/.test(ua);   // iPadOS reports "Macintosh"
+    var android = /Android/.test(ua);
+    var windows = /Windows/.test(ua);
+    var first = android ? 'google' : apple ? 'apple' : windows ? 'outlook' : null;
+
+    menus.forEach(function (menu) {
+      var list = qs('.add-cal__menu', menu);
+      var best = first && list && qs('[data-cal="' + first + '"]', list);
+      if (best) list.insertBefore(best, list.firstElementChild);
+
+      menu.addEventListener('toggle', function () {
+        if (!menu.open) return;
+        menus.forEach(function (other) { if (other !== menu) other.open = false; });
+      });
+      qsa('a', menu).forEach(function (a) {
+        a.addEventListener('click', function () { menu.open = false; });
+      });
+    });
+
+    document.addEventListener('click', function (e) {
+      menus.forEach(function (menu) { if (menu.open && !menu.contains(e.target)) menu.open = false; });
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      menus.forEach(function (menu) {
+        if (!menu.open) return;
+        menu.open = false;
+        var toggle = qs('summary', menu);
+        if (toggle) toggle.focus();
+      });
+    });
+  }
+
+  /* =============================================================
      INIT
      ============================================================= */
   function init() {
@@ -808,6 +850,7 @@ eleventyExcludeFromCollections: true
     initRsvpForm();
     initRsvpLookup();
     initActiveNav();
+    initAddToCalendar();
     initScrollProgress();
     initRsvpBar();
     initViewportFix();
