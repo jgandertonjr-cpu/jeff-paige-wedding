@@ -2,6 +2,7 @@
   "seo": {
     "title": "Wedding Party | Jeff & Paige",
     "description": "Meet the wedding party — the bridesmaids and groomsmen standing beside Jeff and Paige.",
+    "social_title": "",
     "social_description": "Meet the bridesmaids and groomsmen standing by our side."
   },
   "hero": {
@@ -71,6 +72,6 @@
   },
   "cta": {
     "title": "Can't Wait to See You There",
-    "text": "The whole crew will be there. Mark your calendar for August 5, 2028."
+    "text": "Mark your calendar for August 5, 2028."
   }
 }
