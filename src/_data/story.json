@@ -2,6 +2,7 @@
   "seo": {
     "title": "Our Story | Jeff & Paige",
     "description": "Read the love story of Jeff and Paige — how they met, fell in love, and decided to spend forever together.",
+    "social_title": "",
     "social_description": "Read the love story of Jeff and Paige — how they met, fell in love, and decided to spend forever together."
   },
   "hero": {
@@ -32,7 +33,7 @@
       "date_label": "February 2023",
       "date_value": "2023-02",
       "title": "Making It Official",
-      "story": "By February, Jeff was sure he had a girlfriend. There had been date after date, flowers, Valentine's Day gifts — as far as he was concerned, the case was closed. There was just one problem: nobody had told Paige. In her mind, they weren't dating at all.\n\nOne night she sat him down and asked, point-blank, *\"What are we?\"* Jeff, who thought he'd answered that question with a bouquet weeks earlier, finally said it out loud. That night they became a couple — officially this time, with both of them in on it.",
+      "story": "By February, Jeff was sure he had a girlfriend. There had been date after date, flowers, Valentine's Day gifts — as far as he was concerned, the case was closed. There was just one problem: in Paige’s mind, they weren't dating at all.\n\nOne night she sat him down and asked, point-blank, _\"What are we?\"_ Jeff, who thought he'd answered that question with a bouquet weeks earlier, finally said it out loud. That night they became a couple — officially this time, with both of them in on it.",
       "photo": "/images/gallery4.jpg",
       "photo_alt": "Jeff and Paige dressed up for a night out",
       "focus": "high"
