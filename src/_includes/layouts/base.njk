@@ -46,11 +46,15 @@
   <meta property="og:title" content="{{ seo.social_title or seo.title }}">
   <meta property="og:description" content="{{ seo.social_description or seo.description }}">
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="{{ site.couple.partner1_first }} &amp; {{ site.couple.partner2_first }}">
   <meta property="og:url" content="https://jeffandpaige.net/{{ canonical }}">
   <meta property="og:image" content="https://jeffandpaige.net/images/hero.jpg">
 {%- endif %}
-  <link rel="icon" href="/favicon.ico" sizes="any">
-  <link rel="icon" type="image/png" href="/images/favicon.png">
+  {#- Google only shows favicons sized in multiples of 48px; the others are for browser tabs. #}
+  <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+  <link rel="icon" type="image/png" sizes="48x48" href="/images/favicon-48.png">
+  <link rel="icon" type="image/png" sizes="96x96" href="/images/favicon-96.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
   <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

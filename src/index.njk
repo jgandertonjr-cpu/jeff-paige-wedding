@@ -11,6 +11,16 @@ canonical: ""
   <link rel="preload" as="image" href="{{ home.hero.photo | relUrl }}">
 {%- endblock -%}
 {%- block headExtra %}
+  {#- Site name Google shows above the result instead of the bare domain. #}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": {{ (c.partner1_first + " & " + c.partner2_first) | dump | safe }},
+    "alternateName": [{{ (c.partner1_first + " and " + c.partner2_first + "'s Wedding") | dump | safe }}, "jeffandpaige.net"],
+    "url": "https://jeffandpaige.net/"
+  }
+  </script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
