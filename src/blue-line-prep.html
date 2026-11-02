@@ -360,7 +360,9 @@ const isNew=w=>w>=NEW_FROM;
    because you would like it to. */
 /* v6.2: academy deloads 16/20/24/28. Week 32 is no longer a whole-week
    deload — the graduation peak gives it a running unload instead (T−14). */
-const DELOADS=[4,7,16,20,24,28];
+/* 2 Nov 2026: Week 4 is NOT a deload — his call ("I don't need a deload
+   this week"). It repeats Week 3; the next easy week is Week 7. */
+const DELOADS=[7,16,20,24,28];
 const isDeload=w=>DELOADS.includes(w);
 const isTaperWk=w=>TAPER_WKS.includes(w);
 const isAcademy=w=>w>=ACADEMY_WK;
@@ -483,7 +485,7 @@ const getPhase=w=>PHASES.find(p=>w>=p.w[0]&&w<=p.w[1])||(w<1?PHASES[0]:PHASES[2]
    left one minute for warm-up and cool-down. */
 const RUN_PLAN={
    1:{mon:12,wed:10,sat:14},          2:{mon:12,wed:12,sat:15},          3:{mon:14,wed:12,sat:16},
-   4:{mon: 9,wed: 7,sat:10},          5:{mon:16,wed:13,sat:17},          6:{mon:18,wed:13,sat:19},
+   4:{mon:14,wed:12,sat:16},          5:{mon:16,wed:13,sat:17},          6:{mon:18,wed:13,sat:19},
    7:{mon:10,wed: 8,sat:12},          8:{mon:17,wed:12,fri:6,sat:20},    9:{mon:18,wed:12,fri:8,sat:22},
   10:{mon:19,wed:13,fri:8,sat:24},
 };
@@ -684,9 +686,15 @@ const e1Of=x=>epley(+x.wt,+x.reps+(10-(x.rpe!=null&&x.rpe!==""?+x.rpe:10)));
    2 Nov 2026 a single session can raise it by at most 5%. Earlier entries
    are read exactly as before, so no logged history changes. */
 const E1_CAP_FROM="2026-11-02";
+const isEasyLog=x=>x.week!=null&&(isDeload(x.week)||isTaperWk(x.week));
 function e1Track(entries){
   let cur=null,lows=[];
-  entries.filter(x=>!(x.week!=null&&(isDeload(x.week)||isTaperWk(x.week)))).forEach(x=>{
+  /* With no build-week log yet, an easy-week log SEEDS the number — the
+     deload's "work up to a set of 5" was the first log for most lifts, and
+     ignoring it left the lift blank with no loads at all. */
+  const counted=entries.filter(x=>!isEasyLog(x));
+  if(!counted.length&&entries.length)return Math.max(...entries.map(e1Of));
+  counted.forEach(x=>{
     let v=e1Of(x);
     if(cur!=null&&v>1.05*cur&&x.iso&&x.iso>=E1_CAP_FROM)v=1.05*cur;
     if(cur==null||v>=cur){cur=v;lows=[];}
@@ -701,7 +709,7 @@ function e1Track(entries){
    a deficit-proof progression needs. */
 /* v6.2 (S&C review): capped at 85%. None of the four tests rewards a 1RM, and
    90% doubles in the peak running week are risk without return. */
-const WAVE={1:[3,5,.75],2:[4,5,.775],3:[4,4,.825],4:[2,5,.70],5:[4,5,.80],6:[4,4,.825],
+const WAVE={1:[3,5,.75],2:[4,5,.775],3:[4,4,.825],4:[4,4,.825],5:[4,5,.80],6:[4,4,.825],
   7:[2,5,.70],8:[4,5,.80],9:[4,3,.85],10:[3,3,.85],11:[2,3,.80],12:[2,2,.80]};
 /* Academy: two short sessions, rotating 5s / 3s / 4s at 80–85%, top set
    capped at RPE 8 — enough to hold and slowly build on top of academy PT,
@@ -916,11 +924,12 @@ function suFor(m,w,dow,dTest){
    fatigue life still falls exponentially with strain magnitude. */
 /* Running SECONDS in each speed block, so the Wednesday easy portion is the
    total minus the reps and the line adds up to the second. */
-const SPEED_SEC={1:80,2:100,3:120,5:54,6:80,8:80,9:56,10:80};
+const SPEED_SEC={1:80,2:100,3:120,4:120,5:54,6:80,8:80,9:56,10:80};
 const SPEED={
   1:"4 × 20 s fast-but-relaxed strides on grass, walk back between",
   2:"5 × 20 s fast-but-relaxed strides on grass, walk back between",
   3:"6 × 20 s fast-but-relaxed strides on grass, walk back between",
+  4:"6 × 20 s fast-but-relaxed strides on grass, walk back between",
   5:"3 × 100 m fast, about 18 s each, walk 2 min between — ONLY if the last 7 days are pain-free; otherwise strides",
   6:"4 × 20 s fast-but-relaxed strides on grass, walk back between — Saturday is the 1.5-mile check, so Wednesday stays light",
   /* v6.2: Week 8 already adds a 4th run day, so the 200s go (one new
@@ -2199,6 +2208,7 @@ function App(){
   const[liftWt,setLiftWt]=useState("");
   const[liftReps,setLiftReps]=useState("");
   const[liftRpe,setLiftRpe]=useState("");
+  const[liftSaved,setLiftSaved]=useState(0);
   const[acad,setAcad]=useState({});           // "w-d" -> [{type,dur,run,rpe}]
   const[acadForm,setAcadForm]=useState({type:ACAD_TYPES[0],dur:"",run:"",rpe:"",dt:"",pu:"",jumps:"",shoes:"PT shoes"});
   const[acadAssume,setAcadAssume]=useState(ACAD_ASSUME_DEFAULT);
@@ -2506,7 +2516,7 @@ function App(){
   };
   const addLift=()=>{
     const wtv=parseFloat(liftWt),r=parseInt(liftReps);
-    if(!wtv||!r)return;
+    if(!wtv||!r){window.alert("Enter the weight and the reps of your last set.");return;}
     /* Asked as "reps left in the tank" (0–5) — plainer than RPE, same
        information: RPE = 10 − reps left. */
     const left=parseFloat(liftRpe);
@@ -2515,6 +2525,7 @@ function App(){
     if(r>10&&!window.confirm("e1RM estimates are unreliable past 10 reps. Log anyway?"))return;
     setLifts(p=>[...p,{...nowStamp(),k:liftK,wt:wtv,reps:r,rpe}]);
     setLiftWt("");setLiftReps("");setLiftRpe("");
+    setLiftSaved(Date.now());setTimeout(()=>setLiftSaved(0),3000);
   };
   const addAcad=()=>{
     const f=acadForm;
@@ -3043,7 +3054,7 @@ function App(){
                 </span>
               </div>
             ))}
-            <div className="fine" style={{marginTop:12}}>Deloads: Week 4 (Nov 2) and Week 7 (Thanksgiving) — running and lifting volume about −40%, intensity held. AMRAP retests on Weeks 1, 4, 7 and 9, a 1.5-mile time trial on Sat Nov 21, and the mock PFT on Tue 22 Dec. Inside the academy your own work deloads in Weeks {DELOADS.filter(w=>w>=ACADEMY_WK).join(", ")} with a Saturday retest, 1.5-mile time trials on Sat 20 Feb and Sat 17 Apr, a mock PFT on Sat 8 May, and a graduation peak keyed to the final assessment ({fmtDate(gradT)} unless you enter the real date).</div>
+            <div className="fine" style={{marginTop:12}}>Deload: Week 7 (Thanksgiving) — running and lifting volume about −40%, intensity held. Week 4 was switched to a build week (a repeat of Week 3) on 2 Nov. AMRAP retests on Weeks 1, 4, 7 and 9, a 1.5-mile time trial on Sat Nov 21, and the mock PFT on Tue 22 Dec. Inside the academy your own work deloads in Weeks {DELOADS.filter(w=>w>=ACADEMY_WK).join(", ")} with a Saturday retest, 1.5-mile time trials on Sat 20 Feb and Sat 17 Apr, a mock PFT on Sat 8 May, and a graduation peak keyed to the final assessment ({fmtDate(gradT)} unless you enter the real date).</div>
           </div>
 
           <div className="card pad" style={{marginBottom:12}}>
@@ -3457,6 +3468,18 @@ function App(){
                 );
               })}
             </div>
+            {liftSaved>0&&<div style={{marginTop:10,fontSize:12.5,fontWeight:700,color:"#4ade80"}}>Saved ✓</div>}
+            {lifts.length>0&&(
+              <div style={{marginTop:14}}>
+                <div style={{fontSize:9.5,color:"var(--tx-3)",fontWeight:700,letterSpacing:".13em",marginBottom:6}}>RECENT LOGS</div>
+                {lifts.map((x,idx)=>({x,idx})).slice(-8).reverse().map(({x,idx})=>(
+                  <div key={idx} className="lrow" style={{alignItems:"center",justifyContent:"space-between"}}>
+                    <span className="lval"><strong style={{color:"var(--tx)"}}>{(LIFTS.find(L=>L.k===x.k)||{n:x.k}).n.split(" (")[0]}</strong> · {x.wt} lb × {x.reps}{x.rpe!=null?` · ${10-x.rpe} left`:""} · {x.date||x.iso}{isEasyLog(x)?<span style={{color:"var(--tx-3)"}}> · easy week: kept, only counts until a build-week log exists</span>:null}</span>
+                    <button className="btn-ghost" style={{padding:"6px 10px"}} onClick={()=>{if(window.confirm("Delete this lift log?"))setLifts(p=>p.filter((_,k)=>k!==idx));}} aria-label="delete">✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="card pad" style={{marginBottom:12,background:effortsUsed>=MAX_300_EFFORTS?"linear-gradient(180deg,#f43f5e12,transparent 55%),var(--surface)":undefined}}>
