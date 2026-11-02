@@ -351,7 +351,12 @@ const DAYS=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 /* v6.2 changes start at Week 5. Weeks 1–4 were already trained and their
    check-offs are keyed by item POSITION (trackKeys), so those weeks keep
    building exactly as they did — nothing he logged is orphaned. */
-const NEW_FROM=5;
+/* 2 Nov 2026 (his call): no deload in Week 4 — the program ADVANCES a
+   week instead. The old Weeks 5–10 run one calendar week earlier (Week 4
+   onward), the Thanksgiving-week deload moves to Week 6 (16 Nov), and
+   Week 10 (14 Dec) gets one more small step (66 min, longest 25) before
+   the arrival taper, whose dates are fixed. */
+const NEW_FROM=4;
 const isNew=w=>w>=NEW_FROM;
 /* 3:1, with the second deload pulled one week early onto Thanksgiving week
    (Nov 23–29): a holiday week you will under-train anyway is a free deload,
@@ -362,7 +367,7 @@ const isNew=w=>w>=NEW_FROM;
    deload — the graduation peak gives it a running unload instead (T−14). */
 /* 2 Nov 2026: Week 4 is NOT a deload — his call ("I don't need a deload
    this week"). It repeats Week 3; the next easy week is Week 7. */
-const DELOADS=[7,16,20,24,28];
+const DELOADS=[6,16,20,24,28];
 const isDeload=w=>DELOADS.includes(w);
 const isTaperWk=w=>TAPER_WKS.includes(w);
 const isAcademy=w=>w>=ACADEMY_WK;
@@ -371,7 +376,7 @@ const isAcademy=w=>w>=ACADEMY_WK;
    recovered week reads fitness, not fatigue — then the mock PFT. */
 /* v6.2 adds Week 9 (Mon 7 Dec): an AMRAP 15 days before the mock, so the
    doses do not run from Week 7 to Christmas on one number. No bike sprint. */
-const RETEST_WKS=[1,4,7,9];
+const RETEST_WKS=[1,4,6,8];
 /* Tue 22 Dec = 13 days before Jan 4: inside the 10–14-day window, far
    enough out that the result costs nothing on day one, and clear of
    Christmas. */
@@ -437,14 +442,14 @@ function runPaces(cur){
    weeks off a September result. Wednesday that week drops to strides so the
    week never carries three hard runs. Skipped if the last 7 days were not
    pain-free. */
-const RUN15_CHECK_WK=6;
+const RUN15_CHECK_WK=5;
 const ENTRY_TEST={date:"21 Sep 2026",pu:26,su:35,t300:"54",run15:"13:12"};
 
 /* ── phases ───────────────────────────────────────────────────────────── */
 const PHASES=[
   {id:"A",name:"Build",w:[1,10],color:"#22c55e",
-   owns:"Ten weeks, 3:1. Barbell strength on a %-of-e1RM wave (four days a week through Week 4, two full-body days from Week 5, capped at 85%), push-up and sit-up capacity built toward the 50th-percentile goal, goal-pace 1.5-mile intervals on a small running budget with the bike and rower carrying the engine — and the things that decide whether January hurts: running volume (four shorter runs a week from Week 8), duty-boot time, asphalt and jumping, all raised GRADUALLY toward academy load before day one. Moderate deficit, gated by the shins.",
-   exit:"~64 min/wk of running across 4 sessions with zero next-morning symptoms · 40-min boot walks and 5-hour boot blocks at 0/10 · jump prep at ~80 contacts symptom-free · calf test 30+ straight-knee / 25+ bent-knee per leg within 10% · Week 9 retest at or above 34 push-ups / 43 sit-ups, or rising · 1.5-mile time trial ≤12:55 · 165 lb duffel drag done · tenderness length not increased from baseline"},
+   owns:"Ten weeks, 3:1. Barbell strength on a %-of-e1RM wave (four days a week through Week 3, two full-body days from Week 4, capped at 85%), push-up and sit-up capacity built toward the 50th-percentile goal, goal-pace 1.5-mile intervals on a small running budget with the bike and rower carrying the engine — and the things that decide whether January hurts: running volume (four shorter runs a week from Week 8), duty-boot time, asphalt and jumping, all raised GRADUALLY toward academy load before day one. Moderate deficit, gated by the shins.",
+   exit:"~64 min/wk of running across 4 sessions with zero next-morning symptoms · 40-min boot walks and 5-hour boot blocks at 0/10 · jump prep at ~80 contacts symptom-free · calf test 30+ straight-knee / 25+ bent-knee per leg within 10% · Week 8 retest at or above 34 push-ups / 43 sit-ups, or rising · 1.5-mile time trial ≤12:55 · 165 lb duffel drag done · tenderness length not increased from baseline"},
   {id:"B",name:"Arrival Taper",w:[11,12],color:"#f59e0b",
    owns:"Two weeks over the holidays. Full mock PFT Tue 22 Dec, 13 days out, in test order. Lifting sets halve and loads hold. Running VOLUME holds (58 → 56 min, all easy, long runs 20–22 min) and the intensity comes out — the academy is not a race, and arriving with a collapsed running base is exactly how week one becomes a spike. Full day in boots Sat 26 Dec. Maintenance calories.",
    exit:"Mock PFT logged · zero next-morning symptoms for 7 days · boots worn a full day symptom-free · gear laid out Sun 3 Jan"},
@@ -485,9 +490,9 @@ const getPhase=w=>PHASES.find(p=>w>=p.w[0]&&w<=p.w[1])||(w<1?PHASES[0]:PHASES[2]
    left one minute for warm-up and cool-down. */
 const RUN_PLAN={
    1:{mon:12,wed:10,sat:14},          2:{mon:12,wed:12,sat:15},          3:{mon:14,wed:12,sat:16},
-   4:{mon:14,wed:12,sat:16},          5:{mon:16,wed:13,sat:17},          6:{mon:18,wed:13,sat:19},
-   7:{mon:10,wed: 8,sat:12},          8:{mon:17,wed:12,fri:6,sat:20},    9:{mon:18,wed:12,fri:8,sat:22},
-  10:{mon:19,wed:13,fri:8,sat:24},
+   4:{mon:16,wed:13,sat:17},          5:{mon:18,wed:13,sat:19},          6:{mon:10,wed: 8,sat:12},
+   7:{mon:17,wed:12,fri:6,sat:20},    8:{mon:18,wed:12,fri:8,sat:22},    9:{mon:19,wed:13,fri:8,sat:24},
+  10:{mon:20,wed:13,fri:8,sat:25},
 };
 /* v6.2 (lower-leg review): the longest run never grows more than ~10% on the
    longest of the last 30 days — 16 → 17 → 19 → 20 → 22 → 24, then 26 on
@@ -501,8 +506,8 @@ const RUN_PLAN={
 /* v6.2: Week 6 Monday is easy (the time trial is that Saturday — the quality
    cap is the TT). Week 9 is 5 × 2 min, not 2 × 5 at faster than VO2 pace;
    Week 10 is 4 × 2.5 min. GP_WALK is the walk after each rep. */
-const GP_REPS={2:[4,1],3:[4,1.5],5:[4,2],8:[3,3],9:[5,2],10:[4,2.5]};
-const GP_WALK={9:"60 s",10:"90 s"};
+const GP_REPS={2:[4,1],3:[4,1.5],4:[4,2],7:[3,3],8:[5,2],9:[4,2.5],10:[2,6]};
+const GP_WALK={8:"60 s",9:"90 s",10:"2 min"};
 const WEEK_MIN_CAP=70;                  // hard weekly ceiling, own + academy running
 /* Deloads are stepped over when auditing increments — a rebound to the
    pre-deload level is not a progression. TAPER weeks are NOT stepped over
@@ -623,7 +628,7 @@ function academyWeeks(acadLogged,assume,ownTotals,ptN){
    Two walks a week on non-running days — Tue + Fri, moving to Tue + Thu
    once Friday becomes a run day in Week 8. Minutes per walk; Week 1 is
    break-in only. */
-const BOOT_MIN={1:0,2:10,3:15,4:15,5:20,6:25,7:20,8:30,9:35,10:40,11:30,12:30};
+const BOOT_MIN={1:0,2:10,3:15,4:20,5:25,6:20,7:30,8:35,9:40,10:40,11:30,12:30};
 const bootMin=w=>BOOT_MIN[w]??0;
 /* v6.2: Tue + Fri every week from Week 5 — Thursday is now the hard-bike
    + deadlift day, and Friday's PM is an easy upper-body block. */
@@ -634,21 +639,21 @@ const bootDays=w=>isNew(w)?[1,4]:(w>=8?[1,3]:[1,4]);
    errands, with 10 min of marching at ~120 steps/min and some stairs. The
    full-day rehearsal is Sat 26 Dec — NOT Jan 2: a first full day in boots
    48 h before day one is itself a spike. */
-const BOOT_HOURS={6:2,7:2,8:3,9:4,10:5,12:3};
+const BOOT_HOURS={5:2,6:2,7:3,8:4,9:5,10:5,12:3};
 
 /* ── surface progression ────────────────────────────────────────────────
    Formation runs are on asphalt; he trains on grass, track and the TrueForm.
    A surface change is a load change, so asphalt arrives on the long run in
    ≤6-minute steps (PT review: v6.0 jumped 12 → 22 asphalt minutes in Week 8,
    the same week as the deload rebound and the first 200 m reps). */
-const ASPHALT={5:5,6:0,7:6,8:11,9:17,10:23,11:99,12:99};
+const ASPHALT={4:5,5:0,6:6,7:11,8:17,9:23,10:99,11:99,12:99};
 const surfaceOf=(w,mins)=>{const a=ASPHALT[w]||0;
   return a===0?"grass or track (TrueForm for no more than half of it through Week 4 — curved treadmills push you onto the forefoot)":a>=mins?"all on asphalt — the formation-run surface":`first ${a} min on asphalt, the rest on grass or track`;};
 /* Formation pace is unknown (ask the academy). Group runs commonly sit near
    9:30–10:30/mi, which is threshold effort for an 11:00+/mi easy runner, so
    the last few minutes of the Week 8–10 Saturday run are run at ~10:00/mi
    on asphalt. Inside the minutes, never added to them. */
-const FORMATION={8:6,9:8,10:10};
+const FORMATION={7:6,8:8,9:10,10:10};
 
 /* ── cadence retraining ─────────────────────────────────────────────────
    Gait retraining cut MTSS in at-risk army recruits (Sharma 2014, HR 0.25;
@@ -709,8 +714,8 @@ function e1Track(entries){
    a deficit-proof progression needs. */
 /* v6.2 (S&C review): capped at 85%. None of the four tests rewards a 1RM, and
    90% doubles in the peak running week are risk without return. */
-const WAVE={1:[3,5,.75],2:[4,5,.775],3:[4,4,.825],4:[4,4,.825],5:[4,5,.80],6:[4,4,.825],
-  7:[2,5,.70],8:[4,5,.80],9:[4,3,.85],10:[3,3,.85],11:[2,3,.80],12:[2,2,.80]};
+const WAVE={1:[3,5,.75],2:[4,5,.775],3:[4,4,.825],4:[4,5,.80],5:[4,4,.825],6:[2,5,.70],
+  7:[4,5,.80],8:[4,3,.85],9:[3,3,.85],10:[3,3,.85],11:[2,3,.80],12:[2,2,.80]};
 /* Academy: two short sessions, rotating 5s / 3s / 4s at 80–85%, top set
    capped at RPE 8 — enough to hold and slowly build on top of academy PT,
    never enough to compete with it. Weeks 13–14 are 2×3 at 75% with no top
@@ -924,20 +929,19 @@ function suFor(m,w,dow,dTest){
    fatigue life still falls exponentially with strain magnitude. */
 /* Running SECONDS in each speed block, so the Wednesday easy portion is the
    total minus the reps and the line adds up to the second. */
-const SPEED_SEC={1:80,2:100,3:120,4:120,5:54,6:80,8:80,9:56,10:80};
+const SPEED_SEC={1:80,2:100,3:120,4:54,5:80,7:80,8:56,9:80,10:80};
 const SPEED={
   1:"4 × 20 s fast-but-relaxed strides on grass, walk back between",
   2:"5 × 20 s fast-but-relaxed strides on grass, walk back between",
   3:"6 × 20 s fast-but-relaxed strides on grass, walk back between",
-  4:"6 × 20 s fast-but-relaxed strides on grass, walk back between",
-  5:"3 × 100 m fast, about 18 s each, walk 2 min between — ONLY if the last 7 days are pain-free; otherwise strides",
-  6:"4 × 20 s fast-but-relaxed strides on grass, walk back between — Saturday is the 1.5-mile check, so Wednesday stays light",
-  /* v6.2: Week 8 already adds a 4th run day, so the 200s go (one new
-     variable a week). Week 9 gets 2 × 150 m — under 200 m it does not spend a
-     300 m token; the old 250 m at 46 s, 13 days before the mock, did. */
-  8:"4 × 20 s fast-but-relaxed strides on grass, walk back between",
-  9:"2 × 150 m fast, about 28 s each, full walk-back — ONLY if the last 7 days are pain-free; otherwise strides",
-  10:"4 × 20 s fast-but-relaxed strides on grass, walk back between — strides only, no reps: the speed is banked",
+  4:"3 × 100 m fast, about 18 s each, walk 2 min between — ONLY if the last 7 days are pain-free; otherwise strides",
+  5:"4 × 20 s fast-but-relaxed strides on grass, walk back between — Saturday is the 1.5-mile time trial, so Wednesday stays light",
+  /* Week 7 adds a 4th run day, so no reps (one new variable a week). Week 8
+     gets 2 × 150 m — under 200 m it does not spend a 300 m token. */
+  7:"4 × 20 s fast-but-relaxed strides on grass, walk back between",
+  8:"2 × 150 m fast, about 28 s each, full walk-back — ONLY if the last 7 days are pain-free; otherwise strides",
+  9:"4 × 20 s fast-but-relaxed strides on grass, walk back between — strides only, no reps: the speed is banked",
+  10:"4 × 20 s fast-but-relaxed strides on grass, walk back between — strides only",
 };
 const MAX_300_EFFORTS=2;
 
@@ -960,12 +964,12 @@ const MAX_300_EFFORTS=2;
    tired calves land worse. */
 const JUMPS={
   3:"2 sets × 10 pogo hops",
-  4:"2 sets × 10 pogo hops",
-  5:"2 sets × 15 pogo hops · 2 sets × 10 jumping jacks",
-  6:"3 sets × 15 pogo hops · 2 sets × 15 jumping jacks",
-  7:"2 sets × 15 pogo hops · 2 sets × 15 jumping jacks",
-  8:"3 sets × 15 pogo hops · 2 sets × 20 jumping jacks",
-  9:"2 sets × 20 pogo hops · 2 sets × 30 jumping jacks",
+  4:"2 sets × 15 pogo hops · 2 sets × 10 jumping jacks",
+  5:"3 sets × 15 pogo hops · 2 sets × 15 jumping jacks",
+  6:"2 sets × 15 pogo hops · 2 sets × 15 jumping jacks",
+  7:"3 sets × 15 pogo hops · 2 sets × 20 jumping jacks",
+  8:"2 sets × 20 pogo hops · 2 sets × 30 jumping jacks",
+  9:"2 sets × 20 pogo hops · 2 sets × 20 jumping jacks · 2 sets × 5 jump burpees",
   10:"2 sets × 20 pogo hops · 2 sets × 20 jumping jacks · 2 sets × 5 jump burpees",
   11:"2 sets × 15 pogo hops · 2 sets × 20 jumping jacks",
   12:"2 sets × 15 pogo hops · 3 sets × 30 jumping jacks · 2 sets × 4 jump burpees",
@@ -977,7 +981,7 @@ const JUMPS={
    Saturday. Doses are unchanged except Week 8 (jacks held at 2 × 20) and
    Week 9 (jump burpees wait a week: one new variable at a time). Jacks count
    half a contact against an 80/day cap. */
-const jumpDays=w=>!isNew(w)?(isDeload(w)?[1]:w===11?[3]:[1,3]):w===11?[3]:w===12?[1]:isDeload(w)?[2]:w===6?[0]:[0,2];
+const jumpDays=w=>!isNew(w)?(isDeload(w)?[1]:w===11?[3]:[1,3]):w===11?[3]:w===12?[1]:isDeload(w)?[2]:w===RUN15_CHECK_WK?[0]:[0,2];
 
 /* ── exercise libraries ───────────────────────────────────────────────── */
 const SHIN_EX={
@@ -1144,11 +1148,12 @@ const BIKE_HARD=[BIKE.threshold,BIKE.vo2,BIKE.climb,BIKE.tempo];
    runs 5–10 bpm under running HR, so the old run-derived targets were
    unreachable. No more 60–70 rpm "climb" (least run-specific). */
 const BIKE_WK={
-  5:"Peloton 20-min FTP test (the class, ~40 min with its warm-up). It sets your Power Zones — every hard ride after this is prescribed in them. Even effort; the last 5 minutes should be the hardest.",
-  6:"35 min · 10 min warm-up · 3 × 6 min at Power Zone 4 (~95–100% FTP, effort 7/10), 3 min easy between · easy to finish. Kept moderate: Saturday is the 1.5-mile time trial.",
-  8:"45 min · 10 min warm-up · 5 × 3 min at Power Zone 5–6 (~110–118% FTP, effort 9/10), 3 min easy between · easy to finish",
-  9:"45 min · 10 min warm-up · 3 sets of 13 × (30 s hard at Power Zone 6 / 15 s easy), 3 min easy between sets · easy to finish (Rønnestad 30/15s)",
-  10:"45 min · 10 min warm-up · 3 × 8–10 min at Power Zone 4 (effort 7–8/10), 3 min easy between · easy to finish",
+  4:"Peloton 20-min FTP test (the class, ~40 min with its warm-up). It sets your Power Zones — every hard ride after this is prescribed in them. Even effort; the last 5 minutes should be the hardest.",
+  5:"35 min · 10 min warm-up · 3 × 6 min at Power Zone 4 (~95–100% FTP, effort 7/10), 3 min easy between · easy to finish. Kept moderate: Saturday is the 1.5-mile time trial.",
+  7:"45 min · 10 min warm-up · 5 × 3 min at Power Zone 5–6 (~110–118% FTP, effort 9/10), 3 min easy between · easy to finish",
+  8:"45 min · 10 min warm-up · 3 sets of 13 × (30 s hard at Power Zone 6 / 15 s easy), 3 min easy between sets · easy to finish (Rønnestad 30/15s)",
+  9:"45 min · 10 min warm-up · 3 × 8–10 min at Power Zone 4 (effort 7–8/10), 3 min easy between · easy to finish",
+  10:"45 min · 10 min warm-up · 5 × 3 min at Power Zone 5–6 (~110–118% FTP, effort 9/10), 3 min easy between · easy to finish",
 };
 /* Academy hard ride, alternating by week: VO2 5 × 3 and 30/15s. */
 const bikeAcad=w=>w%2?"40 min · 10 min warm-up · 5 × 3 min at Power Zone 5–6 (effort 9/10), 3 min easy between · easy to finish":"40 min · 10 min warm-up · 2 sets of 13 × (30 s hard / 15 s easy), 3 min easy between · easy to finish";
@@ -1233,7 +1238,7 @@ const PU_IDS=["puAmrap","puClust","puIso","puPacing"], SU_IDS=["suAmrap","suLadd
    test to fatigue is the wrong thing to do two days before a max 300 m. */
 /* v6.2: + Week 11 (Sun 27 Dec), the last read before day one. Target ≥30
    straight-knee / ≥25 bent-knee per leg, within 10%. */
-const HEEL_WKS=[1,4,7,9,11];
+const HEEL_WKS=[1,4,6,8,11];
 
 function buildDay(week,dow,dTest,ctx){
   const p=buildDayRaw(week,dow,dTest,ctx);
@@ -1551,7 +1556,7 @@ function buildDayRaw(week,dow,dTest,ctx){
   const repTxt=gp?`${gp[0]} × ${gp[1]===1.5?"90 s":gp[1]+" min"}`:"";
   /* v6.2: Week 9's AMRAP Monday keeps its goal-pace run (10 min after the
      push-ups); the cool-down is whatever the minutes leave, not a fixed 3. */
-  const mon=dl||(retest&&week!==9)||!gp
+  const mon=dl||(retest&&week!==8)||!gp
     ?{id:"easyRun",rm:rp.mon,sr:`${rp.mon} min easy jog on grass or track, at a pace you could talk at${retest?" — after the tests, nothing hard":""}.${cadNote(week,0)}`}
     :{id:"quality",rm:rp.mon,sr:`${rp.mon} min run on a track${retest?", 10 min after the push-ups":""}: 5 min easy · ${repTxt} at ${rp15.repMi.replace("/mi","/mile")}, walk ${GP_WALK[week]||"the same time"} after each (walking doesn't count) · ${Math.round(rp.mon-5-gp[0]*gp[1])} min easy.${cadNote(week,0)}`};
   /* ONE Wednesday run, written as ONE item with its parts in order. */
@@ -1601,34 +1606,37 @@ function buildDayRaw(week,dow,dTest,ctx){
     const r=f=>Math.max(6,Math.min(Math.floor(0.7*m),Math.round(f*m))), rs=f=>Math.max(6,Math.round(f*sm));
     const holdP=Math.max(10,m-8), holdS=Math.max(10,sm-8);
     const PU={
-      5:{mon:setLine(5,r(.60),"60 s","after the bench"),wed:`2 sets × 30 s at ${pc}/min (≈${Math.round(pc/2)} reps) · 2 min rest · if you need a rest, lock out 2 s at rep ${holdP}`,fri:"1 ladder: 2-4-6-8-10-8-6-4-2 (50 reps) · rest as long as the last set took"},
-      6:{mon:setLine(5,r(.65),"50 s","after the bench"),wed:`2 sets × 40 s at ${pc}/min (≈${Math.round(pc*2/3)} reps) · 2 min rest · planned 2 s lockout rest at rep ${holdP}`,fri:setLine(6,r(.55),"45 s")},
-      7:{wed:`1 set × 30 s at ${pc}/min (≈${Math.round(pc/2)} reps) · easy week`,fri:setLine(4,r(.50),"45 s","easy week")},
-      8:{mon:setLine(5,r(.65),"45 s","after the bench"),fri:"1 ladder: 2-4-6-8-10-12-10-8-6-4-2 (72 reps) · rest as long as the last set took"},
-      9:{fri:setLine(6,r(.60),"45 s")},
+      4:{mon:setLine(5,r(.60),"60 s","after the bench"),wed:`2 sets × 30 s at ${pc}/min (≈${Math.round(pc/2)} reps) · 2 min rest · if you need a rest, lock out 2 s at rep ${holdP}`,fri:"1 ladder: 2-4-6-8-10-8-6-4-2 (50 reps) · rest as long as the last set took"},
+      5:{mon:setLine(5,r(.65),"50 s","after the bench"),wed:`2 sets × 40 s at ${pc}/min (≈${Math.round(pc*2/3)} reps) · 2 min rest · planned 2 s lockout rest at rep ${holdP}`,fri:setLine(6,r(.55),"45 s")},
+      6:{wed:`1 set × 30 s at ${pc}/min (≈${Math.round(pc/2)} reps) · easy week`,fri:setLine(4,r(.50),"45 s","easy week")},
+      7:{mon:setLine(5,r(.65),"45 s","after the bench"),fri:"1 ladder: 2-4-6-8-10-12-10-8-6-4-2 (72 reps) · rest as long as the last set took"},
+      8:{fri:setLine(6,r(.60),"45 s")},
+      9:{mon:setLine(4,r(.70),"30 s","after the bench · the shorter rest IS the progression"),fri:setLine(4,r(.60),"45 s")},
       10:{mon:setLine(4,r(.70),"30 s","after the bench · the shorter rest IS the progression"),fri:setLine(4,r(.60),"45 s")},
     }[week]||{};
     const SU={
-      5:{mon:`1 set × ${rs(.70)} reps at ${sc}/min · sit up and hold 5 s at rep ${Math.max(5,rs(.70)-5)}`,wed:"5 sets × 15 s ALL-OUT, 45 s rest · aim for 11+ full-range reps each",fri:"1 set × 22 reps fast but clean (aim ~30 s)"},
-      6:{mon:`1 set × ${rs(.70)} reps at ${sc}/min · sit up and hold 5 s at rep ${Math.max(5,rs(.70)-5)}`,wed:"5 sets × 15 s ALL-OUT, 45 s rest · aim for 11+ full-range reps each",fri:"1 set × 24 reps fast but clean (aim ~32 s)"},
-      7:{wed:"4 sets × 15 s ALL-OUT, 45 s rest · easy week",fri:`1 set × 18 reps at ${sc}/min · easy week`},
-      8:{mon:`1 set × 45 s at ${sc}/min (≈${Math.round(sc*.75)} reps) · sit up and hold 5 s at rep ${holdS}`,fri:`2 sets × 22 reps at ${sc}/min · 2 min rest`},
-      9:{fri:"1 set × 22 reps fast but clean (aim ~30 s)"},
+      4:{mon:`1 set × ${rs(.70)} reps at ${sc}/min · sit up and hold 5 s at rep ${Math.max(5,rs(.70)-5)}`,wed:"5 sets × 15 s ALL-OUT, 45 s rest · aim for 11+ full-range reps each",fri:"1 set × 22 reps fast but clean (aim ~30 s)"},
+      5:{mon:`1 set × ${rs(.70)} reps at ${sc}/min · sit up and hold 5 s at rep ${Math.max(5,rs(.70)-5)}`,wed:"5 sets × 15 s ALL-OUT, 45 s rest · aim for 11+ full-range reps each",fri:"1 set × 24 reps fast but clean (aim ~32 s)"},
+      6:{wed:"4 sets × 15 s ALL-OUT, 45 s rest · easy week",fri:`1 set × 18 reps at ${sc}/min · easy week`},
+      7:{mon:`1 set × 45 s at ${sc}/min (≈${Math.round(sc*.75)} reps) · sit up and hold 5 s at rep ${holdS}`,fri:`2 sets × 22 reps at ${sc}/min · 2 min rest`},
+      8:{fri:"1 set × 22 reps fast but clean (aim ~30 s)"},
+      9:{mon:`1 set × ${rs(.80)} reps at ${sc}/min · hold 5 s sitting up only if you need to`,fri:"1 set × 22 reps fast but clean (aim ~30 s)"},
       10:{mon:`1 set × ${rs(.80)} reps at ${sc}/min · hold 5 s sitting up only if you need to`,fri:"1 set × 22 reps fast but clean (aim ~30 s)"},
     }[week]||{};
-    const PTSIM={8:"Push-ups 60 (4 × 15) · ab work 60 (20 sit-ups + 40 flutter-kick four-counts) · 40 jumping jacks · 10 step-back burpees",
-      9:"Push-ups 75 (5 × 15) · ab work 90 (30 sit-ups + 60 flutter-kick four-counts) · 60 jumping jacks · 15 step-back burpees",
+    const PTSIM={7:"Push-ups 60 (4 × 15) · ab work 60 (20 sit-ups + 40 flutter-kick four-counts) · 40 jumping jacks · 10 step-back burpees",
+      8:"Push-ups 75 (5 × 15) · ab work 90 (30 sit-ups + 60 flutter-kick four-counts) · 60 jumping jacks · 15 step-back burpees",
+      9:"Push-ups 75 (5 × 15) · ab work 120 (40 sit-ups + 80 flutter-kick four-counts) · 60 jumping jacks · 20 step-back burpees",
       10:"Push-ups 75 (5 × 15) · ab work 120 (40 sit-ups + 80 flutter-kick four-counts) · 60 jumping jacks · 20 step-back burpees"};
-    const OB_DRAG={5:"~90 lb",6:"~105 lb",7:"~70 lb (easy week)",8:"~120 lb",9:"~135 lb",10:"150–165 lb — the full MPO-245 drag"};
-    const DUR2={5:"sprawl",6:"getup",7:"grip",8:"grip",9:"getup",10:"sprawl"};
+    const OB_DRAG={4:"~90 lb",5:"~105 lb",6:"~70 lb (easy week)",7:"~120 lb",8:"~135 lb",9:"150–165 lb — the full MPO-245 drag",10:"165 lb — the full MPO-245 drag"};
+    const DUR2={4:"sprawl",5:"getup",6:"grip",7:"grip",8:"getup",9:"sprawl",10:"getup"};
     const ptSim=PTSIM[week]&&!dl?{id:"ptSim",sr:`${trendClean?PTSIM[week]:PTSIM[week].replace(/ · \d+ jumping jacks/,"")+" (jacks out: the last 7 days were not pain-free)"} · to a called cadence (app or partner), no rest beyond what the caller gives · then walk 3 min and go straight into the run`}:null;
     const jOK=!!JUMPS[week]&&trendClean&&!(dTest!=null&&dTest<=7);
     const monJ=jOK&&jumpDays(week).includes(0)?[{id:"pogo",sr:`${JUMPS[week]} · 60 s rest · before the squat, after the prehab · count every jump as one rep (jacks as half) · stop on any shin pain`}]:[];
     const wedJ=jOK&&jumpDays(week).includes(2)?[{id:"pogo",sr:`${ptSim?JUMPS[week].split(" · ")[0]:JUMPS[week]} · 60 s rest · after the run · stop on any shin pain`}]:[];
     const chinsA=dl?"2 sets × (your best set minus 3) reps · 90 s rest":"3 sets × (your best set minus 2) reps · 90 s rest · under 5 clean reps? slow negatives, or feet on a box";
     const testsAM=sim?[{id:"suAmrap",sr:"1 set · 60 seconds, max reps · first hard thing today, at least 90 min after waking · film it or have someone call out 15/30/45 s"},
-      ...(week===9?[]:[{id:"acid",sr:"In the 5 min after the sit-ups: 3 min easy spin with 2 short pick-ups, then 50 s ALL OUT, seated · log average watts · then 5 min rest"}]),
-      {id:"puAmrap",sr:`1 set · 60 seconds, max reps · 5 min after the ${week===9?"sit-ups":"bike sprint"} · film it or have someone call out 15/30/45 s${week===9?" · 15 days before the mock":""}`}]
+      ...(week===8?[]:[{id:"acid",sr:"In the 5 min after the sit-ups: 3 min easy spin with 2 short pick-ups, then 50 s ALL OUT, seated · log average watts · then 5 min rest"}]),
+      {id:"puAmrap",sr:`1 set · 60 seconds, max reps · 5 min after the ${week===8?"sit-ups":"bike sprint"} · film it or have someone call out 15/30/45 s${week===8?" · 22 days before the mock":""}`}]
       :retest?[{id:"suPacing",sr:setLine(2,Math.min(20,rs(.7)),"90 s",`pace ${sc}/min · no max effort inside 10 days of a test`)},{id:"puPacing",sr:`1 set × ${r(.6)} reps at ${pc}/min · no max effort inside 10 days of a test`}]:[];
     const days2=[
       {l:sim?"RETEST · Test Order + Full-Body A":(mon.id==="quality"?"Goal-Pace Run + Full-Body A":"Easy Run + Full-Body A"),impact:true,strain:sim?"high":null,
@@ -3054,7 +3062,7 @@ function App(){
                 </span>
               </div>
             ))}
-            <div className="fine" style={{marginTop:12}}>Deload: Week 7 (Thanksgiving) — running and lifting volume about −40%, intensity held. Week 4 was switched to a build week (a repeat of Week 3) on 2 Nov. AMRAP retests on Weeks 1, 4, 7 and 9, a 1.5-mile time trial on Sat Nov 21, and the mock PFT on Tue 22 Dec. Inside the academy your own work deloads in Weeks {DELOADS.filter(w=>w>=ACADEMY_WK).join(", ")} with a Saturday retest, 1.5-mile time trials on Sat 20 Feb and Sat 17 Apr, a mock PFT on Sat 8 May, and a graduation peak keyed to the final assessment ({fmtDate(gradT)} unless you enter the real date).</div>
+            <div className="fine" style={{marginTop:12}}>Deload: Week 6 (16 Nov) — running and lifting volume about −40%, intensity held. On 2 Nov the program advanced a week instead of deloading, so Thanksgiving week is now a build week. AMRAP retests on Weeks 1, 4, 6 and 8, a 1.5-mile time trial on Sat 14 Nov, and the mock PFT on Tue 22 Dec. Inside the academy your own work deloads in Weeks {DELOADS.filter(w=>w>=ACADEMY_WK).join(", ")} with a Saturday retest, 1.5-mile time trials on Sat 20 Feb and Sat 17 Apr, a mock PFT on Sat 8 May, and a graduation peak keyed to the final assessment ({fmtDate(gradT)} unless you enter the real date).</div>
           </div>
 
           <div className="card pad" style={{marginBottom:12}}>

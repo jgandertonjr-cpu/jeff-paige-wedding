@@ -29,7 +29,7 @@ He has followed the app daily. Weeks 1–3 (12 Oct–1 Nov) are his real base: 3
 
 | What | Status | From |
 |---|---|---|
-| Week 4 (today, retest) | **Changed 2 Nov at your request: no deload.** Week 4 repeats Week 3 (42 run-min, 4×4 @ 82.5%, jumps Tue/Thu); Monday's retest stays. Next easy week is Week 7. The §8 Week 4 table below is superseded | now |
+| Week 4 (today, retest) | **Changed 2 Nov at your request: no deload — the program advances a week.** Old Weeks 5–10 now run one calendar week earlier (Week 4 = old Week 5, 46 run-min). The deload moves to Week 6 (16 Nov); Thanksgiving week is a build week; Week 10 (14 Dec) adds one step (66 min, longest 25) before the fixed arrival taper. The week numbers in §8 below are one week later than the app now shows | now |
 | Shin battery, Sunday screen, gates, red flags, RTR re-entry at stage 5–6 | Identical. The rules are tightened, not replaced (§4) | — |
 | Run totals Wks 5–10 | Within 1 min of what the app already shows: 46/50/30/55/60/**64** (app: 46/50/30/55/60/65) | — |
 | Monday goal-pace run, Saturday long run, asphalt steps, 4th run day from Wk 8, formation finish | Same structure. Wk 6 Monday becomes easy, and the speed reps change (Wk 8–9) | Wk 5 |
