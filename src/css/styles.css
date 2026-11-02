@@ -2553,6 +2553,177 @@ main p a:not(.btn):hover,
   margin: 0;
 }
 
+/* ── Registry: wide photo band with the registry card floating over its
+   bottom edge, then a one-line shipping note ── */
+.registry { padding-top: clamp(2.5rem, 6vw, 4.5rem); }
+
+.registry-photo {
+  margin: 0;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  background: var(--color-sage-mist);
+}
+.registry-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 52%;
+}
+/* The CMS "Photo crop" choices, for this wide frame */
+.registry-photo img.img-focus-high { object-position: center 25%; }
+.registry-photo img.img-focus-left { object-position: 18% 52%; }
+@media (min-width: 768px) {
+  .registry-photo { aspect-ratio: 21 / 9; }
+}
+
+.registry-card {
+  position: relative;
+  width: min(100% - 1.5rem, 720px);
+  margin: calc(-1 * clamp(2.5rem, 7vw, 5.5rem)) auto 0;
+  background: var(--color-white);
+  border: 1px solid var(--color-gold);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-lg);
+  padding: clamp(2rem, 5vw, 3.5rem) clamp(1.25rem, 5vw, 3.5rem);
+  text-align: center;
+}
+.registry-card--wide { width: min(100% - 1.5rem, 920px); }
+/* No photo above: sit in the flow like any other card */
+.registry-card--flat { margin-top: 0; box-shadow: var(--shadow-sm); }
+
+.registry-card__heading {
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-light);
+  font-style: italic;
+  line-height: var(--lh-snug);
+  color: var(--color-text);
+}
+.registry-card__intro .section-ornament { margin: var(--space-4) auto var(--space-5); }
+.registry-card__lead {
+  max-width: 46ch;
+  margin-inline: auto;
+  font-size: var(--fs-base);
+  font-weight: var(--fw-regular);
+  line-height: 1.7;
+  color: var(--color-text-muted);
+}
+@media (min-width: 768px) {
+  .registry-card__lead { font-size: var(--fs-md); line-height: var(--lh-loose); }
+}
+
+/* The registry itself, below a hairline */
+.registry-options {
+  margin-top: clamp(1.75rem, 4vw, 2.5rem);
+  padding-top: clamp(1.75rem, 4vw, 2.5rem);
+  border-top: 1px solid var(--color-border);
+  display: grid;
+  gap: var(--space-8);
+}
+@media (min-width: 768px) {
+  .registry-options--pair { grid-template-columns: 1fr 1fr; gap: 0; }
+  /* Solid-gold hairline between Amazon and the fund */
+  .registry-options--pair .registry-option + .registry-option {
+    border-left: 1px solid var(--color-gold);
+  }
+  .registry-options--pair .registry-option { padding-inline: var(--space-8); }
+}
+@media (max-width: 767px) {
+  .registry-options--pair .registry-option + .registry-option {
+    padding-top: var(--space-8);
+    border-top: 1px solid var(--color-border);
+  }
+}
+
+.registry-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.registry-option__title {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-regular);
+  font-style: italic;
+  color: var(--color-text);
+}
+
+.registry-option__text {
+  max-width: 40ch;
+  font-weight: var(--fw-regular);
+  line-height: var(--lh-normal);
+  color: var(--color-text-muted);
+}
+
+/* Coming soon: a confident date line, not a faint footnote */
+.registry-option__soon-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-3xl);
+  font-weight: var(--fw-light);
+  font-style: italic;
+  line-height: var(--lh-tight);
+  color: var(--color-text);
+}
+
+/* Thumb-sized: full width and 52px tall on phones. margin-top: auto lines
+   the buttons up along the bottom when two options sit side by side.
+   Scoped to .registry-option so the phone .btn rules further down
+   (46px) don't override it. */
+.registry-option .registry-option__cta {
+  margin-top: auto;
+  width: 100%;
+  min-height: 52px;
+  padding-inline: 1em;
+  white-space: nowrap;
+}
+@media (min-width: 560px) {
+  .registry-option .registry-option__cta { width: auto; min-width: 260px; padding-inline: 2.6em; }
+}
+
+.registry-handles {
+  width: 100%;
+  max-width: 320px;
+  border-top: 1px solid var(--color-border);
+}
+.registry-handles__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.registry-handles__label {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-accent-dark);
+}
+.registry-handles__value {
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+/* One line of fine print under the card */
+.registry-shipping {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--space-2);
+  max-width: 720px;
+  margin: var(--space-8) auto 0;
+  font-size: var(--fs-sm);
+  line-height: var(--lh-normal);
+  color: var(--color-text-muted);
+  text-align: left;
+}
+.registry-shipping svg { flex-shrink: 0; margin-top: 2px; color: var(--color-accent-dark); }
+
 /* ── After Party: label/value facts, empty map, what-to-expect ── */
 .fact__label {
   font-size: var(--fs-xs);

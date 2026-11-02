@@ -417,23 +417,62 @@ collections:
         fields:
           - *seo
           - *hero
+          - { name: photo, label: Wide photo, widget: image, required: false, hint: "Shown wide under the page header, with the registry card overlapping its bottom edge. A landscape photo works best. Leave empty for no photo." }
+          - { name: photo_alt, label: Photo description, widget: string, required: false, hint: "For screen readers, e.g. \"Jeff and Paige on the beach\"." }
+          - *focus
           - name: intro
-            label: Main section
+            label: Note at the top of the card
             widget: object
             fields:
               - { name: label, label: Small text, widget: string }
               - { name: title, label: Heading, widget: string }
               - { name: text, label: Message, widget: text }
-          - name: registries
-            label: Registry links
-            label_singular: Registry
-            widget: list
-            required: false
-            summary: "{{fields.name}}"
-            hint: Each one becomes a button under the message. Leave empty for no buttons.
+          - name: coming_soon
+            label: Coming soon
+            widget: object
+            hint: "While this is on, guests see this message instead of the registry buttons."
             fields:
-              - { name: name, label: Button text, widget: string, hint: "e.g. Zola, Amazon, Honeymoon Fund" }
-              - { name: url, label: Link, widget: string, pattern: ['^https?://\S+$', "Paste the full web address, starting with https://"], hint: "The full web address, starting with https://" }
+              - { name: enabled, label: Show "coming soon" instead of the registry, widget: boolean, default: true, hint: "Turn off once the Amazon link below is filled in. The buttons stay hidden until the link is a real registry address." }
+              - { name: label, label: Badge text, widget: string }
+              - { name: title, label: Heading, widget: string }
+              - { name: text, label: Message, widget: text }
+          - name: amazon
+            label: Amazon registry
+            widget: object
+            fields:
+              - { name: url, label: Registry link, widget: string, pattern: ['^https?://\S+$', "Paste the full web address, starting with https://"], hint: "Your Amazon registry's share link. Opens in a new tab." }
+              - { name: title, label: Card heading, widget: string }
+              - { name: text, label: Note under the heading, widget: text }
+              - { name: button_text, label: Button text, widget: string }
+          - name: cash_fund
+            label: Cash fund (optional)
+            widget: object
+            collapsed: true
+            hint: "A second card next to Amazon, for a honeymoon or house fund. Shown only while the registry is live."
+            fields:
+              - { name: enabled, label: Show the cash fund card, widget: boolean, default: false }
+              - { name: title, label: Card heading, widget: string }
+              - { name: text, label: Note under the heading, widget: text }
+              - { name: url, label: Fund page link, widget: string, required: false, pattern: ['^https?://\S+$', "Paste the full web address, starting with https://"], hint: "Optional. Leave empty for no button." }
+              - { name: button_text, label: Button text, widget: string, required: false }
+              - name: handles
+                label: Payment handles
+                label_singular: Handle
+                widget: list
+                required: false
+                summary: "{{fields.label}}: {{fields.value}}"
+                hint: "Optional, e.g. Venmo → @jeff-and-paige. Public usernames only — never bank or card numbers."
+                fields:
+                  - { name: label, label: App, widget: string }
+                  - { name: value, label: Username or handle, widget: string }
+          - name: shipping_note
+            label: Shipping note
+            widget: object
+            collapsed: true
+            hint: "One small line under the registry card."
+            fields:
+              - { name: enabled, label: Show the shipping note, widget: boolean, default: true }
+              - { name: text, label: Message, widget: text }
 
       # Travel ----------------------------------------------------------------
       - name: travel
