@@ -18,13 +18,13 @@
     "text": "Please don't feel you need to bring anything. If you'd like to give a gift anyway, we've kept it simple with a single registry."
   },
   "coming_soon": {
-    "enabled": true,
+    "enabled": false,
     "label": "Coming Soon",
     "title": "Opening in 2027",
     "text": "We'll share the link right here once it's ready. Check back closer to the day."
   },
   "amazon": {
-    "url": "https://www.amazon.com/wedding/registry/YOUR-REGISTRY-ID",
+    "url": "https://www.amazon.com/wedding/guest-view/3HOA5U1OFEBJD",
     "title": "Amazon Wedding Registry",
     "text": "It includes gifts from other stores too, and Amazon shows what's already been bought so nothing doubles up.",
     "button_text": "View Our Registry"
