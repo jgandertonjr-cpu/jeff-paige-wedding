@@ -4,8 +4,21 @@ pageKey: registry
 canonical: registry
 headerDark: true
 ---
+{#-
+  Every setting on this page (links, on/off switches, wording) lives in
+  src/_data/registry.json, also editable at /admin → Pages → Registry.
+
+  The registry buttons appear only when coming_soon.enabled is false AND
+  amazon.url is a real link, so flipping the switch before pasting the
+  registry address can never publish a broken button.
+-#}
 {%- extends "layouts/base.njk" -%}
 {%- block main %}
+{%- set amazon = registry.amazon -%}
+{%- set fund = registry.cash_fund -%}
+{%- set amazonReady = amazon.url and ("YOUR-REGISTRY-ID" not in amazon.url) -%}
+{%- set showRegistry = amazonReady and not registry.coming_soon.enabled -%}
+{%- set showFund = showRegistry and fund.enabled -%}
     <!-- ── PAGE HERO ── -->
     <section class="page-hero" aria-label="Page header">
       <span class="section-label">{{ registry.hero.label }}</span>
@@ -13,22 +26,68 @@ headerDark: true
       <p class="page-hero__subtitle">{{ registry.hero.subtitle }}</p>
     </section>
 
-    <!-- ── INTRO ── -->
+    <!-- ── INTRO + REGISTRY ── -->
     <section class="section" aria-labelledby="registry-intro">
-      <div class="container container--narrow text-center">
-        <span class="section-label reveal">{{ registry.intro.label }}</span>
-        <h2 id="registry-intro" class="section-title reveal reveal--delay-1">{{ registry.intro.title }}</h2>
-        <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
-        <p class="section-subtitle reveal reveal--delay-3">
-          {{ registry.intro.text }}
-        </p>
-        {%- if registry.registries.length %}
-        <div class="flex flex--center mt-8 reveal reveal--delay-3">
-          {%- for item in registry.registries %}
-          <a href="{{ item.url }}" class="btn btn--outline" target="_blank" rel="noopener noreferrer">{{ item.name }}</a>
-          {%- endfor %}
+      <div class="container">
+        <div class="section-header">
+          <span class="section-label reveal">{{ registry.intro.label }}</span>
+          <h2 id="registry-intro" class="section-title reveal reveal--delay-1">{{ registry.intro.title }}</h2>
+          <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
+          <p class="section-subtitle reveal reveal--delay-2">{{ registry.intro.text }}</p>
+        </div>
+
+        {%- if showRegistry %}
+        <div class="registry-cards{% if showFund %} registry-cards--pair{% endif %}">
+          <div class="registry-card card--featured reveal">
+            <h3 class="registry-card__title">{{ amazon.title }}</h3>
+            <p class="registry-card__text">{{ amazon.text }}</p>
+            <a href="{{ amazon.url }}" class="btn btn--primary registry-card__cta" target="_blank" rel="noopener noreferrer">
+              {{ amazon.button_text }}<span class="sr-only"> (opens in a new tab)</span>
+            </a>
+          </div>
+
+          {%- if showFund %}
+          <div class="registry-card reveal reveal--delay-1">
+            <h3 class="registry-card__title">{{ fund.title }}</h3>
+            <p class="registry-card__text">{{ fund.text }}</p>
+            {%- if fund.handles.length %}
+            <dl class="registry-handles">
+              {%- for handle in fund.handles %}
+              <div class="registry-handles__row">
+                <dt class="registry-handles__label">{{ handle.label }}</dt>
+                <dd class="registry-handles__value">{{ handle.value }}</dd>
+              </div>
+              {%- endfor %}
+            </dl>
+            {%- endif %}
+            {%- if fund.url %}
+            <a href="{{ fund.url }}" class="btn btn--outline registry-card__cta" target="_blank" rel="noopener noreferrer">
+              {{ fund.button_text }}<span class="sr-only"> (opens in a new tab)</span>
+            </a>
+            {%- endif %}
+          </div>
+          {%- endif %}
+        </div>
+        {%- else %}
+        <div class="registry-cards">
+          <div class="registry-card card--featured reveal">
+            <span class="info-badge">{{ registry.coming_soon.label }}</span>
+            <h3 class="registry-card__title">{{ registry.coming_soon.title }}</h3>
+            <p class="registry-card__text">{{ registry.coming_soon.text }}</p>
+          </div>
         </div>
         {%- endif %}
       </div>
     </section>
+{%- if registry.shipping_note.enabled %}
+
+    <!-- ── SHIPPING NOTE ── -->
+    <section class="section section--alt registry-note" aria-labelledby="registry-note-heading">
+      <div class="container container--narrow text-center">
+        <span class="section-label reveal">{{ registry.shipping_note.label }}</span>
+        <h2 id="registry-note-heading" class="section-title reveal reveal--delay-1">{{ registry.shipping_note.title }}</h2>
+        <p class="section-subtitle reveal reveal--delay-2">{{ registry.shipping_note.text }}</p>
+      </div>
+    </section>
+{%- endif %}
 {% endblock %}

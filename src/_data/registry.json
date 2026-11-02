@@ -1,8 +1,8 @@
 {
   "seo": {
     "title": "Registry | Jeff & Paige",
-    "description": "Registry information for Jeff and Paige's wedding — coming soon.",
-    "social_description": "Your presence is the greatest gift. Registry details coming soon."
+    "description": "Registry information for Jeff and Paige's wedding.",
+    "social_description": "Your presence is the greatest gift."
   },
   "hero": {
     "label": "Gifts & Wishes",
@@ -10,9 +10,34 @@
     "subtitle": "Your presence at our wedding is the greatest gift of all."
   },
   "intro": {
-    "label": "Coming Soon",
+    "label": "With Gratitude",
     "title": "A Little from the Heart",
-    "text": "Honestly, having you there is plenty. We haven't set up a registry yet — if we do, we'll share the details right here. Check back closer to the day."
+    "text": "The best part of our wedding day will be celebrating it with you, so please don't feel you need to bring a gift. If you'd like to give one anyway, everything you need is right here."
   },
-  "registries": []
+  "coming_soon": {
+    "enabled": true,
+    "label": "Coming Soon",
+    "title": "Our registry is on its way",
+    "text": "We'll set it up in 2027 and share the link right here. Check back closer to the day."
+  },
+  "amazon": {
+    "url": "https://www.amazon.com/wedding/registry/YOUR-REGISTRY-ID",
+    "title": "Amazon Wedding Registry",
+    "text": "It includes gifts from other stores too, and Amazon shows what's already been bought so nothing doubles up.",
+    "button_text": "View Our Registry"
+  },
+  "cash_fund": {
+    "enabled": false,
+    "title": "Honeymoon & Home Fund",
+    "text": "If you'd rather give toward our first trip or our first home, we'd be grateful for any contribution.",
+    "url": "",
+    "button_text": "Contribute to Our Fund",
+    "handles": []
+  },
+  "shipping_note": {
+    "enabled": true,
+    "label": "A Small Request",
+    "title": "Please Ship, Don't Carry",
+    "text": "We'd love it if you skipped bringing boxed gifts to the venue, since we won't have a safe place to keep them that night. Anything from our registry ships straight to us."
+  }
 }
