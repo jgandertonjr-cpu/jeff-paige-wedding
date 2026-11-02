@@ -9,16 +9,19 @@
     "title": "Registry",
     "subtitle": "Your presence at our wedding is the greatest gift of all."
   },
+  "photo": "/images/119812256_unknown.webp",
+  "photo_alt": "Jeff and Paige smiling together on an evening walk on vacation",
+  "focus": "center",
   "intro": {
-    "label": "With Gratitude",
+    "label": "A Note from Us",
     "title": "A Little from the Heart",
-    "text": "The best part of our wedding day will be celebrating it with you, so please don't feel you need to bring a gift. If you'd like to give one anyway, everything you need is right here."
+    "text": "Please don't feel you need to bring anything. If you'd like to give a gift anyway, we've kept it simple with a single registry."
   },
   "coming_soon": {
     "enabled": true,
     "label": "Coming Soon",
-    "title": "Our registry is on its way",
-    "text": "We'll set it up in 2027 and share the link right here. Check back closer to the day."
+    "title": "Opening in 2027",
+    "text": "We'll share the link right here once it's ready. Check back closer to the day."
   },
   "amazon": {
     "url": "https://www.amazon.com/wedding/registry/YOUR-REGISTRY-ID",
@@ -36,8 +39,6 @@
   },
   "shipping_note": {
     "enabled": true,
-    "label": "A Small Request",
-    "title": "Please Ship, Don't Carry",
-    "text": "We'd love it if you skipped bringing boxed gifts to the venue, since we won't have a safe place to keep them that night. Anything from our registry ships straight to us."
+    "text": "Please ship gifts rather than bringing them to the venue. Anything from our registry goes straight to us."
   }
 }

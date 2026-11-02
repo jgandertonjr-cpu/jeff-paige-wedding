@@ -417,8 +417,11 @@ collections:
         fields:
           - *seo
           - *hero
+          - { name: photo, label: Wide photo, widget: image, required: false, hint: "Shown wide under the page header, with the registry card overlapping its bottom edge. A landscape photo works best. Leave empty for no photo." }
+          - { name: photo_alt, label: Photo description, widget: string, required: false, hint: "For screen readers, e.g. \"Jeff and Paige on the beach\"." }
+          - *focus
           - name: intro
-            label: Main section
+            label: Note at the top of the card
             widget: object
             fields:
               - { name: label, label: Small text, widget: string }
@@ -466,10 +469,9 @@ collections:
             label: Shipping note
             widget: object
             collapsed: true
+            hint: "One small line under the registry card."
             fields:
               - { name: enabled, label: Show the shipping note, widget: boolean, default: true }
-              - { name: label, label: Small text, widget: string }
-              - { name: title, label: Heading, widget: string }
               - { name: text, label: Message, widget: text }
 
       # Travel ----------------------------------------------------------------
