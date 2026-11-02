@@ -691,7 +691,7 @@ const e1Of=x=>epley(+x.wt,+x.reps+(10-(x.rpe!=null&&x.rpe!==""?+x.rpe:10)));
    2 Nov 2026 a single session can raise it by at most 5%. Earlier entries
    are read exactly as before, so no logged history changes. */
 const E1_CAP_FROM="2026-11-02";
-const isEasyLog=x=>x.week!=null&&(isDeload(x.week)||isTaperWk(x.week));
+const isEasyLog=x=>!!x.re||(x.week!=null&&(isDeload(x.week)||isTaperWk(x.week)));
 function e1Track(entries){
   let cur=null,lows=[];
   /* With no build-week log yet, an easy-week log SEEDS the number — the
@@ -1240,8 +1240,174 @@ const PU_IDS=["puAmrap","puClust","puIso","puPacing"], SU_IDS=["suAmrap","suLadd
    straight-knee / ≥25 bent-knee per leg, within 10%. */
 const HEEL_WKS=[1,4,6,8,11];
 
+/* ═══ MISSED SESSIONS (v6.3, 2 Nov 2026 — lower-leg, S&C and running-coach
+   lanes, reconciled injury-first) ══════════════════════════════════════════
+   He marks a day Done / Partial / Skipped / Sick. That status is keyed by
+   week-day ("w-d"), never by item position, so nothing already ticked moves.
+   An UNMARKED past day counts as done (a false "miss" would reshape a plan he
+   follows without ticking); the Today tab asks about unmarked run/test days.
+   Every adjustment applies only to TODAY OR LATER — past days stay as built.
+     • Same week: the few sessions worth saving move to a day that already
+       carries that kind of load; everything else simply drops. Nothing is
+       ever doubled, and no move creates a new impact day.
+     • Next week: running is capped from what he ACTUALLY ran (runCaps, built
+       in App) — never from the plan.
+     • After days off: a re-entry ladder for the first week back, slower if
+       he was sick. Bone loses tolerance faster than the engine feels it. */
+const isMiss=x=>x==="skipped"||x==="sick";
+const LIFT_IDS=["squat","bench","dl","ohp"];
+/* The most recent run of consecutive missed days ending before `day` (rest
+   days with no status don't break it), if it ended within the last 7 days. */
+function missStreakBefore(status,day){
+  const at=d=>{const w=weekOfDate(d),dd=(daysBetween(START,d)%7+7)%7;return{s:status[B(w,dd)],dd};};
+  let last=null;
+  for(let i=1;i<=7&&!last;i++){const d=new Date(day);d.setDate(d.getDate()-i);if(isMiss(at(d).s))last=d;}
+  if(!last)return null;
+  let n=0,sick=false;const d=new Date(last);
+  for(let i=0;i<120;i++){
+    const a=at(d);
+    if(isMiss(a.s)){n++;if(a.s==="sick")sick=true;}
+    else if(a.dd===6&&a.s==null&&n>0)n++;          // an unmarked Sunday inside a streak
+    else break;
+    d.setDate(d.getDate()-1);
+  }
+  return n>=2?{days:n,sick,since:daysBetween(last,day)}:null;
+}
+function reentryOf(st){
+  if(!st)return null;
+  const n=st.days,sk=st.sick;
+  if(!sk&&n<4)return null;
+  const run=sk?(n<=3?1:n<=6?0.75:n<=13?0.6:0.5):(n<=6?0.9:n<=13?0.7:n<=27?0.5:0.4);
+  const lift=sk?(n<=3?{t:"−1 set, no extra reps"}:n<=6?{t:"−1 set, 5% lighter"}:n<=13?{s:2,r:5,p:.70}:{s:2,r:5,p:.65})
+                :(n<=6?{cap:.80}:n<=13?{s:3,r:5,p:.75}:{s:2,r:5,p:.70});
+  return{days:n,sick:sk,run,lift,noQuality:sk||n>=4,noJumps:sk?n>=4:n>=7,noMax:n>=7||sk,halfCalis:n>=14,easyBike:sk||n>=14,
+    rtr:n>=14&&(sk||n>=28),
+    msg:`Back after ${n} days off${sk?" (sick)":""}: running at ${Math.round(run*100)}% this first week, all easy${sk?"":" + strides"}, no jumps${n>=7||sk?", no max efforts":""}; lifting ${lift.p?`${lift.s}×${lift.r} @ ${Math.round(lift.p*100)}%`:lift.cap?"capped at 80%":lift.t}.${sk?" Train only once you are 24 h fever-free without meds, symptoms are above the neck only, and resting HR is within 5 beats of normal.":""}${n>=14&&(sk||n>=28)?" Use the Return-To-Run ladder (start at stage 5) for the running.":""}`};
+}
+function missAdapt(week,dow,p,ctx){
+  const st=ctx&&ctx.status;
+  if(!st||p.pre)return p;
+  const day=dateOf(week,dow);
+  if(day<(ctx.today||todayMid()))return p;                   // forward-only
+  const notes=[];
+  let am=[...p.am],pm=[...p.pm],q={};
+  const sOf=(w,d)=>st[B(w,d)];
+  const raw=(w,d)=>buildDayRaw(w,d,null,{...ctx,status:null});
+  const phaseA=isNew(week)&&week<=10;
+  const tag=(x,t)=>({...x,sr:(x.sr||(LIBS[x.id]||{}).sr||"")+" · "+t});
+
+  /* ── same-week moves (Phase A build weeks) ── */
+  if(phaseA&&!p.rest){
+    const monMiss=isMiss(sOf(week,0)), tueMiss=isMiss(sOf(week,1)), wedMiss=isMiss(sOf(week,2)), thuMiss=isMiss(sOf(week,3));
+    if(monMiss&&dow===1){
+      const m=raw(week,0);
+      const tests=m.am.filter(x=>x.id==="suAmrap"||x.id==="puAmrap").map(x=>tag(x,"moved from Monday · at least 90 min after waking, test order"));
+      const lifts=m.pm.filter(x=>["squat","bench","chin"].includes(x.id)).map(x=>tag(x,x.id==="squat"?"moved from Monday · one set fewer, no extra reps":"moved from Monday"));
+      if(tests.length){am=[...am,...tests];notes.push("Monday's retest moved to this morning.");}
+      if(lifts.length){pm=pm.map(x=>x.id==="rowErg"||x.id==="ob"?{...x,sr:"Skip today — Monday's lift moved here"}:x).concat(lifts);notes.push("Monday was missed: its squat + bench + chins moved to this evening (row and obstacle block skipped). Monday's jumps are dropped, not moved.");}
+    }
+    if(monMiss&&dow===2&&GP_REPS[week]){
+      const mins=RUN_PLAN[week].mon, rr={7:"2 × 3 min",8:"4 × 2 min",9:"3 × 2.5 min",10:"2 × 4 min"}[week]||"3 × 2 min";
+      am=am.map(x=>x.id==="wedRun"?{id:"quality",rm:mins,hard:true,sr:`${mins} min run on a track: 5 min easy · ${rr} at goal pace (${ctx.run15?runPaces(ctx.run15).repMi:runPaces().repMi}), walk the same time after each · easy to ${mins} · moved from Monday, one rep fewer — no fast 100s/150s or strides today`}:x);
+      const sim=am.find(x=>x.id==="ptSim");
+      if(sim){am=am.filter(x=>x.id!=="ptSim");notes.push("The PT simulation moves to Friday morning (no jacks).");}
+      notes.push("Monday's goal-pace run is today instead of the short run — same impact days, nothing doubled.");
+    }
+    if(dow===4&&(wedMiss||(monMiss&&GP_REPS[week]))){
+      const w=raw(week,2), sim=w.am.find(x=>x.id==="ptSim");
+      if(sim&&!(wedMiss&&monMiss)){
+        const i=am.findIndex(x=>RUNIDS.includes(x.id));
+        const s2={...sim,sr:sim.sr.replace(/ · \d+ jumping jacks/,"")+" · moved from Wednesday, jacks out (tomorrow is the long run)"};
+        am=i>=0?[...am.slice(0,i),s2,...am.slice(i)]:[...am,s2];
+        pm=pm.map(x=>(PU_IDS.includes(x.id)||SU_IDS.includes(x.id))?{...x,sr:"Skip today — the PT simulation covered it"}:x);
+        notes.push("Wednesday's PT simulation is this morning, before the run.");
+      }
+    }
+    if(thuMiss&&dow===4){
+      const t=raw(week,3);
+      const ohp=t.pm.find(x=>x.id==="ohp"), ftp=t.am.find(x=>x.id==="pz"&&/FTP/.test(x.sr||""));
+      if(ohp){pm=[...pm,tag(ohp,"moved from Thursday · last thing in the session")];notes.push("Thursday was missed: the overhead press moved here. The deadlift drops — never the day before the long run.");}
+      if(ftp){am=[...am,tag(ftp,"moved from Thursday — every later ride is set from it")];notes.push("The FTP test moved to this morning.");}
+    }
+    if(tueMiss&&dow===3){
+      const t=raw(week,1), bw=t.pm.find(x=>x.id==="bootWalk");
+      if(bw){pm=[...pm,tag(bw,"moved from Tuesday")];notes.push("Tuesday's boot walk moved here.");}
+    }
+    if(dow===5&&week===RUN15_CHECK_WK+1&&isMiss(sOf(RUN15_CHECK_WK,5))&&!isMiss(sOf(RUN15_CHECK_WK,6))){
+      const tt=raw(RUN15_CHECK_WK,5).am.find(x=>x.id==="check15");
+      if(tt){am=am.map(x=>RUNIDS.includes(x.id)?{...tt,sr:tt.sr+" · moved from last Saturday (replaces today's easy run)"}:x);notes.push("Last week's 1.5-mile time trial is today.");}
+    }
+  }
+  /* Saturday long run missed → Sunday, all easy, only after a 0/10 morning;
+     then Monday's run is easy (no reps, no jumps). Not in taper weeks. */
+  if(dow===6&&week>=NEW_FROM&&week<=10&&isMiss(sOf(week,5))&&!sOf(week,6)){
+    const lr=raw(week,5).am.find(x=>x.id==="longRun");
+    if(lr){
+      const mv={...lr,sr:`${lr.rm} min continuous, ALL easy (no formation-pace finish) · moved from Saturday — only if this morning's first steps were 0/10; otherwise skip it`};
+      am=[...am,mv];
+      q={rest:false,impact:true,label:"Long Run · Moved From Saturday",pmOff:true};
+      notes.push("Saturday's long run is today, all easy. Monday's run will be easy too.");
+    }
+  }
+  if(dow===0&&week>NEW_FROM&&week<=11&&isMiss(sOf(week-1,5))&&!isMiss(sOf(week-1,6))&&sOf(week-1,6)!=null){
+    am=am.map(x=>x.id==="quality"?{id:"easyRun",rm:x.rm,sr:`${x.rm} min easy · no reps today — yesterday was the moved long run`}:x);
+    pm=pm.map(x=>x.id==="pogo"?{...x,sr:"Skip today — yesterday was the moved long run"}:x);
+  }
+  /* The mock PFT (Tue 22 Dec), missed while busy → Wed 23 Dec, the only
+     grace day. Sick → no max 300 or 1.5 before day one. */
+  if(week===11&&dow===2&&sOf(11,1)==="skipped"){
+    const mk=raw(11,1);am=[...mk.am];pm=[];q={label:"MOCK PFT · Moved From Tuesday",impact:true,strain:"high",mock:true,pmOff:true};
+    notes.push("The mock PFT moved to today. No later make-up exists.");
+  }
+  if(week===11&&(dow===2||dow===3)&&sOf(11,1)==="sick"){
+    notes.push("Mock missed sick: no max 300 or 1.5 before day one. If you are 48 h fever-free and readiness is green today, do the sit-up and push-up 60-second maxes only. Saturday's 20 min can include 1.5 mi at effort 7/10, timed — a note, not a test.");
+  }
+
+  /* ── next week's running cap, from what was actually run ── */
+  const cap=ctx.runCaps&&ctx.runCaps[week];
+  if(cap&&!p.rest){
+    const i=am.findIndex(x=>RUNIDS.includes(x.id));
+    if(i>=0){
+      const x=am[i], nm=cap.byDay&&cap.byDay[dow]!=null?cap.byDay[dow]:x.rm;
+      if(nm<(x.rm||0)){
+        if(nm<=0){am=am.filter((_,j)=>j!==i);q={...q,impact:am.some(y=>RUNIDS.includes(y.id)||y.id==="pogo")};notes.push(`No run today: last week you ran ${cap.actual} of ${cap.planned} min, so this week is capped at ${cap.ceil}.`);}
+        else{am[i]={...x,rm:nm,id:x.id==="longRun"||x.id==="quality"?x.id:"easyRun",sr:`${nm} min${x.id==="quality"?" — keep the reps, shorten the easy parts":" easy"} · cut from ${x.rm}: last week you ran ${cap.actual} of ${cap.planned} min, so this week is capped at ${cap.ceil}${x.id==="longRun"?" and no formation-pace finish":""} · `+(x.sr||"")};notes.push(`Running capped at ${cap.ceil} min this week (last week: ${cap.actual} of ${cap.planned}).`);}
+      }
+    }
+  }
+
+  /* ── re-entry after days off ── */
+  const re=reentryOf(missStreakBefore(st,day));
+  if(re&&!p.rest&&!(week===11&&dow===1)){
+    am=am.map(x=>{
+      if(RUNIDS.includes(x.id)){
+        if(re.noMax&&(x.id==="check15"||x.id==="t300"||x.id==="ttRun"))return{id:"easyRun",rm:Math.round((x.rm||12)*re.run),sr:`${Math.round((x.rm||12)*re.run)} min easy — no time trial in your first week back; it moves to a later week`};
+        const m=Math.max(6,Math.round((x.rm||0)*re.run));
+        return re.noQuality?{id:"easyRun",rm:m,sr:`${m} min easy${re.sick?"":" + 4 × 20 s relaxed strides"} · first week back (${Math.round(re.run*100)}% of the written run)`}:{...x,rm:m};
+      }
+      return x;
+    }).filter(x=>!(re.noJumps&&x.id==="pogo")&&!(re.noMax&&(x.id==="suAmrap"||x.id==="puAmrap"||x.id==="acid")));
+    const liftFix=x=>{
+      if(!LIFT_IDS.includes(x.id))return x;
+      const e=ctx.e1&&ctx.e1[x.id], L=re.lift;
+      const txt=L.p?`${L.s} sets × ${L.r} reps @ ${e?rnd5(L.p*e)+" lb":Math.round(L.p*100)+"%"} · re-entry session — log it; it won't move your numbers`
+        :L.cap?`${x.sr} · capped at 80%${e?` (${rnd5(.8*e)} lb)`:""} this first week back`:`${x.sr} · ${L.t}`;
+      return{...x,sr:txt,re:true};
+    };
+    const calisFix=x=>re.halfCalis&&(PU_IDS.includes(x.id)||SU_IDS.includes(x.id))?{...x,sr:x.sr+" · HALF the reps this first week back"}:x;
+    const bikeFix=x=>re.easyBike&&x.id==="pz"?{id:"z2",sr:BIKE.endurance(30)+" · easy aerobic only this first week back"}:x;
+    pm=pm.map(liftFix).map(calisFix).map(bikeFix).filter(x=>!(re.noJumps&&x.id==="pogo"));
+    am=am.map(liftFix).map(calisFix).map(bikeFix);
+    notes.unshift(re.msg);
+    q={...q,reentry:re,impact:(q.impact!=null?q.impact:p.impact)&&am.some(y=>RUNIDS.includes(y.id)||y.id==="pogo"),
+      ...(re.noMax&&/RETEST/.test(p.label)?{label:"First Week Back · Full-Body A",retest:false}:{})};
+  }
+  if(!notes.length)return p;
+  return{...p,...q,am,pm,adjust:notes};
+}
+
 function buildDay(week,dow,dTest,ctx){
-  const p=buildDayRaw(week,dow,dTest,ctx);
+  const p=missAdapt(week,dow,buildDayRaw(week,dow,dTest,ctx),ctx);
   /* Return-to-run overrides the written run entirely, and every non-impact
      element of the day survives untouched. Jumps come out with it. */
   const rtr=ctx&&ctx.rtr;
@@ -2225,6 +2391,10 @@ function App(){
   const[ptTemplate,setPtTemplate]=useState("auto");
   /* v6.2: nightly readiness — "w-d" -> {sleep,rhr,sore}. */
   const[ready,setReady]=useState({});
+  /* v6.3: per-day outcome — "w-d" -> done | partial | skipped | sick — and
+     minutes actually run on a partial day. Keyed by day, never by item. */
+  const[status,setStatus]=useState({});
+  const[runAct,setRunAct]=useState({});
   const[subs,setSubs]=useState({});   // per-day: bike | row | walk
   const[rtr,setRtr]=useState(null);   // null = not returning; 1-8 = ladder stage
   const[openItems,setOpenItems]=useState({});
@@ -2276,6 +2446,8 @@ function App(){
         if(Array.isArray(d.ptDays))setPtDays(d.ptDays);
         if(d.ptTemplate)setPtTemplate(d.ptTemplate);
         if(d.ready)setReady(d.ready);
+        if(d.status)setStatus(d.status);
+        if(d.runAct)setRunAct(d.runAct);
         if(from)setMigNote(from);
       }
       /* v5 restored the last-VIEWED day on open, which on a daily-use app
@@ -2290,13 +2462,13 @@ function App(){
     clearTimeout(saveRef.current);
     saveRef.current=setTimeout(()=>{
       try{
-        storage.set(STORE,JSON.stringify({v:6,done,pmPain,pmShape,amPain,screen,subs,rtr,flags,scores,weights,efforts,runLog,body,tests,lifts,acad,acadAssume,ptDays,ptTemplate,ready}));
+        storage.set(STORE,JSON.stringify({v:6,done,pmPain,pmShape,amPain,screen,subs,rtr,flags,scores,weights,efforts,runLog,body,tests,lifts,acad,acadAssume,ptDays,ptTemplate,ready,status,runAct}));
         setSaveState("saved");
         setTimeout(()=>setSaveState("idle"),1500);
       }catch{setSaveState("error");}
     },600);
     return()=>clearTimeout(saveRef.current);
-  },[done,pmPain,pmShape,amPain,screen,subs,rtr,flags,scores,weights,efforts,runLog,body,tests,lifts,acad,acadAssume,ptDays,ptTemplate,ready,loaded,loadErr]);
+  },[done,pmPain,pmShape,amPain,screen,subs,rtr,flags,scores,weights,efforts,runLog,body,tests,lifts,acad,acadAssume,ptDays,ptTemplate,ready,status,runAct,loaded,loadErr]);
 
   /* ── e1RM — most recent logged top set per lift, not the best: in a
      deficit a regression must bring the loads down with it. ── */
@@ -2345,7 +2517,9 @@ function App(){
   const runTot=w=>{const o=runLog[w]!=null?Number(runLog[w]):null;const a=acadWeek[w]?acadWeek[w].run:null;return o==null&&a==null?null:(o||0)+(a||0);};
   const load=useMemo(()=>{
     const at=runTot;
-    const trailing=w=>{const v=[];for(let i=w-4;i<w;i++){const x=at(i);if(x!=null)v.push(x);}return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;};
+    /* Deload weeks are stepped over (lower-leg review): averaging a planned
+       easy week in made full compliance read as a spike in Weeks 7–10. */
+    const trailing=w=>{const v=[];for(let i=w-1;i>=w-8&&v.length<4;i--){if(isDeload(i))continue;const x=at(i);if(x!=null)v.push(x);}return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;};
     const cur=at(week),prev=at(week-1),tmPrev=trailing(week-1),tmCur=trailing(week);
     /* FLOOR: a ratio against a near-zero base carries no information.
        PLANNED: a taper is a deliberate cut, not a collapse. */
@@ -2372,8 +2546,23 @@ function App(){
     const nowW=weekOfDate(todayMid());
     const adj=x=>{const t=parseMMSS(x.run15);return t==null?null:(x.pushups!=null||x.situps!=null?t-8:t);};
     const fresh=scores.filter(x=>x.run15&&x.week!=null&&nowW-x.week<=8).map(adj).filter(x=>x!=null);
-    if(fresh.length)return Math.min(...fresh);
-    const r=[...scores].reverse().map(x=>parseMMSS(x.run15)).find(x=>x!=null);return r||RUN15_ENTRY;},[scores]);
+    let base;
+    if(fresh.length)base=Math.min(...fresh);
+    else{const r=[...scores].reverse().map(x=>parseMMSS(x.run15)).find(x=>x!=null);base=r||RUN15_ENTRY;}
+    /* v6.3 (running review): after 7+ days with no training, slow the anchor
+       until a new 1.5 is logged — +2% for 7–13 days off, +4% for 14–20, +6%
+       for 21+. It halves after 2 weeks back and clears after 4. */
+    const t=todayMid();let run=0,best=0,endAgo=null;
+    for(let i=1;i<=60;i++){const d=new Date(t);d.setDate(d.getDate()-i);const v=status[B(weekOfDate(d),(daysBetween(START,d)%7+7)%7)];
+      if(isMiss(v)){if(!run&&endAgo==null)endAgo=i;run++;if(run>best)best=run;}else if(run){break;}}
+    if(best>=7&&endAgo!=null&&endAgo<=28){
+      const endW=weekOfDate(new Date(t.getTime()-endAgo*86400000));
+      if(!scores.some(x=>x.run15&&x.week!=null&&x.week>=endW)){
+        let pen=best>=21?0.06:best>=14?0.04:0.02;if(endAgo>14)pen/=2;
+        base=Math.round(base*(1+pen));
+      }
+    }
+    return base;},[scores,status]);
 
   /* 7-day trend rule — three or more days with ANY tibial pain in a rolling
      seven triggers the flare protocol regardless of the daily peak. It walks
@@ -2420,8 +2609,36 @@ function App(){
      — the old "3+ days at 8+" could never fire on a 2-day schedule. */
   const acadHardWk=useMemo(()=>Object.fromEntries(Object.entries(acadWeek).map(([w,v])=>[w,v.days>0&&v.hardDays/v.days>=0.5])),[acadWeek]);
   const acadJumps=useMemo(()=>Object.fromEntries(Object.entries(acadWeek).map(([w,v])=>[w,v.jumps])),[acadWeek]);
-  const ctx=useMemo(()=>({screenDone,programDays,recentTT,sub:subs[B(week,dow)]||null,rtr,puMax,suMax,e1,acadPlan,trend:trendEff,dtf,run15,acadHard,acadHardWk,acadJumps,ptDays,ptTemplate,gradT}),
-    [screenDone,programDays,recentTT,subs,week,dow,rtr,puMax,suMax,e1,acadPlan,trendEff,dtf,run15,acadHard,acadHardWk,acadJumps,ptDays,ptTemplate,gradT]);
+  /* v6.3 — next week's running from what he ACTUALLY ran (lower-leg review).
+     Actual = the Records running-minutes entry if he made one, else the plan
+     with skipped/sick runs at 0 and partial runs at their logged minutes.
+     Ceiling = min(plan, 1.10 × best recent, best + 5, 1.30 × recent mean,
+     hold term) where the hold term depends on how much of last week was run:
+     ≥90% none · 75–89% repeat last week · 50–74% back to the best recent
+     week · <50% 90% of it. Cuts come off Fri, then Wed, then Mon, then Sat. */
+  const runCaps=useMemo(()=>{
+    const base={...ctxLite,status:null,runCaps:null},planned={},caps={};
+    const nowW=weekOfDate(todayMid());
+    const plan=w=>{if(planned[w])return planned[w];const o={};for(let d=0;d<7;d++){const p=buildDayRaw(w,d,null,base);const rm=[...p.am,...p.pm].reduce((a,x)=>a+(RUNIDS.includes(x.id)?(x.rm||0):0),0);if(rm)o[d]=rm;}return planned[w]=o;};
+    const tot=o=>Object.values(o).reduce((a,b)=>a+b,0);
+    const act=w=>{if(runLog[w]!=null&&runLog[w]!=="")return +runLog[w];let t=0;Object.entries(plan(w)).forEach(([d,m])=>{const k=B(w,+d),v=status[k];if(isMiss(v))return;if(v==="partial"){const a=runAct[k];t+=a!=null&&a!==""?+a:Math.round(m/2);return;}t+=m;});return t;};
+    for(let w=NEW_FROM+1;w<=12&&w<=nowW+1;w++){
+      if(isDeload(w))continue;
+      const K=refWeeks(w);if(!K.length)continue;
+      const Pw=tot(plan(w)),last=K[0],fA=act(last),fP=tot(plan(last))||1,f=fA/fP;
+      const As=K.map(act),Ra=Math.max(...As),M=As.reduce((a,b)=>a+b,0)/As.length;
+      const H=f>=0.9?Infinity:f>=0.75?fP:f>=0.5?Ra:0.9*Ra;
+      const ceil=Math.floor(Math.min(Pw,1.1*Ra,Ra+5,1.3*M,H));
+      if(ceil>=Pw)continue;
+      const o={...plan(w)};let over=Pw-ceil;
+      const cut=(d,min)=>{if(over<=0||o[d]==null)return;const c=Math.min(over,o[d]-min);if(c>0){o[d]-=c;over-=c;}};
+      cut(4,0);cut(2,8);cut(0,Math.ceil((o[0]||0)*0.75));cut(5,10);
+      caps[w]={ceil,planned:fP,actual:fA,byDay:o};
+    }
+    return caps;
+  },[ctxLite,runLog,status,runAct]);
+  const ctx=useMemo(()=>({screenDone,programDays,recentTT,sub:subs[B(week,dow)]||null,rtr,puMax,suMax,e1,acadPlan,trend:trendEff,dtf,run15,acadHard,acadHardWk,acadJumps,ptDays,ptTemplate,gradT,status,runCaps}),
+    [screenDone,programDays,recentTT,subs,week,dow,rtr,puMax,suMax,e1,acadPlan,trendEff,dtf,run15,acadHard,acadHardWk,acadJumps,ptDays,ptTemplate,gradT,status,runCaps]);
   const plan=useMemo(()=>buildDay(week,dow,dtf(week,dow),ctx),[week,dow,dtf,ctx]);
   const tracks=useMemo(()=>trackKeys(week,dow,dtf(week,dow),ctx),[week,dow,dtf,ctx]);
   const b=B(week,dow);
@@ -2531,7 +2748,8 @@ function App(){
     if(!(left>=0&&left<=5)){window.alert("Add how many more reps you could have done on that set (0–5). Without it the app cannot tell a hard set from an easy one, and your loads would drift down.");return;}
     const rpe=10-left;
     if(r>10&&!window.confirm("e1RM estimates are unreliable past 10 reps. Log anyway?"))return;
-    setLifts(p=>[...p,{...nowStamp(),k:liftK,wt:wtv,reps:r,rpe}]);
+    const reNow=reentryOf(missStreakBefore(status,todayMid()));
+    setLifts(p=>[...p,{...nowStamp(),k:liftK,wt:wtv,reps:r,rpe,...(reNow&&reNow.lift&&(reNow.lift.p||reNow.lift.t)?{re:true}:{})}]);
     setLiftWt("");setLiftReps("");setLiftRpe("");
     setLiftSaved(Date.now());setTimeout(()=>setLiftSaved(0),3000);
   };
@@ -2569,6 +2787,13 @@ function App(){
   const acadDayBlocked=isAcademy(week)&&dow<=4&&(iGate.k==="stop"||iGate.k==="swap"||flagsHit>0||mGate.k==="back"||trend>=3);
   const daysToAcademy=daysBetween(todayMid(),dateOf(ACADEMY_WK,0));
   const latest=k=>{const r=[...scores].reverse().find(x=>x[k]!=null&&x[k]!=="");return r?r[k]:null;};
+  /* v6.3: past days (last 9) with a run, lift or test, no status and nothing
+     ticked — he is asked, never assumed to have missed them. */
+  const KEYIDS=[...RUNIDS,...LIFT_IDS,"suAmrap","puAmrap","pz"];
+  const unresolved=(()=>{const o=[],t=todayMid();for(let i=1;i<=9;i++){const d=new Date(t);d.setDate(d.getDate()-i);const w=weekOfDate(d),dd=(daysBetween(START,d)%7+7)%7;if(w<NEW_FROM)continue;const k=B(w,dd);if(status[k])continue;
+    const p=buildDay(w,dd,dtf(w,dd),{...ctx,status:null,runCaps:null});if(p.rest||p.pre)continue;const items=[...p.am,...p.pm];if(!items.some(x=>KEYIDS.includes(x.id)))continue;
+    const tk=trackKeys(w,dd,dtf(w,dd),ctx);if(tk.all.some(x=>done[x]))continue;o.push({w,d:dd,k,date:d,label:p.label});}return o;})();
+  const isPastOrToday=dayDate<=todayMid();
 
   return(
     <div className="app">
@@ -2646,6 +2871,30 @@ function App(){
             <div style={{marginBottom:12}}>
               <Note color="#22c55e">
                 <strong className="k" style={{color:"#4ade80"}}>Your {migNote} data was carried over.</strong> Pain history, flags, scores, bodyweights, the run log and the screen are all here, re-dated onto the new calendar. The old copy is kept untouched on this device.
+              </Note>
+            </div>
+          )}
+
+          {unresolved.length>0&&(
+            <div style={{marginBottom:12}}>
+              <Note color="#22d3ee">
+                <strong className="k" style={{color:"#67e8f9"}}>Did these happen?</strong> Unmarked days count as done. If one didn't happen, mark it so the rest of the week and next week's running adjust.
+                {unresolved.map(u=>(
+                  <div key={u.k} style={{display:"flex",alignItems:"center",gap:6,marginTop:8,flexWrap:"wrap"}}>
+                    <span style={{flex:"1 1 140px",fontSize:12.5}}><strong style={{color:"var(--tx)"}}>{DAYS[u.d]} {fmtDate(u.date)}</strong> · {u.label}</span>
+                    {[["done","Done"],["skipped","Skipped"],["sick","Sick"]].map(([v,n])=>(
+                      <button key={v} className="btn-ghost" style={{padding:"6px 10px"}} onClick={()=>setStatus(p=>({...p,[u.k]:v}))}>{n}</button>))}
+                  </div>
+                ))}
+              </Note>
+            </div>
+          )}
+
+          {plan.adjust&&plan.adjust.length>0&&(
+            <div style={{marginBottom:12}}>
+              <Note color="#22d3ee">
+                <strong className="k" style={{color:"#67e8f9"}}>Today is adjusted for missed sessions.</strong>
+                {plan.adjust.map((a,i)=><span key={i} style={{display:"block",marginTop:6}}>• {a}</span>)}
               </Note>
             </div>
           )}
@@ -3005,6 +3254,30 @@ function App(){
                   </Block>
                 )}
               </div>
+
+              {isPastOrToday&&week>=NEW_FROM&&(
+                <div style={{marginTop:12}}>
+                  <Block label="How Did This Day Go?" color="#94a3b8" badge={status[b]?status[b].toUpperCase():null}>
+                    <div className="pad">
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
+                        {[["done","Done"],["partial","Partial"],["skipped","Skipped"],["sick","Sick"]].map(([v,n])=>{const on=status[b]===v;return(
+                          <button key={v} onClick={()=>setStatus(p=>{const x={...p};if(x[b]===v)delete x[b];else x[b]=v;return x;})}
+                            style={{height:42,borderRadius:11,border:`1px solid ${on?"#22d3ee":"var(--line)"}`,background:on?"#22d3ee":"rgba(255,255,255,.04)",color:on?"#07080b":"var(--tx-2)",fontFamily:"var(--cond)",fontWeight:700,fontSize:14,letterSpacing:".04em"}}>{n}</button>);})}
+                      </div>
+                      {status[b]==="partial"&&plan.am.concat(plan.pm).some(x=>RUNIDS.includes(x.id))&&(
+                        <div style={{marginTop:10}}><label className="lab">Minutes you actually ran</label><input className="inp" type="number" inputMode="numeric" value={runAct[b]??""} onChange={e=>setRunAct(p=>({...p,[b]:e.target.value}))} placeholder="min"/></div>
+                      )}
+                      <div className="fine" style={{marginTop:10}}>
+                        {status[b]==="sick"
+                          ?<>Sick days never count as a deload. Come back only when you are 24 h fever-free without meds, symptoms are above the neck only, and resting HR is within 5 beats of normal; chest pain, palpitations or unusual breathlessness need a doctor first. Your first week back is scaled down automatically.</>
+                          :status[b]==="skipped"
+                            ?<>Nothing is made up by doubling. The sessions worth saving move to later this week where they fit; the rest drop, and next week's running is set from what you actually ran.</>
+                            :<>Mark a day you missed — the rest of the week and next week's running adjust to it. Unmarked days count as done.</>}
+                      </div>
+                    </div>
+                  </Block>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -3093,7 +3366,7 @@ function App(){
               const cap=runCeil(week);
               const over=cap!=null&&ws.total>cap, hot=!isStepOver(week)&&dPct!=null&&(dPct>10.01||dMin>(isAcademy(week)?6:5));
               const acadNow=acadWeek[week]?acadWeek[week].run:null;
-              const trail=[1,2,3,4].map(i=>runTot(week-i)).filter(x=>x!=null);
+              const trail=[1,2,3,4,5,6].map(i=>week-i).filter(x=>!isDeload(x)).slice(0,4).map(runTot).filter(x=>x!=null);
               const trailMean=trail.length>=2?trail.reduce((a,x)=>a+x,0)/trail.length:null;
               const baseLow=week<ACADEMY_WK&&trailMean!=null&&ws.total>1.1*trailMean+5;
               return(
