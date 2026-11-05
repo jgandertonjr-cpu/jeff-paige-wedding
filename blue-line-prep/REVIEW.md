@@ -1,5 +1,12 @@
 # Blue Line Prep: Head-Coach Review (2 Nov 2026)
 
+> **SUPERSEDED on 4 Nov 2026 — kept for history only.** The current source of truth is [HANDOFF.md](HANDOFF.md) (rationale, verified standards and sources, decision rules, rules for editing the app). What is out of date here:
+> - **The 1.5-mile standard is 13:16, not 13:08** (§3 below predates the check against MCCC's January 2027 application packet).
+> - The source keys [A]–[K] in §3 have no legend; the verified sources are listed in HANDOFF.md §3.
+> - The week numbers in §8 are one week later than the app, and Weeks 5–12 and the academy template were replaced by v7.
+> - The daily shin gates, the readiness rule and the daily battery described here were removed at the user's request.
+> - Several evidence claims here could not be sourced (see HANDOFF.md §7, last list).
+
 Sources: PROGRAM_SPEC.md (the app's own engine output), the standards verification and six specialist reports (academy PT instructor, physical therapist, lower-leg/MTSS, S&C, running coach, recovery/nutrition). Every recommendation maps to a week, a session or a constant in `src/blue-line-prep.html`.
 
 **Revision note (2 Nov):** the specialists were briefed that you do daytime landscaping work. You don't, so every landscaping-driven change has been removed or re-ruled. See §7 for what was dropped.
