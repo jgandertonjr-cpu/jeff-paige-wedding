@@ -6,7 +6,9 @@ No accounts, no server, no build step. Your data stays on your device in the bro
 
 **Live address:** https://jeffandpaige.net/pd-tracker/
 
-It lives in the wedding site's `src/pd-tracker/` folder, so it goes live whenever you deploy the site to Netlify. It isn't linked from any wedding page, and it's marked so search engines don't list it.
+It lives in the wedding site's `src/pd-tracker/` folder, so it goes live whenever you deploy the site to Netlify.
+
+**Keep it private.** This is deliberate: don't link it from any wedding page or add it to the nav, the footer, or `sitemap.xml`. It's kept out of search results two ways: a `noindex` rule in `src/_headers` and a `robots` tag in `index.html`. Don't block it in `robots.txt`, because Google has to be able to read the page to see the `noindex`. It has no password: anyone who types the exact address sees an empty copy of the app, but never your data, which stays on your phone.
 
 ## Files
 
@@ -17,6 +19,8 @@ It lives in the wedding site's `src/pd-tracker/` folder, so it goes live wheneve
 | `src/pd-tracker/sw.js` | Service worker that caches the app so it opens offline |
 | `src/pd-tracker/icons/` | App icon (`icon.svg` source plus PNGs at 180, 192, and 512) |
 | `src/_headers` | The `/pd-tracker/*` rule keeps it out of search results and always checks for updates |
+
+Its look follows `DESIGN.md`, in light mode only. Numbers use Jost rather than Cormorant, because Cormorant's old-style "1" reads like a capital I.
 
 ## Publish it (Netlify)
 
@@ -42,7 +46,7 @@ Then open http://localhost:8080/pd-tracker/ in your browser. Press Ctrl+C in Ter
 
 - Data is stored per browser and per address. The home screen app, Safari, and Chrome each have their **own separate copy**. Pick one place to use it (the home screen app is best) and stick with it.
 - On iPhone, Safari can clear site data for websites you haven't visited in a while. Apps added to the home screen are exempt from that, which is another reason to install it.
-- Deleting the home screen app, clearing browser data, or switching phones erases the data. **Back up regularly** (see below). The dashboard reminds you when your last backup is more than 7 days old.
+- Deleting the home screen app, clearing browser data, or switching phones erases the data. **Back up regularly** (see below). The Today screen reminds you when your last backup is more than 7 days old.
 - Redeploying the wedding site never touches your tracker data; it only updates the app's code.
 
 ### Updating the app later
@@ -54,9 +58,9 @@ Edit the files in `src/pd-tracker/` and redeploy `src` to Netlify. The app picks
 Tap **Backup** at the top right of any screen.
 
 **Back up**
-- **In the home screen app:** tap **Back up now** (dashboard) or **Save backup file** (Backup screen). The share sheet opens with a file named like `pd-tracker-backup-2026-10-15.json`. Choose **Save to Files** (pick iCloud Drive or Google Drive so it's off the phone), or email/AirDrop it to yourself. If you close the share sheet without saving, it doesn't count as a backup.
+- **In the home screen app:** tap **Back up now** (Today screen) or **Save backup file** (Backup screen). The share sheet opens with a file named like `pd-tracker-backup-2026-10-15.json`. Choose **Save to Files** (pick iCloud Drive or Google Drive so it's off the phone), or email/AirDrop it to yourself. If you close the share sheet without saving, it doesn't count as a backup.
 - **In a regular browser tab:** **Download backup (.json)** saves the file to your Downloads. **Share backup file** (on phones that support it) opens the share sheet instead.
-- The dashboard shows when you last backed up and reminds you after 7 days.
+- The Today screen shows when you last backed up and reminds you after 7 days.
 
 **Restore**
 1. Tap **Choose backup file to import** and pick your backup file (all files are selectable; the app checks that it's a real backup before changing anything).
@@ -70,13 +74,21 @@ Tap **Backup** at the top right of any screen.
 
 **Moving to a new phone:** download a backup on the old phone, get the file to the new phone (AirDrop, email, cloud drive), install the app on the new phone, then **Backup**, **Choose backup file**, **Replace**.
 
-## How the dashboard decides things
+## How the Today screen decides things
 
-- **Active** means any status except Hired, Rejected, Withdrawn, or On Hold.
-- **Upcoming** lists next-step dates in the next 14 days for active departments, plus application deadlines for departments still in **Researching** (once you've applied, the deadline no longer matters).
-- **Overdue** lists active departments whose next-step date has passed, or whose deadline passed while still in Researching.
-- **Stale** lists active departments with no note or edit in 14 or more days.
-- Changing status adds a dated "Status: X → Y" entry to the notes log. Moving to **Applied** fills in today as the date applied if that field is empty.
+**Active** means any stage except Hired, Rejected, Withdrawn, or On Hold. Each active department appears in **Needs attention** in at most one group:
+
+- **Overdue:** the next step date has passed, or the deadline passed while still in Researching.
+- **Coming up:** a next step date in the next 14 days, or an application deadline in the next 14 days while still in Researching (once you've applied, the deadline no longer matters).
+- **Needs a next step:** nothing planned, or a next step with no date.
+- **Gone quiet:** the next step is more than 14 days out and there has been no note or edit in 14 or more days.
+
+## Moving a department along
+
+- **Move to [next stage]** advances one stage. **Pick a different stage** jumps to any stage, or to Rejected, Withdrawn, or On Hold.
+- Each stage change adds a dated "Status: X → Y" entry to the activity log. Moving to **Applied** fills in today as the date applied if that field is empty.
+- **Mark done and log it** records "Done: [the step]" in the log and clears the next step so you can enter the new one.
+- Stage changes and Mark done both show an **Undo** button for a few seconds.
 
 ## Things that are saved for you automatically
 

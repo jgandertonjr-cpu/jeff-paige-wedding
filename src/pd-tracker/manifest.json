@@ -1,14 +1,14 @@
 {
   "id": "./",
-  "name": "PD Application Tracker",
+  "name": "Police Application Tracker",
   "short_name": "PD Tracker",
   "description": "Track police department applications, sponsorships, and hiring steps.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#13294b",
-  "theme_color": "#13294b",
+  "background_color": "#FBF8F2",
+  "theme_color": "#BCCAB3",
   "icons": [
     {
       "src": "icons/icon-192.png",

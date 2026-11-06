@@ -1,7 +1,7 @@
 // Offline support: serve from cache immediately, refresh the cache from the
 // network in the background (stale-while-revalidate). App updates show up on
 // the next launch. Bump CACHE if you ever need to force-clear old files.
-const CACHE = 'pd-tracker-v1';
+const CACHE = 'pd-tracker-v2';
 // The app page is cached as './' only: Netlify's pretty URLs redirect index.html to the folder.
 const CORE = ['./'];
 const EXTRAS = [
