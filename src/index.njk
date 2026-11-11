@@ -159,14 +159,6 @@ canonical: ""
           </li>
           {%- endfor %}
         </ul>
-        <nav class="index-more reveal" aria-label="More pages">
-          {%- for item in nav.essentials %}{% if item.url in ["travel.html", "registry.html"] %}
-          <a href="{{ item.url }}" class="index-more__link">{{ item.label }}</a>
-          {%- endif %}{% endfor %}
-          {%- for item in nav.more %}{% if not (item.url in ["our-story.html", "wedding-party.html"]) %}
-          <a href="{{ item.url }}" class="index-more__link">{{ item.label }}</a>
-          {%- endif %}{% endfor %}
-        </nav>
       </div>
     </section>
 
@@ -180,8 +172,8 @@ canonical: ""
           {{ home.save_the_date.text }}
         </p>
         <div class="flex flex--center reveal reveal--delay-3">
-          {{ addToCalendar(calendar) }}
           <a href="travel.html" class="btn btn--primary">Plan Your Trip</a>
+          {{ addToCalendar(calendar) }}
         </div>
       </div>
     </section>

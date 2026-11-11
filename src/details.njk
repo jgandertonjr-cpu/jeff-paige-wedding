@@ -66,7 +66,7 @@ headerDark: true
           <span class="section-label reveal">{{ details.reception.label }}</span>
           <h2 id="reception-heading" class="section-title reveal reveal--delay-1">{{ details.reception.title }}</h2>
           <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
-          <p class="section-subtitle">{{ details.reception.subtitle }}</p>
+          <p class="section-subtitle{% if details.reception.subtitle | length > 120 %} section-subtitle--long{% endif %}">{{ details.reception.subtitle }}</p>
         </div>
 
         <div class="detail-block card--centered reveal">
@@ -88,7 +88,7 @@ headerDark: true
           <h2 id="schedule-heading" class="section-title reveal reveal--delay-1">{{ details.schedule.title }}</h2>
           <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
           {%- if details.schedule.subtitle %}
-          <p class="section-subtitle">{{ details.schedule.subtitle }}</p>
+          <p class="section-subtitle{% if details.schedule.subtitle | length > 120 %} section-subtitle--long{% endif %}">{{ details.schedule.subtitle }}</p>
           {%- endif %}
         </div>
 
@@ -116,8 +116,8 @@ headerDark: true
         <h2 class="section-title reveal">{{ details.cta.title }}</h2>
         <p class="section-subtitle mb-8 reveal reveal--delay-1">{{ details.cta.text }}</p>
         <div class="flex flex--center reveal reveal--delay-2">
-          {{ addToCalendar(calendar) }}
           <a href="travel.html" class="btn btn--primary">Plan Your Trip</a>
+          {{ addToCalendar(calendar) }}
         </div>
       </div>
     </section>

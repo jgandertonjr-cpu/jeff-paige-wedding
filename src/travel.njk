@@ -23,7 +23,7 @@ headerDark: true
           <span class="section-label reveal">{{ block.label }}</span>
           <h2 id="hotel-block-heading" class="section-title reveal reveal--delay-1">{{ block.title }}</h2>
           <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
-          <p class="section-subtitle">{{ block.intro }}</p>
+          <p class="section-subtitle{% if block.intro | length > 120 %} section-subtitle--long{% endif %}">{{ block.intro }}</p>
         </div>
 
         <div class="hotel-card card--centered card--featured reveal">
@@ -49,7 +49,8 @@ headerDark: true
             {%- if block.booking_url %}
             <a href="{{ block.booking_url }}" class="btn btn--primary" target="_blank" rel="noopener noreferrer">Book Your Room</a>
             {%- else %}
-            <a href="[HOTEL_ROOM_BLOCK_URL]" class="btn btn--primary" target="_blank" rel="noopener noreferrer" title="Booking link coming soon">Book Your Room</a>
+{#- No booking link yet: shown as a disabled button rather than a link to nowhere. #}
+            <span class="btn btn--disabled" role="link" aria-disabled="true" title="Booking link coming soon">Book Your Room</span>
             {%- endif %}
           </div>
         </div>

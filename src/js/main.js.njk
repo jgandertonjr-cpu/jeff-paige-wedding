@@ -51,8 +51,11 @@ eleventyExcludeFromCollections: true
         }
       });
     }, {
-      rootMargin: '0px 0px -60px 0px',
-      threshold: 0.1
+      /* Reveal as soon as the top edge is a little way into view. (A share of
+         the element's height made tall blocks, like the FAQ list, wait until
+         well after they were on screen.) */
+      rootMargin: '0px 0px -6% 0px',
+      threshold: 0
     });
 
     qsa('.reveal').forEach(function (el) { observer.observe(el); });
@@ -222,7 +225,7 @@ eleventyExcludeFromCollections: true
     items.forEach(function (item, idx) {
       item.setAttribute('tabindex', '0');
       item.setAttribute('role', 'button');
-      item.setAttribute('aria-label', (item.dataset.alt || 'Photo ' + (idx + 1)) + ' — click to enlarge');
+      item.setAttribute('aria-label', 'View larger: ' + (item.dataset.alt || 'photo ' + (idx + 1)));
 
       item.addEventListener('click', function () { openLightbox(idx); });
       item.addEventListener('keydown', function (e) {
@@ -717,13 +720,17 @@ eleventyExcludeFromCollections: true
     /* Not on the RSVP page: it would sit over the form's own buttons */
     if (qs('form[name="rsvp"]')) { bar.hidden = true; return; }
 
-    /* The home page's first screen already shows the same four links */
-    var showAfter = qs('.hero .essentials') ? 520 : 0;
+    /* It arrives once the page's opening band (the invitation on the home
+       page, the title band elsewhere) has scrolled away, and leaves again at
+       the footer, which has the same links. */
+    var opener = qs('.hero, .page-hero');
+    var header = qs('.site-header');
 
     var ticking = false;
     function update() {
+      var showAfter = opener ? opener.offsetTop + opener.offsetHeight - (header ? header.offsetHeight : 0) - 8 : 0;
       var nearBottom = window.innerHeight + window.scrollY >
-                       document.documentElement.scrollHeight - 260;
+                       document.documentElement.scrollHeight - 220;
       bar.classList.toggle('visible', window.scrollY >= showAfter && !nearBottom);
       ticking = false;
     }
@@ -837,6 +844,7 @@ eleventyExcludeFromCollections: true
         frame.setAttribute('allowfullscreen', '');
         frame.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
         box.innerHTML = '';
+        box.classList.add('is-loaded');
         box.appendChild(frame);
         frame.focus();
       });

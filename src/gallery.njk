@@ -22,10 +22,10 @@ headerDark: true
           <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
         </div>
 
-        <div class="gallery-grid" role="list" aria-label="Photo gallery">
+        <div class="gallery-grid" role="group" aria-label="Photo gallery">
           {%- for photo in gallery.photos %}
           {%- set size = photo.image | imgSize %}
-          <div class="gallery-item reveal{% if loop.index0 % 3 %} reveal--delay-{{ loop.index0 % 3 }}{% endif %}" role="listitem"
+          <div class="gallery-item reveal" role="button"
                data-src="{{ photo.image | relUrl }}" data-alt="{{ photo.alt }}"
                tabindex="0" aria-label="View larger: {{ photo.alt }}">
             {#- Sizes follow the mosaic (every 5th tile is full width on phones, every 6th is double width on
