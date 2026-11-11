@@ -39,7 +39,18 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="{{ site.couple.partner1_first }} &amp; {{ site.couple.partner2_first }}">
   <meta property="og:url" content="https://jeffandpaige.net/{{ canonical }}">
-  <meta property="og:image" content="https://jeffandpaige.net/images/hero.jpg">
+  {#- The picture shown when the link is texted or posted: a 1200 x 630 card in the
+      invitation's style (artwork in design/share-card). #}
+  <meta property="og:image" content="https://jeffandpaige.net/images/share-card.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="{{ c.partner1_first }} &amp; {{ c.partner2_first }} — {{ site.wedding_date | dateFormat('weekdayLong') }}, {{ site.venue.name }}, {{ site.venue.city }}, {{ site.venue.state }}">
+  <meta property="og:locale" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ seo.social_title or seo.title }}">
+  <meta name="twitter:description" content="{{ seo.social_description or seo.description }}">
+  <meta name="twitter:image" content="https://jeffandpaige.net/images/share-card.jpg">
 {%- endif %}
   {#- Google only shows favicons sized in multiples of 48px; the others are for browser tabs. #}
   <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
