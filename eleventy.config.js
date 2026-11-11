@@ -137,6 +137,9 @@ export default function (eleventyConfig) {
     }
     return srcsetCache.get(rel);
   });
+  // Each build checks the copies afresh, so a long-running `npm start` re-makes
+  // any that were deleted from _site while it was running.
+  eleventyConfig.on("eleventy.before", () => srcsetCache.clear());
   // The build is not finished until every copy has been written.
   eleventyConfig.on("eleventy.after", async () => {
     await Promise.all(resizeJobs.splice(0));

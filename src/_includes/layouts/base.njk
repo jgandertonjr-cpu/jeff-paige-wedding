@@ -26,6 +26,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  {#- Marks that scripts run, so content is only held back for the scroll fade when it can also be revealed. #}
+  <script>document.documentElement.classList.add('js')</script>
 
   <meta name="theme-color" content="#FBF8F2">
   <meta name="msapplication-navbutton-color" content="#FBF8F2">
@@ -140,6 +142,7 @@
     </div>
   </footer>
 
+{%- if not bare %}
   {#- Phones and tablets: the four essentials stay one tap away on every page.
       main.js slides it in (see initEssentialsBar). #}
   <nav class="essentials essentials-bar" aria-label="Quick links" data-essentials-bar>
@@ -147,6 +150,7 @@
     <a href="{{ root }}{{ item.url }}" class="essentials__link{% if item.rsvp %} essentials__link--rsvp{% endif %}">{{ item.label }}</a>
     {%- endfor %}
   </nav>
+{%- endif %}
 {% block scripts %}
   <script src="{{ root }}js/main.js?v={{ mainJsVersion }}" defer></script>
 {%- endblock %}

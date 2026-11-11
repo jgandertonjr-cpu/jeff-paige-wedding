@@ -38,27 +38,34 @@ eleventyExcludeFromCollections: true
      2. INTERSECTION OBSERVER — SCROLL REVEAL
      ============================================================= */
   function initScrollReveal() {
-    if (!('IntersectionObserver' in window)) {
-      qsa('.reveal').forEach(function (el) { el.classList.add('visible'); });
-      return;
+    var pending = qsa('.reveal');
+    if (!pending.length) return;
+
+    /* A block is shown as soon as its top edge reaches the bottom of the
+       screen, and anything above that line (already scrolled past, however
+       fast) is shown too. So nothing on screen is ever blank, and a jump or
+       a quick flick can't leave a section hidden. */
+    var ticking = false;
+    function check() {
+      ticking = false;
+      var line = window.innerHeight;
+      pending = pending.filter(function (el) {
+        if (el.getBoundingClientRect().top < line) { el.classList.add('visible'); return false; }
+        return true;
+      });
+      if (!pending.length) {
+        window.removeEventListener('scroll', onScroll);
+        window.removeEventListener('resize', onScroll);
+      }
+    }
+    function onScroll() {
+      if (!ticking) { ticking = true; requestAnimationFrame(check); }
     }
 
-    var observer = new IntersectionObserver(function (entries) {
-      entries.forEach(function (entry) {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          observer.unobserve(entry.target);
-        }
-      });
-    }, {
-      /* Reveal as soon as the top edge is a little way into view. (A share of
-         the element's height made tall blocks, like the FAQ list, wait until
-         well after they were on screen.) */
-      rootMargin: '0px 0px -6% 0px',
-      threshold: 0
-    });
-
-    qsa('.reveal').forEach(function (el) { observer.observe(el); });
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    window.addEventListener('load', check);
+    check();
   }
 
   /* =============================================================

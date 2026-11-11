@@ -550,7 +550,7 @@ main p a:not(.btn):hover,
 
 .site-header.scrolled,
 .site-header--dark {
-  box-shadow: 0 1px 0 var(--color-border), var(--shadow-md);
+  box-shadow: 0 1px 0 var(--color-border), var(--shadow-sm);
 }
 .site-header.menu-open { box-shadow: 0 1px 0 var(--color-border); }
 
@@ -639,10 +639,7 @@ main p a:not(.btn):hover,
 .site-nav__link:hover::after,
 .site-nav__link.active::after { transform: scaleX(1); }
 .site-nav__link:hover { color: var(--color-accent-dark); }
-.site-nav__link.active {
-  color: var(--color-accent-dark);
-  font-weight: var(--fw-medium);
-}
+.site-nav__link.active { color: var(--color-accent-dark); }
 
 /* RSVP pill in nav — the site's one Rosette element.
    Hover and current-page states keep the fill and add a gold ring. */
@@ -659,7 +656,6 @@ main p a:not(.btn):hover,
 .site-nav__link--rsvp:hover,
 .site-nav__link--rsvp.active {
   color: var(--color-text);
-  font-weight: var(--fw-medium);
   box-shadow: 0 0 0 2px var(--color-ivory), 0 0 0 3px var(--color-gold);
 }
 
@@ -682,9 +678,8 @@ main p a:not(.btn):hover,
 
 .hamburger__line {
   display: block;
-  height: 1.5px;
+  height: 2px;
   background-color: var(--color-text);
-  border-radius: 2px;
   transition: width var(--transition-base),
               transform var(--transition-base),
               opacity var(--transition-fast),
@@ -694,13 +689,13 @@ main p a:not(.btn):hover,
 .hamburger__line { width: 26px; }
 
 .hamburger[aria-expanded="true"] .hamburger__line:nth-child(1) {
-  transform: translateY(7.5px) rotate(45deg);
+  transform: translateY(8px) rotate(45deg);
 }
 .hamburger[aria-expanded="true"] .hamburger__line:nth-child(2) {
   opacity: 0; width: 0;
 }
 .hamburger[aria-expanded="true"] .hamburger__line:nth-child(3) {
-  transform: translateY(-7.5px) rotate(-45deg);
+  transform: translateY(-8px) rotate(-45deg);
 }
 
 /* Mobile nav overlay */
@@ -1060,10 +1055,10 @@ main p a:not(.btn):hover,
   .hero__card {
     max-width: 780px;
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     column-gap: var(--space-8);
-    padding: var(--space-5) var(--space-8) var(--space-5) var(--space-6);
+    padding: var(--space-5) var(--space-10);
   }
   .hero__card::before { inset: 7px; }
   .hero__photo-wrap {
@@ -1683,11 +1678,9 @@ main .form-success .section-ornament { display: block; }
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--space-2);
-  padding: var(--space-6) var(--space-2);
+  padding: var(--space-6) 0;
   border-bottom: 1px solid var(--color-border);
 }
-
-.schedule__item:last-child { border-bottom: none; }
 
 /* Step numerals / times set in the display face — editorial, not form-like */
 .schedule__time {
@@ -1780,10 +1773,14 @@ main .form-success .section-ornament { display: block; }
    three screens. Full-size portraits return as photos are added. */
 .party-card--placeholder { gap: var(--space-2); }
 .party-card--placeholder .party-card__img {
-  max-width: 84px;
-  padding: 4px;
+  max-width: 116px;
+  padding: 5px;
 }
-.party-card--placeholder .img-placeholder::after { font-size: 0.7rem; letter-spacing: 0.18em; }
+.party-card--placeholder .img-placeholder::after { font-size: 0.85rem; letter-spacing: 0.2em; }
+@media (min-width: 700px) {
+  .party-card--placeholder .party-card__img { max-width: 152px; }
+  .party-card--placeholder .img-placeholder::after { font-size: 1rem; }
+}
 .party-card--placeholder .party-card__name {
   font-style: italic;
   font-size: 1.1rem;
@@ -2356,15 +2353,16 @@ main .form-success .section-ornament { display: block; }
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     gap: var(--space-4);
-    margin: 0 calc(-1 * var(--gutter));
-    padding: 0 var(--gutter) var(--space-3);
+    margin: 0 calc(-2 * var(--gutter));
+    padding: 0 calc(2 * var(--gutter)) var(--space-3);
+    scroll-padding-inline: calc(2 * var(--gutter));
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
   }
   .photo-strip::-webkit-scrollbar { display: none; }
   .photo-strip__item {
-    flex: 0 0 76%;
-    scroll-snap-align: center;
+    flex: 0 0 72%;
+    scroll-snap-align: start;
   }
   /* Middle card keeps its arch on mobile too */
   .photo-strip__item:nth-child(2) .photo-strip__frame {
@@ -2635,8 +2633,9 @@ main .form-success .section-ornament { display: block; }
   text-align: center;
 }
 .registry-card--wide { width: min(100% - 1.5rem, 920px); }
-/* Phones: the card covers the photo's full width, so no dark slivers show beside it */
-@media (max-width: 559px) {
+/* Phones and tablets: the card covers the photo's full width, so no thin
+   slivers of photo show beside it. From 900px it is inset by 50px or more. */
+@media (max-width: 899px) {
   .registry-card,
   .registry-card--wide { width: 100%; }
 }
@@ -2784,7 +2783,8 @@ main .form-success .section-ornament { display: block; }
 .expect-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0 var(--space-12);
+  max-width: 660px;
+  margin-inline: auto;
   border-top: 1px solid var(--color-gold);
 }
 .expect-item {
@@ -2815,9 +2815,6 @@ main .form-success .section-ornament { display: block; }
   color: var(--color-text-muted);
   line-height: 1.65;
   margin: 0;
-}
-@media (min-width: 768px) {
-  .expect-grid { grid-template-columns: repeat(2, 1fr); }
 }
 /* The empty map has its own text — drop the placeholder monogram */
 .map-embed--empty::after { content: none; }
@@ -2954,14 +2951,16 @@ main .form-success .section-ornament { display: block; }
 /* =============================================================
    SCROLL REVEAL
    ============================================================= */
-.reveal {
+/* Only when the script is running (html.js is set in the page head), so a
+   page whose script fails to load still shows all of its content. */
+.js .reveal {
   opacity: 0;
   transform: translateY(12px);
   transition: opacity var(--duration-max) var(--ease),
               transform var(--duration-max) var(--ease);
 }
 
-.reveal.visible {
+.js .reveal.visible {
   opacity: 1;
   transform: translateY(0);
 }
@@ -3119,7 +3118,7 @@ main { overflow-x: clip; }
 
 @media (max-width: 430px) {
   .photo-strip__item {
-    flex-basis: 84%;
+    flex-basis: 78%;
   }
 
   .gallery-grid {
@@ -3188,7 +3187,7 @@ main { overflow-x: clip; }
 
 /* Mobile menu: centred in the space it has, a size up on tablets, compact when sideways */
 .mobile-nav::before { content: ''; flex: 1 1 0; }
-.mobile-nav::after  { content: ''; flex: 1.6 1 0; }
+.mobile-nav::after  { content: ''; flex: 1.25 1 0; }
 
 @media (min-width: 700px) and (min-height: 521px) {
   .mobile-nav__primary,
@@ -3207,9 +3206,14 @@ main { overflow-x: clip; }
   .mobile-nav__note { margin-top: var(--space-2); font-size: 0.95rem; }
 
   .page-hero {
-    padding-top: calc(var(--safe-area-top) + var(--header-height) + 1.25rem);
-    padding-bottom: 1.5rem;
+    padding-top: calc(var(--safe-area-top) + var(--header-height) + 0.9rem);
+    padding-bottom: 1rem;
   }
+  .page-hero .section-label { margin-bottom: var(--space-2); }
+  .page-hero__title { font-size: 2.25rem; margin-bottom: var(--space-2); }
+  .page-hero__title::after { height: 20px; margin-top: 0.5rem; }
+  .page-hero__subtitle { font-size: 1rem; line-height: 1.5; max-width: 640px; }
+  .error-page { padding-top: calc(var(--safe-area-top) + var(--header-height) + var(--space-5)); padding-bottom: var(--space-6); min-height: 0; }
 }
 
 /* Three buttons in a row (RSVP page) stay on one line from tablet up, not two-and-one */
@@ -3240,7 +3244,7 @@ main { overflow-x: clip; }
 
   html { scroll-behavior: auto; }
 
-  .reveal { opacity: 1; transform: none; }
+  .js .reveal { opacity: 1; transform: none; }
 }
 
 /* =============================================================
