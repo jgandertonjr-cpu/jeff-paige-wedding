@@ -139,12 +139,12 @@
   --sage-wash: linear-gradient(135deg, rgba(var(--color-dusty-sage-rgb), 0.25) 0%, rgba(var(--color-dusty-sage-rgb), 0.55) 100%);
 
   /* ── Typography ── */
-  --font-display: 'Cormorant Garamond', Georgia, serif;   /* headings — light, often italic */
+  --font-display: 'Cormorant Garamond', Georgia, serif;   /* headings — upright; italic for accents only */
   --font-body:    'Jost', system-ui, sans-serif;          /* body and labels */
   --font-script:  'Pinyon Script', cursive;               /* the "&" only — nowhere else */
 
   /* Type scale */
-  --fs-xs:      0.75rem;                              /* caps labels */
+  --fs-xs:      0.8125rem;                            /* caps labels — 13px, the smallest size on the site */
   --fs-sm:      0.9rem;                               /* small body, descriptions */
   --fs-base:    1.0625rem;                            /* body */
   --fs-md:      1.15rem;                              /* subtitles */
@@ -165,8 +165,8 @@
   --lh-loose:  1.8;
 
   /* Uppercase tracking — two steps only */
-  --tracking-eyebrow: 0.32em;   /* section eyebrows, hero date */
-  --tracking-label:   0.2em;    /* labels, buttons, nav */
+  --tracking-eyebrow: 0.24em;   /* section eyebrows */
+  --tracking-label:   0.16em;   /* labels, buttons, nav */
   --tracking-display: 0.02em;   /* large display type */
 
   /* ── Spacing ── */
@@ -246,7 +246,7 @@ html {
 body {
   font-family: var(--font-body);
   font-size: var(--fs-base);
-  font-weight: var(--fw-light);
+  font-weight: var(--fw-regular);
   line-height: var(--lh-normal);
   color: var(--color-text);
   background-color: var(--color-bg);
@@ -366,17 +366,19 @@ html { scrollbar-color: var(--color-dusty-sage) var(--color-background); scrollb
    ============================================================= */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
-  font-weight: var(--fw-light);
+  font-weight: var(--fw-regular);
   line-height: var(--lh-snug);
   color: var(--color-text);
   letter-spacing: 0.01em;
   text-wrap: balance;
 }
 
-h1 { font-size: var(--fs-3xl); }
+/* Upright throughout. Light only at display sizes, where the strokes
+   have room; sturdier as the size comes down. */
+h1 { font-size: var(--fs-3xl); font-weight: var(--fw-light); }
 h2 { font-size: var(--fs-2xl); }
-h3 { font-size: var(--fs-xl); }
-h4 { font-size: var(--fs-lg); }
+h3 { font-size: var(--fs-xl); font-weight: var(--fw-medium); }
+h4 { font-size: var(--fs-lg); font-weight: var(--fw-medium); }
 
 /* Body copy is evergreen; secondary text (subtitles, descriptions,
    captions) opts into sage-gray via its own class. */
@@ -427,15 +429,15 @@ main p a:not(.btn):hover,
 .section-title {
   font-family: var(--font-display);
   font-size: var(--fs-2xl);
-  font-weight: var(--fw-light);
-  font-style: italic;
+  font-weight: var(--fw-regular);
   letter-spacing: 0.005em;
+  line-height: 1.15;
   margin-bottom: var(--space-4);
 }
 
 .section-subtitle {
   font-size: var(--fs-md);
-  font-weight: var(--fw-light);
+  font-weight: var(--fw-regular);
   color: var(--color-text-muted);
   line-height: var(--lh-loose);
   max-width: 600px;
@@ -1155,7 +1157,6 @@ main p a:not(.btn):hover,
   font-family: var(--font-display);
   font-size: var(--fs-display);
   font-weight: var(--fw-light);
-  font-style: italic;
   letter-spacing: var(--tracking-display);
   line-height: 1.05;
   margin-bottom: var(--space-5);
@@ -1163,7 +1164,7 @@ main p a:not(.btn):hover,
 
 .page-hero__subtitle {
   font-size: var(--fs-md);
-  font-weight: var(--fw-light);
+  font-weight: var(--fw-regular);
   color: var(--color-muted-on-sage);
   max-width: 560px;
   margin: 0 auto;
@@ -1453,21 +1454,17 @@ main p a:not(.btn):hover,
   text-indent: var(--tracking-label);
   text-transform: uppercase;
   text-decoration: none;
-  border-radius: var(--radius-full);
-  padding: 1em 2.6em;
+  border-radius: var(--radius-sm);
+  min-height: 48px;
+  padding: 0.9em 2.2em;
   cursor: pointer;
   border: 1px solid transparent;
   position: relative;
   transition: background-color var(--transition-base),
               color var(--transition-base),
-              border-color var(--transition-base),
-              transform var(--transition-base),
-              box-shadow var(--transition-base);
+              border-color var(--transition-base);
   -webkit-tap-highlight-color: transparent;
 }
-
-.btn:hover  { transform: translateY(-1px); box-shadow: var(--shadow-md); }
-.btn:active { transform: translateY(0); box-shadow: none; }
 
 .btn--primary {
   background-color: var(--color-text);
@@ -1502,7 +1499,7 @@ main p a:not(.btn):hover,
   color: var(--color-text);
 }
 .btn--rsvp:hover {
-  box-shadow: 0 0 0 2px var(--color-ivory), 0 0 0 3px var(--color-gold), var(--shadow-md);
+  box-shadow: 0 0 0 2px var(--color-ivory), 0 0 0 3px var(--color-gold);
 }
 
 /* Add to Calendar — a secondary button that opens a short menu of
@@ -1653,8 +1650,7 @@ main p a:not(.btn):hover,
 .timeline__title {
   font-family: var(--font-display);
   font-size: var(--fs-xl);
-  font-weight: var(--fw-light);
-  font-style: italic;
+  font-weight: var(--fw-medium);
   margin-bottom: var(--space-3);
 }
 
@@ -1896,8 +1892,7 @@ main p a:not(.btn):hover,
 .hotel-card__name {
   font-family: var(--font-display);
   font-size: var(--fs-xl);
-  font-weight: var(--fw-light);
-  font-style: italic;
+  font-weight: var(--fw-medium);
   color: var(--color-text);
 }
 
@@ -1955,7 +1950,7 @@ main p a:not(.btn):hover,
   color: var(--color-text);
   font-size: var(--fs-base);
   font-family: var(--font-body);
-  font-weight: var(--fw-light);
+  font-weight: var(--fw-regular);
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
   appearance: none;
   -webkit-appearance: none;
@@ -2051,8 +2046,7 @@ main p a:not(.btn):hover,
 .form-success__title {
   font-family: var(--font-display);
   font-size: var(--fs-2xl);
-  font-weight: var(--fw-light);
-  font-style: italic;
+  font-weight: var(--fw-regular);
   margin-bottom: var(--space-4);
 }
 
@@ -2530,8 +2524,7 @@ main p a:not(.btn):hover,
 .detail-block__heading {
   font-family: var(--font-display);
   font-size: var(--fs-xl);
-  font-weight: var(--fw-light);
-  font-style: italic;
+  font-weight: var(--fw-medium);
   margin-bottom: var(--space-6);
 }
 .detail-list {
@@ -2660,8 +2653,7 @@ main p a:not(.btn):hover,
 .registry-card__heading {
   font-family: var(--font-display);
   font-size: var(--fs-2xl);
-  font-weight: var(--fw-light);
-  font-style: italic;
+  font-weight: var(--fw-regular);
   line-height: var(--lh-snug);
   color: var(--color-text);
 }
@@ -2711,8 +2703,7 @@ main p a:not(.btn):hover,
 .registry-option__title {
   font-family: var(--font-display);
   font-size: var(--fs-xl);
-  font-weight: var(--fw-regular);
-  font-style: italic;
+  font-weight: var(--fw-medium);
   color: var(--color-text);
 }
 
@@ -2728,7 +2719,6 @@ main p a:not(.btn):hover,
   font-family: var(--font-display);
   font-size: var(--fs-3xl);
   font-weight: var(--fw-light);
-  font-style: italic;
   line-height: var(--lh-tight);
   color: var(--color-text);
 }
@@ -2838,8 +2828,7 @@ main p a:not(.btn):hover,
 .expect-item__title {
   font-family: var(--font-display);
   font-size: var(--fs-xl);
-  font-weight: var(--fw-light);
-  font-style: italic;
+  font-weight: var(--fw-medium);
   margin-bottom: var(--space-2);
 }
 .expect-item__desc {
@@ -2890,7 +2879,6 @@ main p a:not(.btn):hover,
 
 .error-page__title {
   font-size: clamp(2rem, 6vw, 3.5rem);
-  font-style: italic;
   letter-spacing: var(--tracking-display);
   margin-bottom: var(--space-4);
 }
@@ -3221,7 +3209,7 @@ main { overflow-x: clip; }
 
   .btn {
     width: 100%;
-    min-height: 46px;
+    min-height: 50px;
     padding: 0.95em 1.35em;
     text-align: center;
   }
@@ -3442,7 +3430,7 @@ main { overflow-x: clip; }
 .rsvp-panel .section-label { margin: 0; text-indent: 0; }
 .rsvp-panel__title {
   font-family: var(--font-display);
-  font-weight: var(--fw-light);
+  font-weight: var(--fw-medium);
   font-size: var(--fs-xl);
   line-height: 1.2;
   color: var(--color-text);
