@@ -7,7 +7,8 @@ canonical: ""
 {%- from "add-to-calendar.njk" import addToCalendar -%}
 {%- set c = site.couple -%}
 {%- set v = site.venue -%}
-{%- set heroSizes = "(min-width: 920px) 360px, 46vw" -%}
+{#- The arch crops a wide photo to a tall frame, so the photo is drawn about twice as wide as the frame. -#}
+{%- set heroSizes = "(min-width: 920px) 700px, 88vw" -%}
 {%- block preload %}
   <link rel="preload" as="image" href="{{ home.hero.photo | relUrl }}" imagesrcset="{{ home.hero.photo | srcset }}" imagesizes="{{ heroSizes }}">
 {%- endblock -%}
@@ -124,7 +125,7 @@ canonical: ""
           {%- set size = item.image | imgSize %}
           <figure class="photo-strip__item reveal{% if loop.index0 % 3 %} reveal--delay-{{ loop.index0 % 3 }}{% endif %}">
             <div class="photo-strip__frame">
-              <img src="{{ item.image | relUrl }}" srcset="{{ item.image | srcset }}" sizes="(min-width: 700px) 30vw, 80vw" width="{{ size.width }}" height="{{ size.height }}" alt="{{ item.alt }}" loading="lazy" decoding="async"{% if item.focus and item.focus != 'center' %} class="img-focus-{{ item.focus }}"{% endif %}>
+              <img src="{{ item.image | relUrl }}" srcset="{{ item.image | srcset }}" sizes="(min-width: 700px) 50vw, 130vw" width="{{ size.width }}" height="{{ size.height }}" alt="{{ item.alt }}" loading="lazy" decoding="async"{% if item.focus and item.focus != 'center' %} class="img-focus-{{ item.focus }}"{% endif %}>
             </div>
             <figcaption class="photo-strip__caption">{{ item.caption }}</figcaption>
           </figure>
