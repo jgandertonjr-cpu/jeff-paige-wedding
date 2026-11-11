@@ -57,33 +57,33 @@ canonical: ""
 {%- block main %}
 {%- set hero = home.hero -%}
 {%- set heroSize = hero.photo | imgSize %}
-    <!-- ── HERO — EDITORIAL ── -->
+    <!-- ── HERO — THE INVITATION ── -->
     <section class="hero" aria-label="{{ c.partner1_first }} and {{ c.partner2_first }} are getting married">
-      <div class="hero__editorial">
-        <p class="hero__eyebrow">{{ hero.eyebrow }}</p>
+      <div class="hero__card">
         <div class="hero__photo-wrap">
           <div class="hero__photo">
             <img src="{{ hero.photo | relUrl }}" width="{{ heroSize.width }}" height="{{ heroSize.height }}" alt="{{ hero.photo_alt }}" fetchpriority="high">
           </div>
         </div>
-        <h1 class="hero__names">
-          <span class="hero__name hero__name--first">{{ c.partner1_first }}</span>
-          <span class="hero__and" aria-hidden="true">&amp;</span>
-          <span class="sr-only">and</span>
-          <span class="hero__name hero__name--second">{{ c.partner2_first }}</span>
-          <span class="sr-only"> — {{ c.partner1_formal or c.partner1_full }} &amp; {{ c.partner2_formal or c.partner2_full }}</span>
-        </h1>
-        <p class="hero__date">{{ site.wedding_date | dateFormat('weekday') }} &middot; {{ site.wedding_date | dateFormat('long') }}</p>
-        <p class="hero__location">{{ v.name }}<span class="hero__sep"> &middot; </span>{{ (v.city + ", " + v.state) | nbsp | safe }}</p>
-        <div class="hero__cta">
-          <a href="details.html" class="btn btn--primary">See the Details</a>
-          <a href="our-story.html" class="btn btn--ghost">Our Story</a>
+        <div class="hero__text">
+          <p class="hero__eyebrow">{{ hero.eyebrow }}</p>
+          <h1 class="hero__names">
+            <span class="hero__name hero__name--first">{{ c.partner1_first }}</span>
+            <span class="hero__and" aria-hidden="true">&amp;</span>
+            <span class="sr-only">and</span>
+            <span class="hero__name hero__name--second">{{ c.partner2_first }}</span>
+            <span class="sr-only"> — {{ c.partner1_formal or c.partner1_full }} &amp; {{ c.partner2_formal or c.partner2_full }}</span>
+          </h1>
+          <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
+          <p class="hero__date">{{ site.wedding_date | dateFormat('weekday') }} &middot; {{ site.wedding_date | dateFormat('long') }}</p>
+          <p class="hero__location">{{ v.name }}<span class="hero__sep"> &middot; </span>{{ (v.city + ", " + v.state) | nbsp | safe }}</p>
+          {#- The four things guests come for, one tap from the first screen #}
+          <nav class="essentials" aria-label="Wedding essentials">
+            {%- for item in nav.essentials %}
+            <a href="{{ item.url }}" class="essentials__link{% if item.rsvp %} essentials__link--rsvp{% endif %}">{{ item.label }}</a>
+            {%- endfor %}
+          </nav>
         </div>
-      </div>
-      <div class="hero__scroll-cue" aria-hidden="true">
-        <svg width="14" height="22" viewBox="0 0 14 22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M7 3v16M1 13l6 6 6-6"/>
-        </svg>
       </div>
     </section>
 

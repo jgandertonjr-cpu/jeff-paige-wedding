@@ -222,6 +222,10 @@
   --transition-fast:   var(--duration-fast) ease;
   --transition-base:   var(--duration-base) var(--ease);
 
+  /* Leaf sprig — the site's one botanical motif. Used as a mask, so it
+     takes whatever gold the element behind it is painted with. */
+  --sprig: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 144 28' fill='none' stroke='black' stroke-width='0.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M65 15Q38 19.5 6 11M57.3 16Q53.9 10.7 47.6 9.8Q51.1 15.1 57.3 16M48.3 16.5Q42.7 18 40.1 23.3Q45.7 21.8 48.3 16.5M39.1 16.4Q36.8 11.5 31.6 9.9Q33.9 14.8 39.1 16.4M30.2 15.7Q25.2 16.3 22.4 20.4Q27.4 19.8 30.2 15.7M21.7 14.4Q20.3 10.1 16.1 8.3Q17.5 12.6 21.7 14.4M14.2 13Q10.1 13.1 7.5 16.2Q11.6 16.2 14.2 13M6 11Q2.8 8.4 -1.2 9.1Q1.9 11.7 6 11M79 15Q106 19.5 138 11M86.7 16Q92.9 15.1 96.4 9.8Q90.1 10.7 86.7 16M95.6 16.5Q98.3 21.8 103.9 23.3Q101.3 18 95.6 16.5M104.9 16.4Q110.1 14.8 112.4 9.9Q107.2 11.5 104.9 16.4M113.8 15.7Q116.6 19.8 121.6 20.4Q118.8 16.3 113.8 15.7M122.3 14.4Q126.5 12.6 127.9 8.3Q123.7 10.1 122.3 14.4M129.8 13Q132.4 16.2 136.5 16.2Q133.9 13.1 129.8 13M138 11Q142.1 11.7 145.2 9.1Q141.2 8.4 138 11'/%3E%3Ccircle cx='72' cy='15' r='1.3' fill='black' stroke='none'/%3E%3C/svg%3E");
+
   /* Grain texture (fractal noise, near-invisible) */
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
 }
@@ -762,179 +766,69 @@ main p a:not(.btn):hover,
 }
 
 /* =============================================================
-   HERO — EDITORIAL  (homepage)
+   HERO — THE INVITATION  (homepage)
+   An ivory card resting on Dusty Sage: photo, names, date, venue,
+   and the four things guests come for.
    ============================================================= */
 .hero {
   position: relative;
-  min-height: 100svh;
   display: flex;
-  align-items: center;
-  overflow: hidden;
-  background-color: var(--color-background);
-  background-image:
-    radial-gradient(ellipse 60% 50% at 8% 0%,   rgba(var(--color-gold-rgb), 0.10)  0%, transparent 60%),
-    radial-gradient(ellipse 55% 45% at 100% 18%, rgba(var(--color-dusty-sage-rgb), 0.28) 0%, transparent 58%),
-    radial-gradient(ellipse 70% 55% at 85% 105%, rgba(var(--color-dusty-sage-rgb), 0.12) 0%, transparent 55%);
-  padding: calc(var(--safe-area-top) + var(--header-height) + var(--space-10)) var(--gutter) var(--space-16);
+  justify-content: center;
+  background-color: var(--color-dusty-sage);
+  padding: calc(var(--safe-area-top) + var(--header-height) + var(--space-4)) var(--space-3) var(--space-6);
 }
 
-/* Thin gold inner frame around the whole hero (starts below the fixed header) */
-.hero::before {
-  content: '';
-  position: absolute;
-  inset: calc(var(--safe-area-top) + var(--header-height) + 0.75rem) clamp(0.9rem, 2vw, 1.5rem) clamp(0.9rem, 2vw, 1.5rem);
-  border: 1px solid rgba(var(--color-gold-rgb), 0.28);
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* Mobile-first: a single composed column — eyebrow, arch photo,
-   names overlapping the arch, then the particulars */
-.hero__editorial {
+.hero__card {
   position: relative;
-  z-index: 2;
   width: 100%;
-  max-width: var(--max-width-wide);
-  margin: 0 auto;
+  max-width: 460px;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: var(--space-5);
+  background-color: var(--color-ivory);
+  border-radius: 2px;
+  box-shadow: var(--shadow-md);
+  padding: var(--space-8) var(--space-5) var(--space-5);
+  animation: fadeIn var(--duration-max) ease both;
 }
 
-/* Desktop: two-column editorial via grid areas (photo spans the right) */
-@media (min-width: 920px) {
-  .hero__editorial {
-    display: grid;
-    grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
-    grid-template-areas:
-      "eyebrow  photo"
-      "names    photo"
-      "date     photo"
-      "location photo"
-      "cta      photo";
-    align-content: center;
-    align-items: start;
-    justify-items: start;
-    column-gap: clamp(2.5rem, 5vw, 4rem);
-    row-gap: var(--space-5);
-    text-align: left;
-    padding: 0 clamp(1rem, 4vw, 4rem);
-  }
+/* Thin gold rule just inside the card's edge, as on printed stationery */
+.hero__card::before {
+  content: '';
+  position: absolute;
+  inset: 7px;
+  border: 1px solid rgba(var(--color-gold-rgb), 0.55);
+  pointer-events: none;
+}
 
-  .hero__eyebrow    { grid-area: eyebrow; }
-  .hero__names      { grid-area: names; }
-  .hero__date       { grid-area: date; }
-  .hero__location   { grid-area: location; }
-  .hero__cta        { grid-area: cta; }
-  .hero__photo-wrap { grid-area: photo; justify-self: center; align-self: center; }
+.hero__text {
+  display: contents;   /* phones: one column, ordered below */
 }
 
 .hero__eyebrow {
+  order: 1;
   font-family: var(--font-body);
-  font-size: 0.88rem;
-  font-weight: var(--fw-regular);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
   letter-spacing: var(--tracking-eyebrow);
   text-indent: var(--tracking-eyebrow);
   text-transform: uppercase;
+  line-height: var(--lh-snug);
   color: var(--color-accent-dark);
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
 }
 
-.hero__eyebrow::before,
-.hero__eyebrow::after {
-  content: '';
-  width: 42px;
-  height: 1px;
-  background: var(--gold-metallic);
-}
-@media (min-width: 920px) {
-  .hero__eyebrow::after { display: none; }
-}
-
-.hero__names {
-  font-family: var(--font-display);
-  font-size: var(--fs-hero);
-  font-weight: var(--fw-light);
-  line-height: var(--lh-tight);
-  letter-spacing: 0.015em;
-  color: var(--color-text);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-@media (min-width: 920px) {
-  .hero__names { align-items: flex-start; }
-}
-
-.hero__name { display: block; white-space: nowrap; font-style: italic; }
-
-/* Script ampersand between the names — matches the J&P logo */
-.hero__and {
-  font-family: var(--font-script);
-  font-size: clamp(3.6rem, 9vw, 6rem);
-  line-height: 1;
-  color: var(--gold-text-hero-fallback);
-  display: block;
-  transform: rotate(-4deg);
-  margin: -0.14em 0 -0.32em;   /* clears the italic f descenders of "Jeff" */
-  padding-left: 0.28em;
-  text-shadow: none;           /* the names' ivory glow would show through the gradient fill */
-}
-
-.hero__date {
-  font-family: var(--font-body);
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-regular);
-  letter-spacing: var(--tracking-eyebrow);
-  text-transform: uppercase;
-  color: var(--color-text);
-}
-
-.hero__location {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: var(--fs-md);
-  letter-spacing: 0.06em;
-  color: var(--color-text-muted);
-}
-
-/* On phones the venue and town stack cleanly instead of leaving a dangling “·” */
-@media (max-width: 699px) {
-  .hero__sep { display: block; font-size: 0; line-height: 0; }
-}
-
-.hero__cta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-  justify-content: center;
-  margin-top: var(--space-3);
-}
-@media (min-width: 920px) { .hero__cta { justify-content: flex-start; } }
-
-/* ── Photo column — arch portrait with offset gold frame ── */
+/* Arch portrait */
 .hero__photo-wrap {
-  position: relative;
-  width: min(76vw, 380px);
-  margin: 0 auto;
-  justify-self: center;
-}
-
-@media (min-width: 920px) {
-  .hero__photo-wrap { width: min(34vw, 440px); }
+  order: 2;
+  width: min(46vw, 180px);
+  margin-top: var(--space-5);
 }
 
 .hero__photo {
-  position: relative;
-  aspect-ratio: 4 / 5.4;
+  aspect-ratio: 4 / 5.2;
   border-radius: var(--radius-arch);
   overflow: hidden;
-  box-shadow: var(--shadow-lg);
   background: var(--color-sage-mist);
 }
 
@@ -944,88 +838,151 @@ main p a:not(.btn):hover,
   object-fit: cover;
 }
 
-/* Offset gold echo frame */
-.hero__photo-wrap::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border: 1px solid rgba(var(--color-gold-rgb), 0.55);
-  border-radius: var(--radius-arch);
-  transform: translate(16px, 16px);
-  z-index: -1;
+/* Phones: the names share one line, so the date and the essentials
+   stay on the first screen. Wide screens stack them (below). */
+.hero__names {
+  order: 3;
+  margin-top: var(--space-5);
+  font-family: var(--font-display);
+  font-size: clamp(2.4rem, 13vw, 3.4rem);
+  font-weight: var(--fw-light);
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  color: var(--color-text);
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.14em;
 }
 
-/* Hero entrance — one quiet fade for the whole composition */
-.hero__editorial {
-  animation: fadeIn var(--duration-max) ease both;
+.hero__name { display: block; white-space: nowrap; }
+
+/* Script ampersand between the names — matches the J&P logo */
+.hero__and {
+  font-family: var(--font-script);
+  font-size: 0.8em;
+  line-height: 1;
+  color: var(--gold-text-hero-fallback);
+  display: block;
 }
 
-/* ── Mobile hero — photo and names share one composition, like a save-the-date card ── */
-@media (max-width: 919px) {
+.hero .section-ornament {
+  order: 4;
+  margin: var(--space-3) auto var(--space-3);
+}
+
+/* The date is the second thing a guest should read */
+.hero__date {
+  order: 5;
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 6vw, 1.6rem);
+  font-weight: var(--fw-regular);
+  letter-spacing: 0.02em;
+  line-height: var(--lh-snug);
+  color: var(--color-text);
+}
+
+.hero__location {
+  order: 6;
+  margin-top: var(--space-1);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.15rem;
+  letter-spacing: 0.02em;
+  line-height: var(--lh-snug);
+  color: var(--color-text-muted);
+  text-wrap: balance;
+}
+
+.hero .essentials {
+  order: 7;
+  margin-top: var(--space-6);
+}
+
+/* ── Essentials — Details, Travel, Registry, RSVP as a small ruled table.
+      Used in the hero card and (as .essentials-bar) pinned to the bottom of
+      every page on phones. ── */
+.essentials {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid var(--color-hairline);
+  border-left: 1px solid var(--color-hairline);
+}
+
+.essentials__link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 0 var(--space-2);
+  border-right: 1px solid var(--color-hairline);
+  border-bottom: 1px solid var(--color-hairline);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  letter-spacing: var(--tracking-label);
+  text-indent: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text);
+  transition: background-color var(--transition-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.essentials__link:hover { background-color: var(--color-sage-mist); }
+
+/* RSVP — the site's one Rosette element (evergreen on rosette 6.9:1) */
+.essentials__link--rsvp,
+.essentials__link--rsvp:hover { background-color: var(--color-rosette); }
+.essentials__link--rsvp:hover { box-shadow: inset 0 0 0 1px var(--color-gold); }
+
+/* Wide screens: the card opens out — photo on the left, wording on the right */
+@media (min-width: 920px) {
   .hero {
-    padding-top: calc(var(--safe-area-top) + var(--header-height) + 1.5rem);
-    padding-bottom: 3rem;
-    text-align: center;
+    min-height: 100svh;
+    align-items: center;
+    padding: calc(var(--safe-area-top) + var(--header-height) + var(--space-10)) var(--gutter) var(--space-12);
   }
 
-  .hero__editorial { gap: var(--space-4); }
-
-  .hero__eyebrow {
-    font-size: 0.76rem;
-    white-space: nowrap;
-    gap: var(--space-3);
-    margin-bottom: var(--space-2);
+  .hero__card {
+    max-width: 1040px;
+    display: grid;
+    grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+    align-items: center;
+    column-gap: clamp(2.5rem, 5vw, 4.5rem);
+    padding: clamp(3rem, 5vw, 4.5rem);
   }
-  .hero__eyebrow::before,
-  .hero__eyebrow::after { width: 26px; }
+  .hero__card::before { inset: 12px; }
 
-  /* Arch photo right under the eyebrow */
-  .hero__photo-wrap { width: min(60vw, 300px); }
-  .hero__photo-wrap::before { transform: translate(12px, 12px); }
-
-  /* Names kiss the bottom edge of the arch — soft ivory glow keeps them readable */
-  .hero__names {
-    font-size: clamp(3.1rem, 14.5vw, 5.2rem);
-    margin-top: -0.62em;
-    position: relative;
-    z-index: 3;
-    text-shadow:
-      0 0 14px rgba(var(--color-ivory-rgb), 0.95),
-      0 0 4px rgba(var(--color-ivory-rgb), 0.9),
-      0 2px 30px rgba(var(--color-ivory-rgb), 0.8);
-  }
-  .hero__and {
-    font-size: clamp(3.4rem, 17vw, 4.8rem);
-    padding-left: 0;
-    margin: 0.06em 0 -0.36em;   /* centred, dropped just below the f tails */
+  .hero__photo-wrap {
+    width: min(100%, 360px);
+    margin: 0;
+    justify-self: center;
   }
 
-  .hero__date     { font-size: 0.78rem; letter-spacing: var(--tracking-label); margin-top: var(--space-2); }
-  .hero__location { font-size: 1rem; }
-
-  /* Stacked, centered CTAs — full tap targets */
-  .hero__cta {
+  .hero__text {
+    display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-3);
-    width: 100%;
-    margin-top: var(--space-2);
   }
-  .hero__cta .btn { width: min(100%, 270px); }
 
-  .hero .hero__scroll-cue { display: none; }
-}
-
-/* Grand-scale hero on wide screens — type kisses the arch for editorial tension */
-@media (min-width: 1200px) {
   .hero__names {
-    font-size: clamp(6.5rem, 9.5vw, 9.5rem);
-    position: relative;
-    z-index: 3;
-    margin-right: -3.5rem;
+    margin-top: var(--space-6);
+    font-size: clamp(4.5rem, 7.2vw, 6.25rem);
+    line-height: 1;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
   }
-  .hero__editorial { grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr); }
-  .hero__and { font-size: clamp(6rem, 9vw, 9rem); }
+  .hero__and { font-size: 0.82em; margin: -0.02em 0 -0.12em; }
+
+  .hero .section-ornament { margin: var(--space-6) auto var(--space-4); }
+  .hero__date     { font-size: 1.9rem; }
+  .hero__location { font-size: 1.3rem; margin-top: var(--space-2); }
+
+  .hero .essentials {
+    grid-template-columns: repeat(4, 1fr);
+    margin-top: var(--space-10);
+  }
 }
 
 /* Script ampersand — the only use of Pinyon Script on the site */
@@ -1052,20 +1009,6 @@ main p a:not(.btn):hover,
   font-size: 1.3em;
   transform: translateY(0.05em);
   margin: 0 0.02em;
-}
-
-.hero__scroll-cue {
-  position: absolute;
-  bottom: var(--space-8);
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--color-accent-dark);
-  opacity: 0.7;
-  z-index: 2;
 }
 
 /* =============================================================
@@ -1172,14 +1115,16 @@ main p a:not(.btn):hover,
   text-wrap: balance;
 }
 
-/* Ornamental rule beneath the title */
+/* Leaf sprig beneath the title */
 .page-hero__title::after {
   content: '';
   display: block;
-  width: 64px;
-  height: 1px;
-  background: var(--gold-metallic);
-  margin: clamp(1.2rem, 3vw, 1.8rem) auto 0;
+  width: 150px;
+  height: 29px;
+  background: var(--color-gold-on-sage);
+  -webkit-mask: var(--sprig) center / contain no-repeat;
+          mask: var(--sprig) center / contain no-repeat;
+  margin: clamp(1rem, 2.5vw, 1.4rem) auto 0;
 }
 
 /* Page-hero entrance */
@@ -1257,51 +1202,30 @@ main p a:not(.btn):hover,
 .section-header .section-subtitle { margin: 0 auto; }
 
 /* =============================================================
-   SECTION ORNAMENT  (elegant divider — ——◆—— )
+   SECTION ORNAMENT — the leaf sprig
+   One per page (under the page title) plus the footer, so it stays a
+   flourish rather than a pattern. The --sprig drawing is a mask; the
+   gold comes from the element's own background.
    ============================================================= */
 .section-ornament {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  margin: var(--space-5) auto;
   width: 150px;
+  height: 29px;
+  margin: var(--space-5) auto;
+  background: var(--color-accent-dark);
+  -webkit-mask: var(--sprig) center / contain no-repeat;
+          mask: var(--sprig) center / contain no-repeat;
   pointer-events: none;
 }
 
-.section-ornament::before,
-.section-ornament::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--gold-metallic);
-  opacity: 0.8;
-}
+.section-ornament__diamond { display: none; }
 
-.section-ornament__diamond {
-  width: 5px;
-  height: 5px;
-  background: var(--gold-metallic);
-  transform: rotate(45deg);
-  flex-shrink: 0;
-  opacity: 1;
-}
+/* On Dusty Sage the darker gold keeps the drawing visible */
+.site-footer .section-ornament,
+.section--dark .section-ornament { background: var(--color-gold-on-sage); }
 
-.section-ornament--light::before,
-.section-ornament--light::after,
-.site-footer .section-ornament::before,
-.site-footer .section-ornament::after,
-.section--dark .section-ornament::before,
-.section--dark .section-ornament::after {
-  background: var(--gold-metallic);
-  opacity: 1;
-}
-.section-ornament--light .section-ornament__diamond,
-.site-footer .section-ornament__diamond,
-.section--dark .section-ornament__diamond {
-  background: var(--gold-metallic);
-  opacity: 1;
-}
+/* Section headings carry no ornament — eyebrow and title are enough */
+main .section .section-ornament { display: none; }
+main .form-success .section-ornament { display: block; }
 
 /* Gold gradient lettering — the script "&" only (logo, hero, footer, 404).
    Each element sets its solid fallback color (the gradient's middle stop).
@@ -1316,7 +1240,7 @@ main p a:not(.btn):hover,
   .amp { background-image: var(--gold-text); }
   .hero__and { background-image: var(--gold-text-hero); }
   .amp { padding: 0.1em 0.18em; margin: -0.1em -0.14em; }
-  .hero__and { padding-right: 0.25em; }
+  .hero__and { padding: 0.08em 0.2em; }
   .footer__monogram .amp { background-image: var(--gold-text-on-sage); }
 }
 
@@ -2657,7 +2581,7 @@ main p a:not(.btn):hover,
   line-height: var(--lh-snug);
   color: var(--color-text);
 }
-.registry-card__intro .section-ornament { margin: var(--space-4) auto var(--space-5); }
+.registry-card__heading { margin-bottom: var(--space-4); }
 .registry-card__lead {
   max-width: 46ch;
   margin-inline: auto;
@@ -3109,69 +3033,6 @@ main { overflow-x: clip; }
     font-size: clamp(1.18rem, 5.6vw, 1.55rem);
   }
 
-  .hero {
-    min-height: auto;
-    padding: calc(var(--safe-area-top) + var(--header-height) + 1rem) var(--gutter) var(--space-8);
-  }
-
-  .hero::before {
-    inset: calc(var(--safe-area-top) + var(--header-height) + 0.55rem) 0.7rem 0.7rem;
-  }
-
-  .hero__editorial {
-    gap: var(--space-3);
-  }
-
-  .hero__eyebrow {
-    order: 1;
-    max-width: 100%;
-    white-space: normal;
-    line-height: var(--lh-snug);
-  }
-
-  .hero__eyebrow::before,
-  .hero__eyebrow::after {
-    width: clamp(18px, 9vw, 28px);
-  }
-
-  .hero__names {
-    order: 3;
-    margin-top: -0.48em;
-    font-size: clamp(2.8rem, 14.5vw, 4.25rem);
-    text-shadow:
-      0 0 14px rgba(var(--color-ivory-rgb), 0.96),
-      0 0 4px rgba(var(--color-ivory-rgb), 0.94),
-      0 2px 24px rgba(var(--color-ivory-rgb), 0.82);
-  }
-
-  .hero__and {
-    margin: 0.06em 0 -0.36em;
-  }
-
-  .hero__date {
-    order: 4;
-    max-width: 100%;
-    text-indent: var(--tracking-label);
-    line-height: var(--lh-snug);
-  }
-
-  .hero__location {
-    order: 5;
-    max-width: 28ch;
-    line-height: var(--lh-snug);
-  }
-
-  .hero__photo-wrap {
-    order: 2;
-    width: min(58vw, 225px);
-    margin-top: 0;
-  }
-
-  .hero__cta {
-    order: 6;
-    margin-top: var(--space-2);
-  }
-
   .section-header {
     margin-bottom: var(--space-8);
   }
@@ -3278,14 +3139,6 @@ main { overflow-x: clip; }
 }
 
 @media (max-width: 430px) {
-  .hero__photo-wrap {
-    width: min(62vw, 210px);
-  }
-
-  .hero__names {
-    font-size: clamp(2.65rem, 14vw, 3.8rem);
-  }
-
   .photo-strip__item {
     flex-basis: 84%;
   }
@@ -3450,7 +3303,16 @@ main { overflow-x: clip; }
   align-items: center;
   gap: var(--space-4);
 }
-.rsvp-plus-header .section-ornament { margin: 0; width: auto; flex: 1; }
+main .rsvp-plus-header .section-ornament {
+  display: block;
+  margin: 0;
+  width: auto;
+  height: 1px;
+  flex: 1;
+  background: var(--color-hairline);
+  -webkit-mask: none;
+          mask: none;
+}
 .rsvp-plus-header .section-label    { margin: 0; white-space: nowrap; }
 
 /* One block per person in the guest's party (plus-one, kids…) */
@@ -3481,7 +3343,6 @@ main { overflow-x: clip; }
   .site-header,
   .site-footer,
   .hamburger,
-  .hero__scroll-cue,
   .scroll-progress,
   .countdown { display: none; }
 
