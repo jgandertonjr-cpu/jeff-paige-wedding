@@ -120,17 +120,14 @@ eleventyExcludeFromCollections: true
 
     var target = new Date('{{ site.wedding_date | dateFormat("iso") }}T00:00:00{{ site.wedding_date | easternOffset }}').getTime();
 
-    function pad(n) { return n < 10 ? '0' + n : String(n); }
-
     function set(el, sel, value) {
       var node = qs(sel, el);
       if (!node || node.textContent === value) return;
       node.textContent = value;
-      node.classList.remove('tick');
-      void node.offsetWidth;
-      node.classList.add('tick');
     }
 
+    /* Days only — the page shows one quiet number, so it is checked once a
+       minute rather than ticking every second. */
     function update() {
       var diff = target - Date.now();
       containers.forEach(function (el) {
@@ -138,15 +135,12 @@ eleventyExcludeFromCollections: true
           el.innerHTML = '<p class="countdown__message">Today\'s the day!</p>';
           return;
         }
-        set(el, '[data-days]',    String(Math.floor(diff / 86400000)));
-        set(el, '[data-hours]',   pad(Math.floor(diff / 3600000) % 24));
-        set(el, '[data-minutes]', pad(Math.floor(diff / 60000) % 60));
-        set(el, '[data-seconds]', pad(Math.floor(diff / 1000) % 60));
+        set(el, '[data-days]', String(Math.floor(diff / 86400000)));
       });
       if (diff <= 0) clearInterval(timer);
     }
 
-    var timer = setInterval(update, 1000);
+    var timer = setInterval(update, 60000);
     update();
   }
 
@@ -695,30 +689,6 @@ eleventyExcludeFromCollections: true
   }
 
   /* =============================================================
-     11. SCROLL PROGRESS — gold hairline along the top edge
-     ============================================================= */
-  function initScrollProgress() {
-    var bar = document.createElement('div');
-    bar.className = 'scroll-progress';
-    bar.setAttribute('aria-hidden', 'true');
-    /* Anchor inside the sticky header — see .scroll-progress in styles.css */
-    (qs('.site-header') || document.body).appendChild(bar);
-
-    var ticking = false;
-    function update() {
-      var max = document.documentElement.scrollHeight - window.innerHeight;
-      var pct = max > 0 ? (window.scrollY / max) * 100 : 0;
-      bar.style.width = pct + '%';
-      ticking = false;
-    }
-
-    window.addEventListener('scroll', function () {
-      if (!ticking) { ticking = true; requestAnimationFrame(update); }
-    }, { passive: true });
-    update();
-  }
-
-  /* =============================================================
      12. ESSENTIALS BAR — Details / Travel / Registry / RSVP pinned to
          the bottom on phones and tablets (markup is in base.njk)
      ============================================================= */
@@ -849,7 +819,6 @@ eleventyExcludeFromCollections: true
     initRsvpLookup();
     initActiveNav();
     initAddToCalendar();
-    initScrollProgress();
     initEssentialsBar();
     initViewportFix();
   }
