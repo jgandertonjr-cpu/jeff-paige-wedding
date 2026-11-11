@@ -684,7 +684,7 @@ eleventyExcludeFromCollections: true
 
     var currentSlug = slug(window.location.pathname);
 
-    qsa('.site-nav__link, .mobile-nav__link, .footer__nav-link').forEach(function (link) {
+    qsa('.site-nav__link, .mobile-nav__link, .footer__nav-link, .essentials__link').forEach(function (link) {
       var href = link.getAttribute('href');
       if (!href) return;
       if (slug(href) === currentSlug) {
@@ -719,32 +719,30 @@ eleventyExcludeFromCollections: true
   }
 
   /* =============================================================
-     12. FLOATING RSVP BAR — mobile companion, appears on scroll
+     12. ESSENTIALS BAR — Details / Travel / Registry / RSVP pinned to
+         the bottom on phones and tablets (markup is in base.njk)
      ============================================================= */
-  function initRsvpBar() {
-    /* Not on the RSVP page itself, or the Details page it links to */
-    if (qs('form[name="rsvp"]')) return;
-    if (/\/details(\.html)?$/.test(location.pathname)) return;
-    if (!qs('.site-footer')) return;
+  function initEssentialsBar() {
+    var bar = qs('[data-essentials-bar]');
+    if (!bar) return;
+    /* Not on the RSVP page: it would sit over the form's own buttons */
+    if (qs('form[name="rsvp"]')) { bar.hidden = true; return; }
 
-    var bar = document.createElement('div');
-    bar.className = 'rsvp-bar';
-    bar.innerHTML =
-      '<span class="rsvp-bar__text">{{ site.couple.partner1_first }} &amp; {{ site.couple.partner2_first }} &middot; {{ site.wedding_date | dateFormat("dots") }}</span>' +
-      '<a href="details.html" class="rsvp-bar__btn">Details</a>';
-    document.body.appendChild(bar);
+    /* The home page's first screen already shows the same four links */
+    var showAfter = qs('.hero .essentials') ? 520 : 0;
 
     var ticking = false;
     function update() {
       var nearBottom = window.innerHeight + window.scrollY >
                        document.documentElement.scrollHeight - 260;
-      bar.classList.toggle('visible', window.scrollY > 520 && !nearBottom);
+      bar.classList.toggle('visible', window.scrollY >= showAfter && !nearBottom);
       ticking = false;
     }
 
     window.addEventListener('scroll', function () {
       if (!ticking) { ticking = true; requestAnimationFrame(update); }
     }, { passive: true });
+    window.addEventListener('resize', update);
     update();
   }
 
@@ -852,7 +850,7 @@ eleventyExcludeFromCollections: true
     initActiveNav();
     initAddToCalendar();
     initScrollProgress();
-    initRsvpBar();
+    initEssentialsBar();
     initViewportFix();
   }
 

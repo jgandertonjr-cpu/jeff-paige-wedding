@@ -582,6 +582,9 @@ main p a:not(.btn):hover,
   transition: color var(--transition-fast), opacity var(--transition-fast);
   flex-shrink: 0;
   line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }
 
 .site-logo:hover { opacity: 0.7; }
@@ -599,28 +602,37 @@ main p a:not(.btn):hover,
 }
 
 .site-nav__link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   font-size: var(--fs-xs);
   font-weight: var(--fw-regular);
-  letter-spacing: var(--tracking-label);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   white-space: nowrap;
   color: var(--color-text-muted);
   text-decoration: none;
   position: relative;
   transition: color var(--transition-fast);
-  padding: 4px 0;
 }
 
 .site-nav__link::after {
   content: '';
   position: absolute;
-  bottom: -3px;
+  bottom: 9px;
   left: 0;
   right: 0;
   height: 1px;
   background: var(--color-accent-dark);
   transform: scaleX(0);
   transition: transform var(--transition-base);
+}
+
+/* The essentials lead in ink; a hairline sets the rest of the pages apart */
+.site-nav__list > li:not(.site-nav__group):not(.site-nav__group ~ li) .site-nav__link { color: var(--color-text); }
+.site-nav__group {
+  padding-left: clamp(0.8rem, 1.3vw, 1.6rem);
+  border-left: 1px solid var(--color-hairline);
 }
 
 .site-nav__link:hover::after,
@@ -637,8 +649,9 @@ main p a:not(.btn):hover,
   border: 1px solid var(--color-rosette);
   background-color: var(--color-rosette);   /* evergreen on rosette 6.9:1 */
   color: var(--color-text);
-  padding: 0.5em 1.4em;
-  border-radius: var(--radius-full);
+  min-height: 36px;
+  padding: 0 1.3em;
+  border-radius: var(--radius-sm);
   transition: box-shadow var(--transition-fast);
 }
 .site-nav__link--rsvp::after { display: none; }
@@ -706,9 +719,8 @@ main p a:not(.btn):hover,
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: calc(var(--header-height) + var(--space-2)) var(--gutter) var(--space-4);
+  justify-content: flex-start;
+  padding: calc(var(--safe-area-top) + var(--header-height) + var(--space-8)) var(--gutter) max(var(--space-8), env(safe-area-inset-bottom, 0px));
   overflow-y: auto;
   opacity: 0;
   visibility: hidden;
@@ -724,45 +736,64 @@ main p a:not(.btn):hover,
   transform: translateY(0);
 }
 
+/* The four essentials lead, as a ruled table like the one on the home
+   page; the rest of the pages follow in two quieter columns. */
+.mobile-nav__primary {
+  width: min(100%, 360px);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid var(--color-hairline);
+  border-left: 1px solid var(--color-hairline);
+}
+
+.mobile-nav__more {
+  width: min(100%, 360px);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: var(--space-5);
+}
+
 .mobile-nav__link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
   font-family: var(--font-display);
-  font-size: clamp(1.35rem, 4.6vw, 1.8rem);
-  font-weight: var(--fw-light);
+  font-size: 1.3rem;
+  font-weight: var(--fw-regular);
   color: var(--color-text);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.03em;
   text-decoration: none;
   transition: color var(--transition-fast);
-  padding: 2px 0;
   -webkit-tap-highlight-color: transparent;
 }
+
+.mobile-nav__link--primary {
+  min-height: 64px;
+  font-size: 1.6rem;
+  border-right: 1px solid var(--color-hairline);
+  border-bottom: 1px solid var(--color-hairline);
+}
+
+/* RSVP keeps its Rosette fill here too */
+.mobile-nav__link--primary[href^="rsvp"] { background-color: var(--color-rosette); }
 
 .mobile-nav__link:hover { color: var(--color-accent-dark); }
 .mobile-nav__link.active {
   color: var(--color-accent-dark);
   font-style: italic;
 }
+.mobile-nav__link--primary[href^="rsvp"]:hover,
+.mobile-nav__link--primary[href^="rsvp"].active { color: var(--color-text); }
 
-/* Monogram crest above and venue line below the menu links.
-   Cormorant throughout — a pseudo-element can't mix in the script "&". */
-.mobile-nav::before {
-  content: 'J & P';
-  font-family: var(--font-display);
-  font-style: italic;
-  font-weight: var(--fw-light);
-  font-size: 2rem;
-  letter-spacing: 0.1em;
-  color: var(--color-text);
-  margin-bottom: var(--space-4);
-}
-
-.mobile-nav::after {
-  content: 'August 5, 2028 \00B7  New Hope, PA';
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: 0.95rem;
-  letter-spacing: 0.06em;
-  color: var(--color-text-muted);
+.mobile-nav__note {
   margin-top: var(--space-6);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 1.05rem;
+  letter-spacing: 0.03em;
+  color: var(--color-text-muted);
+  text-align: center;
 }
 
 /* =============================================================
@@ -1012,67 +1043,56 @@ main p a:not(.btn):hover,
 }
 
 /* =============================================================
-   FLOATING RSVP BAR — mobile only (element injected by JS)
+   ESSENTIALS BAR — phones and tablets
+   The same four links as the home page table, pinned to the bottom of
+   every page. Markup in base.njk; main.js adds .visible.
    ============================================================= */
-.rsvp-bar {
+.essentials-bar {
   position: fixed;
-  left: var(--space-3);
-  right: var(--space-3);
-  bottom: calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+  left: var(--space-2);
+  right: var(--space-2);
+  bottom: calc(var(--space-2) + env(safe-area-inset-bottom, 0px));
   z-index: 950;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-5);
+  width: auto;
+  max-width: 520px;
+  margin-inline: auto;
+  grid-template-columns: repeat(4, 1fr);
   background: rgba(var(--color-ivory-rgb), 0.92);
   backdrop-filter: blur(14px) saturate(1.2);
   -webkit-backdrop-filter: blur(14px) saturate(1.2);
   border: 1px solid rgba(var(--color-gold-rgb), 0.35);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
   box-shadow: var(--shadow-lg);
+  overflow: hidden;
   transform: translateY(calc(100% + var(--space-6)));
   opacity: 0;
   transition: transform var(--transition-base), opacity var(--transition-base);
   pointer-events: none;
 }
 
-.rsvp-bar.visible {
+.essentials-bar.visible {
   transform: translateY(0);
   opacity: 1;
   pointer-events: auto;
 }
 
-.rsvp-bar__text {
-  font-family: var(--font-display);
-  font-style: italic;
-  font-size: 1rem;
-  letter-spacing: 0.04em;
-  color: var(--color-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.essentials-bar .essentials__link {
+  min-height: 50px;
+  padding: 0;
+  border-bottom: none;
+  letter-spacing: 0.1em;
+  text-indent: 0.1em;
+}
+.essentials-bar .essentials__link:last-child { border-right: none; }
+.essentials-bar .essentials__link.active:not(.essentials__link--rsvp) { background-color: var(--color-sage-mist); }
+
+@media (max-width: 359px) {
+  .essentials-bar .essentials__link { letter-spacing: 0.04em; text-indent: 0.04em; }
 }
 
-.rsvp-bar__btn {
-  flex-shrink: 0;
-  font-size: var(--fs-xs);
-  font-weight: var(--fw-medium);
-  letter-spacing: var(--tracking-label);
-  text-indent: var(--tracking-label);
-  text-transform: uppercase;
-  color: var(--color-background);
-  background: var(--color-text);
-  border-radius: var(--radius-full);
-  padding: 0.8em 1.7em;
-  transition: background-color var(--transition-fast);
-}
-
-.rsvp-bar__btn:hover { background: var(--color-accent-dark); }
-
-/* Desktop has the nav pill — bar is a mobile companion only */
-@media (min-width: 768px) {
-  .rsvp-bar { display: none; }
+/* Desktop has the full nav in the header */
+@media (min-width: 1060px) {
+  .essentials-bar { display: none; }
 }
 
 /* =============================================================
@@ -2403,13 +2423,17 @@ main .form-success .section-ornament { display: block; }
 .footer__nav {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3) var(--space-6);
+  gap: 0 var(--space-2);
   justify-content: center;
   max-width: 920px;
-  margin: 0 auto var(--space-8);
+  margin: 0 auto var(--space-6);
 }
 
 .footer__nav-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--space-3);
   font-size: var(--fs-xs);
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
@@ -2842,7 +2866,10 @@ main .form-success .section-ornament { display: block; }
   top: var(--space-2);
   left: var(--space-2);
   z-index: 2002;
-  padding: 0.7em 1.2em;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 1.2em;
   background: var(--color-text);
   color: var(--color-background);
   font-size: var(--fs-xs);
@@ -2965,7 +2992,6 @@ main .form-success .section-ornament { display: block; }
     padding-bottom: 2.5rem;
   }
   .timeline__item { padding-left: var(--space-5); margin-bottom: var(--space-6); }
-  .footer__nav { gap: var(--space-2) var(--space-4); }
   .footer__monogram { font-size: 2rem; }
 }
 
@@ -3006,31 +3032,6 @@ main { overflow-x: clip; }
   .party-card__bio,
   .schedule__event-desc {
     line-height: 1.65;
-  }
-
-  .mobile-nav {
-    justify-content: flex-start;
-    gap: 0;
-    padding-top: calc(var(--safe-area-top) + var(--header-height) + var(--space-5));
-    padding-bottom: max(var(--space-8), env(safe-area-inset-bottom, 0px));
-  }
-
-  .mobile-nav::before {
-    margin-bottom: var(--space-3);
-  }
-
-  .mobile-nav::after {
-    margin-top: var(--space-4);
-    text-align: center;
-  }
-
-  .mobile-nav__link {
-    width: min(100%, 320px);
-    min-height: 42px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: clamp(1.18rem, 5.6vw, 1.55rem);
   }
 
   .section-header {
@@ -3119,23 +3120,6 @@ main { overflow-x: clip; }
     align-items: flex-start;
   }
 
-  .rsvp-bar {
-    left: var(--space-2);
-    right: var(--space-2);
-    padding-left: var(--space-4);
-  }
-
-  .rsvp-bar__text {
-    font-size: 0.95rem;
-  }
-
-  .rsvp-bar__btn {
-    padding: 0.75em 1.2em;
-  }
-
-  .site-footer {
-    padding-bottom: calc(5.25rem + env(safe-area-inset-bottom, 0px));
-  }
 }
 
 @media (max-width: 430px) {
@@ -3154,6 +3138,11 @@ main { overflow-x: clip; }
 @media (min-width: 768px) {
   .section-header { margin-bottom: var(--space-16); }
   .section-header.section-header--tight { margin-bottom: var(--space-8); }
+}
+
+/* Below the desktop nav the essentials bar is pinned to the bottom — leave it room */
+@media (max-width: 1059px) {
+  .site-footer { padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px)); }
 }
 
 /* Desktop nav needs real room — hamburger until 1060px */
