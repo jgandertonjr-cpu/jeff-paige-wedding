@@ -13,9 +13,10 @@ headerDark: true
           <article class="party-card{% if not person.photo %} party-card--placeholder{% endif %} reveal">
             <div class="party-card__img">
             {%- if person.photo %}
-              <img src="{{ person.photo | relUrl }}" srcset="{{ person.photo | srcset }}" sizes="(min-width: 700px) 230px, 170px" alt="{{ person.name }}" loading="lazy" decoding="async">
+              {%- set size = person.photo | imgSize %}
+              <img src="{{ person.photo | relUrl }}" srcset="{{ person.photo | srcset }}" sizes="(min-width: 700px) 300px, 230px" width="{{ size.width }}" height="{{ size.height }}" alt="{{ person.name }}" loading="lazy" decoding="async">
             {%- else %}
-              <div class="img-placeholder img-placeholder--circle" aria-label="Photo of {{ person.role }}"></div>
+              <div class="img-placeholder img-placeholder--circle" aria-hidden="true"></div>
             {%- endif %}
             </div>
             <h3 class="party-card__name">{{ person.name }}</h3>

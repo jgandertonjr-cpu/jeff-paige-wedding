@@ -70,6 +70,26 @@
   unicode-range: U+26;
 }
 
+/* Stand-ins used for the instant before the fonts above arrive. They are
+   Georgia and Arial scaled to the same average letter width as Cormorant
+   Garamond and Jost, so lines break in the same places and nothing jumps. */
+@font-face {
+  font-family: 'Cormorant Fallback';
+  src: local('Georgia');
+  size-adjust: 88.7%;
+  ascent-override: 104%;
+  descent-override: 33%;
+  line-gap-override: 0%;
+}
+@font-face {
+  font-family: 'Jost Fallback';
+  src: local('Arial'), local('Helvetica Neue');
+  size-adjust: 96.7%;
+  ascent-override: 111%;
+  descent-override: 39%;
+  line-gap-override: 0%;
+}
+
 /* =============================================================
    DESIGN TOKENS
    ============================================================= */
@@ -139,8 +159,8 @@
   --sage-wash: linear-gradient(135deg, rgba(var(--color-dusty-sage-rgb), 0.25) 0%, rgba(var(--color-dusty-sage-rgb), 0.55) 100%);
 
   /* ── Typography ── */
-  --font-display: 'Cormorant Garamond', Georgia, serif;   /* headings — upright; italic for accents only */
-  --font-body:    'Jost', system-ui, sans-serif;          /* body and labels */
+  --font-display: 'Cormorant Garamond', 'Cormorant Fallback', Georgia, serif;   /* headings — upright; italic for accents only */
+  --font-body:    'Jost', 'Jost Fallback', system-ui, sans-serif;          /* body and labels */
   --font-script:  'Pinyon Script', cursive;               /* the "&" only — nowhere else */
 
   /* Type scale */
@@ -344,7 +364,7 @@ html { scrollbar-color: var(--color-dusty-sage) var(--color-background); scrollb
   font-size: 3.1em;
   line-height: 0.78;
   float: left;
-  padding: 0.04em 0.14em 0 0;
+  padding: 0.04em 0.05em 0 0;
   color: var(--color-accent-dark);
 }
 
@@ -948,7 +968,11 @@ main p a:not(.btn):hover,
   -webkit-tap-highlight-color: transparent;
 }
 
-.essentials__link:hover { background-color: var(--color-sage-mist); }
+.essentials__link:hover,
+.essentials__link:active { background-color: var(--color-sage-mist); }
+/* The focus ring sits inside the cell so neighbours and the bar's edge don't clip it */
+.essentials__link:focus-visible,
+.mobile-nav__link--primary:focus-visible { outline-offset: -4px; }
 
 /* RSVP — the site's one Rosette element (evergreen on rosette 6.9:1) */
 .essentials__link--rsvp,
@@ -966,7 +990,8 @@ main p a:not(.btn):hover,
   .hero__card {
     max-width: 1040px;
     display: grid;
-    grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+    /* wording (first in visual order) gets the wider half, the photo the narrower */
+    grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
     align-items: center;
     column-gap: clamp(2.5rem, 5vw, 4.5rem);
     padding: clamp(3rem, 5vw, 4.5rem);
@@ -1001,8 +1026,82 @@ main p a:not(.btn):hover,
 
   .hero .essentials {
     grid-template-columns: repeat(4, 1fr);
+    max-width: 480px;
     margin-top: var(--space-10);
   }
+  .hero .essentials__link { min-height: 56px; font-size: 0.875rem; }
+}
+
+/* Tablets: the same single card, a size up */
+@media (min-width: 700px) and (max-width: 919px) and (min-height: 521px) {
+  .hero { padding-top: calc(var(--safe-area-top) + var(--header-height) + var(--space-8)); padding-bottom: var(--space-10); }
+  .hero__card { max-width: 560px; padding: var(--space-12) var(--space-10) var(--space-10); }
+  .hero__card::before { inset: 10px; }
+  .hero__photo-wrap { width: 240px; margin-top: var(--space-6); }
+  .hero__names { font-size: 4.25rem; margin-top: var(--space-6); }
+  .hero__date { font-size: 1.85rem; }
+  .hero__location { font-size: 1.3rem; }
+  .hero .essentials { grid-template-columns: repeat(4, 1fr); margin-top: var(--space-8); }
+}
+
+/* Very wide screens: the card grows a little so it doesn't float in the sage */
+@media (min-width: 1600px) and (min-height: 900px) {
+  .hero__card { max-width: 1180px; padding: 5rem; }
+  .hero__names { font-size: 7rem; }
+  .hero__date { font-size: 2.1rem; }
+  .hero__location { font-size: 1.4rem; }
+}
+
+/* Short phones (and Safari with its toolbars showing): a smaller photo and
+   header keep the date and the first essentials on the first screen */
+@media (max-height: 700px) and (orientation: portrait) and (max-width: 699px) {
+  :root { --nav-height: 64px; }
+  .hero__card { padding-top: var(--space-6); }
+  .hero__photo-wrap { width: min(34vw, 132px); margin-top: var(--space-4); }
+  .hero__names { margin-top: var(--space-4); }
+  .hero .section-ornament { margin: var(--space-2) auto; }
+  .hero .essentials { margin-top: var(--space-5); }
+}
+
+/* A phone held sideways: the card opens out, photo beside the wording, so
+   the names and date are still the first thing on screen */
+@media (orientation: landscape) and (max-height: 520px) and (min-width: 560px) {
+  :root { --nav-height: 56px; }
+  .hero {
+    min-height: 0;
+    padding: calc(var(--safe-area-top) + var(--header-height) + var(--space-3)) var(--space-4) var(--space-4);
+  }
+  .hero__card {
+    max-width: 780px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: var(--space-8);
+    padding: var(--space-5) var(--space-8) var(--space-5) var(--space-6);
+  }
+  .hero__card::before { inset: 7px; }
+  .hero__photo-wrap {
+    width: auto;
+    height: min(calc(100svh - var(--header-height) - 6.5rem), 300px);
+    aspect-ratio: 4 / 5.2;
+    margin: 0;
+  }
+  .hero__photo { height: 100%; }
+  .hero__text { display: flex; flex-direction: column; align-items: center; }
+  .hero__names {
+    margin-top: var(--space-2);
+    font-size: clamp(2.2rem, 6vw, 3rem);
+    line-height: 1.1;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 0.14em;
+  }
+  .hero__and { font-size: 0.8em; margin: 0; }
+  .hero .section-ornament { height: 24px; margin: var(--space-2) auto; }
+  .hero__date { font-size: 1.35rem; }
+  .hero__location { font-size: 1.05rem; margin-top: 0; }
+  .hero .essentials { grid-template-columns: repeat(4, 1fr); margin-top: var(--space-4); }
+  .hero .essentials__link { min-height: 44px; }
 }
 
 /* Script ampersand — the only use of Pinyon Script on the site */
@@ -1271,7 +1370,8 @@ main .form-success .section-ornament { display: block; }
   color: var(--color-text);
   transition: color var(--transition-fast);
 }
-.index-list__row:hover .index-list__title { color: var(--color-accent-dark); }
+.index-list__row:hover .index-list__title,
+.index-list__row:active .index-list__title { color: var(--color-accent-dark); }
 
 .index-list__desc {
   font-size: var(--fs-base);
@@ -1341,6 +1441,9 @@ main .form-success .section-ornament { display: block; }
               border-color var(--transition-base);
   -webkit-tap-highlight-color: transparent;
 }
+
+/* Pressed: the button gives by a pixel, like a key */
+.btn:active { transform: translateY(1px); }
 
 .btn--primary {
   background-color: var(--color-text);
@@ -1824,7 +1927,7 @@ main .form-success .section-ornament { display: block; }
 .form-textarea {
   width: 100%;
   padding: 0.9em 1.1em;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-sage-gray);   /* field edge 6.4:1 on white — the hairline was 1.4:1 */
   border-radius: var(--radius-sm);
   background: var(--color-white);
   color: var(--color-text);
@@ -1843,6 +1946,13 @@ main .form-success .section-ornament { display: block; }
   outline: none;
   border-color: var(--color-accent-dark);
   box-shadow: 0 0 0 3px rgba(var(--color-gold-rgb), 0.18);
+}
+
+/* Example text inside fields: sage-gray (6.4:1), not the browser's pale default */
+.form-input::placeholder,
+.form-textarea::placeholder {
+  color: var(--color-sage-gray);
+  opacity: 1;
 }
 
 .form-select {
@@ -1883,7 +1993,7 @@ main .form-success .section-ornament { display: block; }
   -webkit-appearance: none;
   width: 20px;
   height: 20px;
-  border: 1.5px solid var(--color-border);
+  border: 1.5px solid var(--color-sage-gray);
   border-radius: 50%;
   transition: border-color var(--transition-fast), background-color var(--transition-fast);
   position: relative;

@@ -67,32 +67,51 @@ eleventyExcludeFromCollections: true
     var header    = qs('.site-header');
     if (!hamburger || !mobileNav) return;
 
-    hamburger.addEventListener('click', function () {
-      var isOpen = hamburger.getAttribute('aria-expanded') === 'true';
-      hamburger.setAttribute('aria-expanded', String(!isOpen));
-      mobileNav.classList.toggle('open', !isOpen);
-      if (header) header.classList.toggle('menu-open', !isOpen);
-      document.body.style.overflow = isOpen ? '' : 'hidden';
-    });
+    /* Everything behind the open menu: taken out of the tab order and hidden
+       from screen readers, so focus can only be in the header or the menu. */
+    var behind = qsa('main, .site-footer, .essentials-bar, .skip-link');
+
+    function isOpen() { return hamburger.getAttribute('aria-expanded') === 'true'; }
+
+    function setOpen(open, returnFocus) {
+      hamburger.setAttribute('aria-expanded', String(open));
+      hamburger.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+      mobileNav.classList.toggle('open', open);
+      if (header) header.classList.toggle('menu-open', open);
+      document.body.style.overflow = open ? 'hidden' : '';
+      behind.forEach(function (el) {
+        if (open) { el.setAttribute('inert', ''); el.setAttribute('aria-hidden', 'true'); }
+        else { el.removeAttribute('inert'); el.removeAttribute('aria-hidden'); }
+      });
+      if (!open && returnFocus) hamburger.focus();
+    }
+
+    hamburger.addEventListener('click', function () { setOpen(!isOpen(), false); });
 
     qsa('.mobile-nav__link', mobileNav).forEach(function (link) {
-      link.addEventListener('click', function () {
-        hamburger.setAttribute('aria-expanded', 'false');
-        mobileNav.classList.remove('open');
-        if (header) header.classList.remove('menu-open');
-        document.body.style.overflow = '';
-      });
+      link.addEventListener('click', function () { setOpen(false, false); });
     });
 
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && mobileNav.classList.contains('open')) {
-        hamburger.setAttribute('aria-expanded', 'false');
-        mobileNav.classList.remove('open');
-        if (header) header.classList.remove('menu-open');
-        document.body.style.overflow = '';
-        hamburger.focus();
-      }
+      if (!isOpen()) return;
+      if (e.key === 'Escape') { setOpen(false, true); return; }
+      if (e.key !== 'Tab') return;
+      /* Keep Tab cycling between the close button and the menu's links */
+      var stops = [hamburger].concat(qsa('a', mobileNav));
+      var first = stops[0];
+      var last  = stops[stops.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      else if (stops.indexOf(document.activeElement) === -1) { e.preventDefault(); first.focus(); }
     });
+
+    /* Rotating a tablet or widening the window to the desktop layout closes it */
+    if (window.matchMedia) {
+      var desktop = window.matchMedia('(min-width: 1060px)');
+      var onChange = function (e) { if (e.matches && isOpen()) setOpen(false, false); };
+      if (desktop.addEventListener) desktop.addEventListener('change', onChange);
+      else if (desktop.addListener) desktop.addListener(onChange);
+    }
   }
 
   /* =============================================================
