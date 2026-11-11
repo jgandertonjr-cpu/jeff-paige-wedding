@@ -49,6 +49,9 @@ Look and feel (the "invitation suite", November 2026)
 - One botanical motif: a line-drawn leaf sprig (greenery, never blooms), in gold. It appears under each page title and in the footer, and nowhere else.
 - Content sits in open blocks under hairlines (gold for the lead block, the hairline color otherwise), not in bordered white cards. The home invitation and the registry card are the two pieces of "paper" and the only elements with a shadow.
 - Buttons are square-cornered (3px), uppercase, at least 48px tall. No pills.
-- The essentials (Details, Travel, Registry, RSVP) lead every menu and are one tap away on every page.
+- The essentials (Details, Travel, Registry, RSVP) lead every menu and are one tap away on every page. On phones and tablets they are a flush, opaque bar along the bottom edge (hidden when a phone is held sideways).
+- In any group of buttons the primary (dark) button comes first.
+- Label/value facts use the detail list (Details, After Party); icon lists share one heading and body size.
+- Body text is 17px at every width; notes are 15px; uppercase labels 13px.
 - Every link and button is at least 44px tall.
 - Motion: each block fades up once as it enters. Nothing loops, ticks, or tracks scrolling.
