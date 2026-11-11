@@ -3,7 +3,7 @@ Inspired by the bridesmaid dresses (Azazie "Dusty Sage" and "Rosette") with meta
 
 Core colors
 - Dusty Sage #BCCAB3: main banner color (page headers, feature bands, footer)
-- Rosette #E0AA9E: accent, used sparingly (RSVP button only)
+- Rosette #E0AA9E: accent, used sparingly (RSVP only: the button, and the RSVP link in the nav, menu and essentials table)
 - Metallic Gold gradient #A47A2C → #D9B860 → #F5E6A8 → #C9A04A → #8F6A26: decorative only (divider lines, small diamonds, dots, thin borders)
 - Solid Gold #C9A04A: flat fallback for gold borders/rings
 
@@ -29,16 +29,26 @@ Gold gradient text (large script lettering only)
 - Always set a solid fallback color (the middle stop) for browsers without background-clip: text.
 
 Typography
-- Display/headings: Cormorant Garamond (light, often italic)
-- Body/labels: Jost. Small labels are uppercase with wide letter-spacing.
+- Display/headings: Cormorant Garamond, upright. Light (300) at display sizes, regular or medium as the size comes down. Italic is an accent only (captions, the venue line, "with love,").
+- Body/labels: Jost at regular weight (400). Small labels are uppercase with wide letter-spacing, and never smaller than 13px.
 - Script: Pinyon Script, for the "&" only. Nowhere else.
+- All three are self-hosted in src/fonts (no Google Fonts request).
 
 Rules
 - No pure black anywhere. No pure white text.
 - Text on Dusty Sage is always evergreen, never white or cream.
 - Rosette, Dusty Sage, and bright gold are never text colors on ivory. They are fills, borders, and accents only.
 - RSVP button: Rosette fill, Evergreen text.
-- Page rhythm: Dusty Sage banner, then Ivory and Sage Mist sections alternating, then a Dusty Sage footer.
+- Page rhythm: Dusty Sage banner, then Ivory and Sage Mist sections alternating, then a Dusty Sage footer. On the home page the banner holds the invitation: an ivory card with a thin gold inner rule.
 - Pink stays minimal. Green and gold lead; Rosette is a single accent.
 - All text meets WCAG AA (4.5:1 body, 3:1 large text).
 - Tone: elegant, warm, gender-neutral. Refined, not frilly. No florals, glitter, or heavy decoration.
+
+Look and feel (the "invitation suite", November 2026)
+- The site should read as printed stationery: the home page is the invitation, the other pages are its enclosure cards.
+- One botanical motif: a line-drawn leaf sprig (greenery, never blooms), in gold. It appears under each page title and in the footer, and nowhere else.
+- Content sits in open blocks under hairlines (gold for the lead block, the hairline color otherwise), not in bordered white cards. The home invitation and the registry card are the two pieces of "paper" and the only elements with a shadow.
+- Buttons are square-cornered (3px), uppercase, at least 48px tall. No pills.
+- The essentials (Details, Travel, Registry, RSVP) lead every menu and are one tap away on every page.
+- Every link and button is at least 44px tall.
+- Motion: each block fades up once as it enters. Nothing loops, ticks, or tracks scrolling.
