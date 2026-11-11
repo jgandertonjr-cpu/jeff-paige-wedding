@@ -6,6 +6,7 @@ headerDark: true
 ---
 {%- extends "layouts/base.njk" -%}
 {%- from "add-to-calendar.njk" import addToCalendar -%}
+{%- from "icons.njk" import icon -%}
 {%- block main %}
 {%- set v = site.venue -%}
 {%- set fullAddress = v.name + ", " + v.street + ", " + v.city + ", " + v.state + " " + v.zip %}
@@ -45,8 +46,13 @@ headerDark: true
             </address>
           </div>
           <div class="reveal reveal--delay-1">
-            <div class="map-embed">
-              <iframe src="{{ fullAddress | mapsEmbedUrl }}" title="Map of {{ v.name }}, {{ v.city }}, {{ v.state }}" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
+            {#- The map loads when asked for: Google's embed is about 1.8 MB of script. #}
+            <div class="map-embed" data-map-src="{{ fullAddress | mapsEmbedUrl }}" data-map-title="Map of {{ v.name }}, {{ v.city }}, {{ v.state }}">
+              <button type="button" class="map-embed__load">
+                {{ icon("pin", 26, true) }}
+                <span class="map-embed__place">{{ v.name }}</span>
+                <span class="map-embed__cue">Show map</span>
+              </button>
             </div>
           </div>
         </div>

@@ -59,8 +59,12 @@ headerDark: true
 
           <div class="reveal reveal--delay-1">
           {%- if d.map_address %}
-            <div class="map-embed">
-              <iframe src="{{ d.map_address | mapsEmbedUrl }}" title="Map of {{ d.venue_name }}" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
+            <div class="map-embed" data-map-src="{{ d.map_address | mapsEmbedUrl }}" data-map-title="Map of {{ d.venue_name }}">
+              <button type="button" class="map-embed__load">
+                {{ icon("pin", 26, true) }}
+                <span class="map-embed__place">{{ d.venue_name }}</span>
+                <span class="map-embed__cue">Show map</span>
+              </button>
             </div>
             <p class="fine-print mt-4"><a href="{{ d.map_address | mapsSearchUrl }}" target="_blank" rel="noopener">Get directions</a></p>
           {%- else %}
