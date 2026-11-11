@@ -27,7 +27,11 @@ canonical: ""
     "@type": "Event",
     "name": {{ (c.partner1_first + " and " + c.partner2_first + "'s Wedding") | dump | safe }},
     "description": {{ ("The wedding of " + c.partner1_full + " and " + c.partner2_full + " at " + v.name + " in " + v.city + ", " + v.state + ".") | dump | safe }},
-    "startDate": "{{ site.wedding_date | dateFormat('iso') }}",
+    "startDate": "{{ calendar.startIso }}",
+    "endDate": "{{ calendar.endIso }}",
+    {%- if home.hero.photo %}
+    "image": ["https://jeffandpaige.net/{{ home.hero.photo | relUrl }}"],
+    {%- endif %}
     "eventStatus": "https://schema.org/EventScheduled",
     "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
     "location": {
@@ -44,8 +48,8 @@ canonical: ""
     },
     "url": "https://jeffandpaige.net",
     "organizer": [
-      { "@type": "Person", "name": {{ c.partner1_full | dump | safe }}{% if c.partner1_formal and c.partner1_formal != c.partner1_full %}, "alternateName": {{ c.partner1_formal | dump | safe }}{% endif %} },
-      { "@type": "Person", "name": {{ c.partner2_full | dump | safe }}{% if c.partner2_formal and c.partner2_formal != c.partner2_full %}, "alternateName": {{ c.partner2_formal | dump | safe }}{% endif %} }
+      { "@type": "Person", "name": {{ c.partner1_full | dump | safe }}{% if c.partner1_formal and c.partner1_formal != c.partner1_full %}, "alternateName": {{ c.partner1_formal | dump | safe }}{% endif %}, "url": "https://jeffandpaige.net/" },
+      { "@type": "Person", "name": {{ c.partner2_full | dump | safe }}{% if c.partner2_formal and c.partner2_formal != c.partner2_full %}, "alternateName": {{ c.partner2_formal | dump | safe }}{% endif %}, "url": "https://jeffandpaige.net/" }
     ]
   }
   </script>
