@@ -28,7 +28,8 @@ headerDark: true
           <div class="gallery-item reveal{% if loop.index0 % 3 %} reveal--delay-{{ loop.index0 % 3 }}{% endif %}" role="listitem"
                data-src="{{ photo.image | relUrl }}" data-alt="{{ photo.alt }}"
                tabindex="0" aria-label="View larger: {{ photo.alt }}">
-            <img src="{{ photo.image | relUrl }}" width="{{ size.width }}" height="{{ size.height }}" alt="{{ photo.alt }}" loading="lazy">
+            {#- Sizes follow the mosaic: every 5th tile is full width on phones, every 6th is double width on desktop. #}
+            <img src="{{ photo.image | relUrl }}" srcset="{{ photo.image | srcset }}" sizes="(min-width: 900px) {{ '66vw' if loop.index0 % 6 == 0 else '33vw' }}, {{ '100vw' if loop.index0 % 5 == 0 else '50vw' }}" width="{{ size.width }}" height="{{ size.height }}" alt="{{ photo.alt }}" loading="lazy" decoding="async">
           </div>
           {%- endfor %}
         </div>

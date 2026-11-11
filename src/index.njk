@@ -7,8 +7,9 @@ canonical: ""
 {%- from "add-to-calendar.njk" import addToCalendar -%}
 {%- set c = site.couple -%}
 {%- set v = site.venue -%}
+{%- set heroSizes = "(min-width: 920px) 360px, 46vw" -%}
 {%- block preload %}
-  <link rel="preload" as="image" href="{{ home.hero.photo | relUrl }}">
+  <link rel="preload" as="image" href="{{ home.hero.photo | relUrl }}" imagesrcset="{{ home.hero.photo | srcset }}" imagesizes="{{ heroSizes }}">
 {%- endblock -%}
 {%- block headExtra %}
   {#- Site name Google shows above the result instead of the bare domain. #}
@@ -62,7 +63,7 @@ canonical: ""
       <div class="hero__card">
         <div class="hero__photo-wrap">
           <div class="hero__photo">
-            <img src="{{ hero.photo | relUrl }}" width="{{ heroSize.width }}" height="{{ heroSize.height }}" alt="{{ hero.photo_alt }}" fetchpriority="high">
+            <img src="{{ hero.photo | relUrl }}" srcset="{{ hero.photo | srcset }}" sizes="{{ heroSizes }}" width="{{ heroSize.width }}" height="{{ heroSize.height }}" alt="{{ hero.photo_alt }}" fetchpriority="high">
           </div>
         </div>
         <div class="hero__text">
@@ -123,7 +124,7 @@ canonical: ""
           {%- set size = item.image | imgSize %}
           <figure class="photo-strip__item reveal{% if loop.index0 % 3 %} reveal--delay-{{ loop.index0 % 3 }}{% endif %}">
             <div class="photo-strip__frame">
-              <img src="{{ item.image | relUrl }}" width="{{ size.width }}" height="{{ size.height }}" alt="{{ item.alt }}" loading="lazy"{% if item.focus and item.focus != 'center' %} class="img-focus-{{ item.focus }}"{% endif %}>
+              <img src="{{ item.image | relUrl }}" srcset="{{ item.image | srcset }}" sizes="(min-width: 700px) 30vw, 80vw" width="{{ size.width }}" height="{{ size.height }}" alt="{{ item.alt }}" loading="lazy" decoding="async"{% if item.focus and item.focus != 'center' %} class="img-focus-{{ item.focus }}"{% endif %}>
             </div>
             <figcaption class="photo-strip__caption">{{ item.caption }}</figcaption>
           </figure>

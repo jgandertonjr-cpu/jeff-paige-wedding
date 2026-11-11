@@ -12,7 +12,7 @@ headerDark: true
           <article class="party-card reveal{% if loop.index0 % 4 %} reveal--delay-{{ loop.index0 % 4 }}{% endif %}">
             <div class="party-card__img">
             {%- if person.photo %}
-              <img src="{{ person.photo | relUrl }}" alt="{{ person.name }}" loading="lazy">
+              <img src="{{ person.photo | relUrl }}" srcset="{{ person.photo | srcset }}" sizes="(min-width: 700px) 230px, 170px" alt="{{ person.name }}" loading="lazy" decoding="async">
             {%- else %}
               <div class="img-placeholder img-placeholder--circle" aria-label="Photo of {{ person.role }}"></div>
             {%- endif %}
