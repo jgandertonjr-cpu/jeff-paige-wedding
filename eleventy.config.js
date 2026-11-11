@@ -103,7 +103,8 @@ export default function (eleventyConfig) {
   // the screen, so a phone no longer downloads a 2000px photo for a 180px
   // frame. Copies are WebP, written to _site/images/sized/ during the build.
   //   <img src="{{ photo | relUrl }}" srcset="{{ photo | srcset }}" sizes="…">
-  const SIZED_WIDTHS = [400, 700, 1000, 1400];
+  const SIZED_WIDTHS = [400, 550, 700, 900, 1200, 1600];
+  const SIZED_QUALITY = 72;
   const SIZED_DIR = path.join("_site", "images", "sized");
   const resizeJobs = [];
   const srcsetCache = new Map();
@@ -119,7 +120,8 @@ export default function (eleventyConfig) {
       // the photo's own width. The file's fingerprint is in the name, so a
       // replaced photo gets new URLs and no browser keeps the old copies.
       const widths = [...SIZED_WIDTHS.filter((w) => w < fullWidth), fullWidth];
-      const stem = `${path.parse(rel).name}-${crypto.createHash("sha256").update(bytes).digest("hex").slice(0, 8)}`;
+      // (The quality setting is part of the fingerprint too, so changing it re-makes the copies.)
+      const stem = `${path.parse(rel).name}-${crypto.createHash("sha256").update(bytes).update(`q${SIZED_QUALITY}`).digest("hex").slice(0, 8)}`;
       const copies = widths.map((w) => ({ w, name: `${stem}-${w}.webp` }));
       for (const { w, name } of copies) {
         const out = path.join(SIZED_DIR, name);
@@ -127,7 +129,7 @@ export default function (eleventyConfig) {
         resizeJobs.push((async () => {
           await fs.promises.mkdir(SIZED_DIR, { recursive: true });
           // rotate() honours a phone photo's rotation flag before resizing
-          await sharp(bytes).rotate().resize({ width: w }).webp({ quality: 78 }).toFile(out);
+          await sharp(bytes).rotate().resize({ width: w }).webp({ quality: SIZED_QUALITY }).toFile(out);
         })());
       }
       // Relative URLs, like every other image path on the site.

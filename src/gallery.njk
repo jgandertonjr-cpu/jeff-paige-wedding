@@ -29,8 +29,8 @@ headerDark: true
                data-src="{{ photo.image | relUrl }}" data-alt="{{ photo.alt }}"
                tabindex="0" aria-label="View larger: {{ photo.alt }}">
             {#- Sizes follow the mosaic (every 5th tile is full width on phones, every 6th is double width on
-                desktop), plus a third because the tiles crop each photo to fill. #}
-            <img src="{{ photo.image | relUrl }}" srcset="{{ photo.image | srcset }}" sizes="(min-width: 900px) {{ '90vw' if loop.index0 % 6 == 0 else '45vw' }}, {{ '130vw' if loop.index0 % 5 == 0 else '66vw' }}" width="{{ size.width }}" height="{{ size.height }}" alt="{{ photo.alt }}" loading="lazy" decoding="async">
+                desktop). Square tiles ask for a little more than their width because they crop wide photos to fill. #}
+            <img src="{{ photo.image | relUrl }}" srcset="{{ photo.image | srcset }}" sizes="(min-width: 1200px) {{ '730px' if loop.index0 % 6 == 0 else '370px' }}, (min-width: 900px) {{ '64vw' if loop.index0 % 6 == 0 else '32vw' }}, {{ '100vw' if loop.index0 % 5 == 0 else '55vw' }}" width="{{ size.width }}" height="{{ size.height }}" alt="{{ photo.alt }}" loading="lazy" decoding="async">
           </div>
           {%- endfor %}
         </div>

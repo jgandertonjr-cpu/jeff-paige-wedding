@@ -3212,6 +3212,12 @@ main { overflow-x: clip; }
   }
 }
 
+/* Three buttons in a row (RSVP page) stay on one line from tablet up, not two-and-one */
+@media (min-width: 700px) {
+  .flex--center:has(> :nth-child(3)) { flex-wrap: nowrap; gap: var(--space-3); }
+  .flex--center:has(> :nth-child(3)) .btn { padding-inline: 1.5em; white-space: nowrap; }
+}
+
 /* A button that has nowhere to go yet (e.g. the room-block booking link) */
 .btn--disabled,
 .btn--disabled:hover {
