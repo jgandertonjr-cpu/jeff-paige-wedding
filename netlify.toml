@@ -35,6 +35,12 @@
     [headers.values]
     Cache-Control = "public, max-age=2592000"
 
+# Fonts: 30-day cache
+[[headers]]
+  for = "/fonts/*"
+    [headers.values]
+    Cache-Control = "public, max-age=2592000"
+
 # HTML: always revalidate
 [[headers]]
   for = "/*.html"

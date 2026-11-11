@@ -30,6 +30,7 @@ export default function (eleventyConfig) {
 
   for (const p of [
     "src/css",
+    "src/fonts/*.woff2",
     "src/images",
     "src/study",
     "src/pd-tracker",
