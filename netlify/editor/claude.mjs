@@ -151,7 +151,9 @@ function parseProposal(input, schema) {
   return { value: { kind: "proposal", note, contentOps, fileEdits } };
 }
 
-const siteData = (source, body) => `<site_data source="${source}">\n${body}\n</site_data>`;
+// A closing tag inside the file is broken up, so only the real one ends the data.
+const siteData = (source, body) =>
+  `<site_data source="${source}">\n${body.replace(/<\/(site_data)/gi, "<\\/$1")}\n</site_data>`;
 
 async function runReadFile(input, readFile) {
   if (!isPlain(input) || !hasOnly(input, ["path"]) || !isString(input.path)) {

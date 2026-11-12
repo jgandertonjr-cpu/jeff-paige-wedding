@@ -63,7 +63,9 @@ export function systemPrompt(schema) {
   return `${RULES}\n\nWhat can be edited. Each line is: label (path inside the file) [type]. In a list, <n> is the item's position starting at 0.\n\n${schemaOutline(schema)}\n`;
 }
 
+// "<" is written as its JSON escape, so nothing in the content can close the
+// <site_data> wrapper early; the text is still the same JSON.
 export function contentBlock(content) {
-  const parts = Object.entries(content).map(([key, value]) => `### ${key}\n${JSON.stringify(value, null, 2)}`);
+  const parts = Object.entries(content).map(([key, value]) => `### ${key}\n${JSON.stringify(value, null, 2).replace(/</g, "\\u003c")}`);
   return `<site_data source="current content">\nThe site's current content, one file key at a time:\n\n${parts.join("\n\n")}\n</site_data>\n`;
 }
