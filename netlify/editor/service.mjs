@@ -228,14 +228,17 @@ const titleOf = (summary) => (summary[0] || "Site change").replace(/^Please chec
 
 const isLive = (deps, p) => p && deps.now() - p.createdAt < LIFETIME_MS;
 
-// A live proposal, or null. An expired one is removed when touched.
+// A live proposal, or null. An expired one (or an expired cancelled marker) is
+// removed when touched; a cancelled one counts as gone.
 async function loadProposal(deps, id) {
   if (typeof id !== "string" || !ID.test(id)) return null;
   const p = await deps.store.get(key(id));
   if (!p) return null;
-  if (isLive(deps, p)) return p;
-  await discard(deps, id, p.preview);
-  return null;
+  if (!isLive(deps, p)) {
+    await discard(deps, id, p.preview);
+    return null;
+  }
+  return p.cancelled ? null : p;
 }
 
 // Best-effort close of a preview, then the record goes.
@@ -335,7 +338,7 @@ export async function preview(deps, id) {
   let claimed = false;
   await deps.store.update(key(id), (cur) => {
     claimed = false;
-    if (!cur || cur.preview || cur.published || (cur.previewing && deps.now() - cur.previewing < CLAIM_MS)) return cur;
+    if (!cur || cur.cancelled || cur.preview || cur.published || (cur.previewing && deps.now() - cur.previewing < CLAIM_MS)) return cur;
     claimed = true;
     return { ...cur, previewing: deps.now() };
   });
@@ -348,12 +351,15 @@ export async function preview(deps, id) {
       return refuse(built.problem);
     }
     const opened = await deps.repo.openPreview({ id, baseSha: built.sha, message: titleOf(p.summary), files: built.files });
-    const saved = await deps.store.update(key(id), (cur) => {
-      if (!cur) return null;
+    let kept = false;
+    await deps.store.update(key(id), (cur) => {
+      kept = false;
+      if (!cur || cur.cancelled) return cur;
+      kept = true;
       const { previewing, ...rest } = cur;
       return { ...rest, preview: { number: opened.number, sha: opened.sha, filesHash: hashFiles(built.files) } };
     });
-    if (!saved) await deps.repo.closePreview({ id, number: opened.number }); // cancelled meanwhile
+    if (!kept) await deps.repo.closePreview({ id, number: opened.number }); // cancelled meanwhile
   } catch (e) {
     await clearField(deps, id, "previewing");
     throw e;
@@ -435,6 +441,10 @@ export async function publish(deps, id) {
       outcome = { gone: true, preview: cur?.preview };
       return null;
     }
+    if (cur.cancelled) {
+      outcome = { gone: true };
+      return cur;
+    }
     if (cur.published) {
       outcome = { done: cur.published };
       return cur;
@@ -477,7 +487,7 @@ export async function publish(deps, id) {
   // A record that vanished meanwhile is not brought back.
   await deps.store.update(key(id), (cur) => {
     if (!cur) return null;
-    const { publishing, photo, ...rest } = cur;
+    const { publishing, photo, cancelled, ...rest } = cur;
     return { ...rest, published: { sha: result.sha, title } };
   });
   if (p.preview) {
@@ -488,17 +498,19 @@ export async function publish(deps, id) {
 
 export async function cancel(deps, id) {
   if (typeof id !== "string" || !ID.test(id)) return { ok: true };
-  // Check and delete in one step, so a publish cannot claim it in between.
+  // Check and mark cancelled in one compare-and-swap write, so a publish cannot
+  // claim it in between. The record is never deleted here (the production
+  // store's delete is unchecked); a light marker stays until it expires.
   let outcome = null;
   await deps.store.update(key(id), (cur) => {
     outcome = null;
-    if (!cur || cur.published) return cur;
+    if (!cur || cur.published || cur.cancelled) return cur;
     if (cur.publishing && deps.now() - cur.publishing < CLAIM_MS) {
       outcome = { busy: true };
       return cur;
     }
     outcome = { preview: cur.preview };
-    return null;
+    return { id: cur.id, createdAt: cur.createdAt, cancelled: deps.now() };
   });
   if (outcome?.busy) return refuse(TEXT.busy);
   if (outcome?.preview) {

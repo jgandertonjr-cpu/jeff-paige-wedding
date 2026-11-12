@@ -92,7 +92,7 @@ const set = (file, p, value) => ({ op: "set", file, path: p, value });
 // Behaves like the production compare-and-swap store at its worst: every
 // update first runs `fn` on the value as it was when update was called (a
 // losing attempt whose result is thrown away), then again on the real value.
-function recordingStore() {
+function recordingStore({ lose = true } = {}) {
   const inner = memoryStore();
   const written = new Set();
   return {
@@ -103,7 +103,7 @@ function recordingStore() {
     update(k, fn) {
       const stale = inner.get(k); // read now, before any queued update lands
       return inner.update(k, async (cur) => {
-        await fn(await stale);
+        if (lose) await fn(await stale);
         const next = await fn(cur);
         if (next !== null) written.add(k);
         return next;
@@ -141,11 +141,38 @@ function fakeNetlify() {
   };
 }
 
-async function setup({ repoWrap } = {}) {
+// Like the production compare-and-swap loop: reads, yields, then writes only if
+// nothing changed meanwhile (else retries), but deletes without any check.
+function casStore() {
+  const data = new Map();
+  let version = 0;
+  const versions = new Map();
+  const tick = () => new Promise((r) => setImmediate(r));
+  const copy = (v) => (v == null ? null : JSON.parse(JSON.stringify(v)));
+  return {
+    written: new Set(),
+    async get(k) { return copy(data.get(k)); },
+    async set(k, v) { this.written.add(k); data.set(k, copy(v)); versions.set(k, ++version); },
+    async delete(k) { data.delete(k); versions.set(k, ++version); },
+    async update(k, fn) {
+      for (;;) {
+        const seen = versions.get(k);
+        const next = await fn(copy(data.get(k)));
+        await tick();
+        if (next === null) { data.delete(k); versions.set(k, ++version); return null; }
+        if (versions.get(k) !== seen) continue;
+        data.set(k, copy(next)); versions.set(k, ++version); this.written.add(k);
+        return copy(next);
+      }
+    },
+  };
+}
+
+async function setup({ repoWrap, store: makeStore } = {}) {
   const root = await makeSite();
   const local = createLocalRepo({ root });
   const repo = repoWrap ? repoWrap(local) : local;
-  const store = recordingStore();
+  const store = makeStore ? makeStore() : recordingStore();
   const client = fakeClient();
   const netlify = fakeNetlify();
   let clock = START;
@@ -639,14 +666,17 @@ test("a failed preview throws the change away", async () => {
   }
 });
 
-test("cancel closes the preview, deletes the change, and succeeds when it is already gone", async () => {
+test("cancel closes the preview, marks the change cancelled, and succeeds when it is already gone", async () => {
   const t = await setup();
   try {
     t.client.queue(propose([DEADLINE]));
     const r = await ask(t.deps, { message: "deadline" });
     await preview(t.deps, r.id);
     assert.deepEqual(await cancel(t.deps, r.id), { ok: true });
-    assert.equal(await t.store.get(`proposal:${r.id}`), null);
+    // Fix round 2 (N): the record is kept as a light "cancelled" marker, never deleted outright.
+    const left = await t.store.get(`proposal:${r.id}`);
+    assert.deepEqual(Object.keys(left).sort(), ["cancelled", "createdAt", "id"]);
+    assert.deepEqual(seen(await status(t.deps, { id: r.id })), { stage: "preview", state: "failed", text: EXPIRED });
     await assert.rejects(fs.access(path.join(t.root, ".editor-local/previews", r.id)));
     assert.deepEqual(await cancel(t.deps, r.id), { ok: true });
     assert.deepEqual(await cancel(t.deps, "not-an-id"), { ok: true });
@@ -672,13 +702,70 @@ test("cancel and publish at the same moment: never both cancelled and written", 
         const where = `cancel ${cancelFirst ? "first" : "second"}, delay ${delay}`;
         if (cancelled.ok) {
           assert.equal(written, 0, `${where}: told cancelled, but it went live`);
-          assert.equal(await t.store.get(`proposal:${r.id}`), null, where);
+          assert.ok((await t.store.get(`proposal:${r.id}`)).cancelled, where);
         }
         if (written) assert.ok(published.ok, where);
       } finally {
         await t.cleanup();
       }
     }
+  }
+});
+
+// Fix round 2, N: cancel never deletes, so the production store's unchecked
+// delete cannot race a publish claim.
+test("cancel and publish racing, 200 times on the lost-swap store and 200 on a compare-and-swap store", async () => {
+  const ticks = async (n) => { for (let i = 0; i < n; i++) await Promise.resolve(); };
+  const outcomes = new Set();
+  for (const kind of ["lost-swap", "cas"]) {
+    for (let i = 0; i < 200; i++) {
+      const store = kind === "cas" ? casStore : () => recordingStore({ lose: i % 2 === 0 });
+      const t = await setup({ store });
+      try {
+        t.client.queue(propose([DEADLINE]));
+        const r = await ask(t.deps, { message: "deadline" });
+        const cancelFirst = i % 4 < 2;
+        const delay = Math.floor(i / 4) % 25;
+        const first = cancelFirst ? () => cancel(t.deps, r.id) : () => publish(t.deps, r.id);
+        const second = cancelFirst ? () => publish(t.deps, r.id) : () => cancel(t.deps, r.id);
+        const [a, b] = await Promise.all([first(), ticks(delay).then(second)]);
+        const [c, p] = cancelFirst ? [a, b] : [b, a];
+        const written = (await t.repo.edits(10)).length;
+        const where = `${kind} run ${i}`;
+        if (c.ok) {
+          assert.equal(written, 0, `${where}: told cancelled, but it went live`);
+          assert.deepEqual(p, { ok: false, text: EXPIRED }, where);
+          outcomes.add("cancelled");
+        } else {
+          assert.equal(written, 1, where);
+          assert.equal(p.ok, true, where);
+          outcomes.add("published");
+        }
+      } finally {
+        await t.cleanup();
+      }
+    }
+  }
+  assert.deepEqual([...outcomes].sort(), ["cancelled", "published"]);
+});
+
+test("a cancelled change cannot be previewed, published or checked, and its marker expires after a day", async () => {
+  const t = await setup();
+  try {
+    t.client.queue(propose([DEADLINE]));
+    const r = await ask(t.deps, { message: "deadline", photo: PHOTO });
+    assert.deepEqual(await cancel(t.deps, r.id), { ok: true });
+    assert.deepEqual(seen(await publish(t.deps, r.id)), { ok: false, text: EXPIRED });
+    assert.deepEqual(seen(await preview(t.deps, r.id)), { ok: false, text: EXPIRED });
+    assert.deepEqual(seen(await status(t.deps, { id: r.id })), { stage: "preview", state: "failed", text: EXPIRED });
+    assert.deepEqual(await cancel(t.deps, r.id), { ok: true });
+    assert.equal((await t.repo.edits(10)).length, 0);
+    assert.ok((await t.store.get(`proposal:${r.id}`)).cancelled);
+    t.advance(DAY + 1);
+    await status(t.deps, { id: r.id });
+    assert.equal(await t.store.get(`proposal:${r.id}`), null);
+  } finally {
+    await t.cleanup();
   }
 });
 
