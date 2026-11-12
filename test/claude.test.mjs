@@ -455,3 +455,11 @@ test("O1: a date without a year takes the year that fits the wedding, and says s
   assert.doesNotMatch(p, /needs the current year, ask her/i);
   assert.doesNotMatch(p, /\b(19|20)\d\d\b/); // no dates, so the prompt stays cacheable
 });
+
+test("O2: a request about how something looks means reading the stylesheet or page first", () => {
+  const p = systemPrompt(schema);
+  assert.match(p, /how something looks/i);
+  assert.match(p, /read_file on the stylesheet or the page file before/i);
+  assert.match(p, /never say you can't change how something looks without having read/i);
+  assert.doesNotMatch(p, /Use read_file only when/);
+});
