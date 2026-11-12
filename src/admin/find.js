@@ -993,6 +993,12 @@ const SETTLED = new Set(["live", "cancelled", "failed", "undone", "moved"]);
 // answer is on its way) until the card is live, cancelled or has failed.
 export const trayLocked = (review) => !!review.pending || (!!review.card && !SETTLED.has(review.card.state));
 
+// After an undo from Recent changes, a reviewed card no longer matches the site
+// and is thrown away, unless a Publish or preview request for it is still on
+// its way: then its answer is waited for and the card carries on from there.
+export const discardAfterUndo = (card) =>
+  !!card && !card.busy && ["review", "previewing", "previewReady"].includes(card.state);
+
 // ---- the size of one Review request ---------------------------------------------
 
 // Everything Review sends goes in one request; the server takes 6 MB, so keep clear of it.

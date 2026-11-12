@@ -12,7 +12,7 @@ import {
   PAGE_ORDER, fileOrder, buildIndex, search, opFor, applyLocal, checkLocal, describe, formatDate, formatTime,
   emptyItem, itemName, locate, controlFor, optionLabels, addChange, dropChange, pruneTray, numberPhotos,
   photoRefs, checkLabel, describeOp, isShown, canAdd, remark, removeEntries, toStorage, fromStorage, currentSpots,
-  marksOf, relocate, trayLocked, MAX_REQUEST_CHARS, photosBudget, photoRoom, pollStep,
+  marksOf, relocate, trayLocked, MAX_REQUEST_CHARS, photosBudget, photoRoom, pollStep, discardAfterUndo,
 } from "../src/admin/find.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -740,4 +740,17 @@ test("pruneTray: a move the site already has is dropped quietly", () => {
   const tray = add([], { op: "move", file: "faq", path: "/questions/3", to: 2 });
   assert.deepEqual(pruneTray(content, tray), { tray, dropped: 0 });
   assert.ok(n > 4);
+});
+
+// F6: an undo from Recent changes throws away a reviewed card that no longer
+// matches the site, but never one whose Publish (or preview) is on its way.
+test("discardAfterUndo: only an idle card that has not been published", () => {
+  assert.equal(discardAfterUndo(null), false);
+  for (const state of ["review", "previewing", "previewReady"]) {
+    assert.equal(discardAfterUndo({ state, busy: false }), true, state);
+    assert.equal(discardAfterUndo({ state, busy: true }), false, `${state} while a request is on its way`);
+  }
+  for (const state of ["publishing", "live", "slow", "unreachable", "failed", "cancelled", "undone", "moved"]) {
+    assert.equal(discardAfterUndo({ state, busy: false }), false, state);
+  }
 });

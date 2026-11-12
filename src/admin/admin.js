@@ -8,7 +8,7 @@ import {
   fileOrder, buildIndex, search, locate, controlFor, describe, isShown, canAdd, itemName, isPhonePhoto, optionLabels,
   opFor, applyLocal, checkLocal, emptyItem, addChange, dropChange, pruneTray, numberPhotos, photoRefs, checkLabel,
   remark, removeEntries, toStorage, fromStorage, currentSpots, marksOf, relocate, trayLocked,
-  MAX_REQUEST_CHARS, photoRoom, pollStep,
+  MAX_REQUEST_CHARS, photoRoom, pollStep, discardAfterUndo,
 } from "./find.js";
 
 const API = "/api/editor/";
@@ -2303,9 +2303,10 @@ function recentRow(edit) {
         recentResult.replaceChildren(...undoResult(result));
         loadRecent(); // the undo is itself a new change at the top of the list
         // A review made before this undo no longer matches the site: it is
-        // thrown away and she reviews again. A publish under way is left to finish.
+        // thrown away and she reviews again. A publish under way (or one whose
+        // request is still on its way) is left to finish.
         const card = review.card;
-        if (card && ["review", "previewing", "previewReady"].includes(card.state)) discardCard(card, SAY.reviewAgain);
+        if (discardAfterUndo(card)) discardCard(card, SAY.reviewAgain);
         else if (!locked()) loadSite({ quiet: true });
       } else {
         say(result.text || "");
