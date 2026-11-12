@@ -12,7 +12,7 @@ import {
   PAGE_ORDER, fileOrder, buildIndex, search, opFor, applyLocal, checkLocal, describe, formatDate, formatTime,
   emptyItem, itemName, locate, controlFor, optionLabels, addChange, dropChange, pruneTray, numberPhotos,
   photoRefs, checkLabel, describeOp, isShown, canAdd, remark, removeEntries, toStorage, fromStorage, currentSpots,
-  marksOf, relocate,
+  marksOf, relocate, trayLocked,
 } from "../src/admin/find.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -645,4 +645,17 @@ test("fresh content that already has a change (it was published) drops it quietl
   const r = pruneTray(partly, tray);
   assert.equal(r.dropped, 0);
   assert.deepEqual(r.tray.map((t) => t.op.op), ["insert", "set", "remove"]);
+});
+
+// CR7: the tray locks from the moment Review is tapped, not only once a card exists.
+test("trayLocked: while a review is on its way, and while a card is not settled", () => {
+  assert.equal(trayLocked({ pending: false, card: null }), false);
+  assert.equal(trayLocked({ pending: true, card: null }), true);
+  for (const state of ["review", "previewing", "previewReady", "publishing", "slow", "unreachable"]) {
+    assert.equal(trayLocked({ pending: false, card: { state } }), true, state);
+  }
+  for (const state of ["live", "cancelled", "failed", "undone", "stopped", "moved"]) {
+    assert.equal(trayLocked({ pending: false, card: { state } }), false, state);
+    assert.equal(trayLocked({ pending: true, card: { state } }), true, state);
+  }
 });

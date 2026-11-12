@@ -7,7 +7,7 @@ import "./deadline.js";
 import {
   fileOrder, buildIndex, search, locate, controlFor, describe, isShown, canAdd, itemName, isPhonePhoto, optionLabels,
   opFor, applyLocal, checkLocal, emptyItem, addChange, dropChange, pruneTray, numberPhotos, photoRefs, checkLabel,
-  remark, removeEntries, toStorage, fromStorage, currentSpots, marksOf, relocate,
+  remark, removeEntries, toStorage, fromStorage, currentSpots, marksOf, relocate, trayLocked,
 } from "./find.js";
 
 const API = "/api/editor/";
@@ -254,11 +254,9 @@ function setTray(next) {
   updateTrayBar();
 }
 
-// While a reviewed set of changes is on its way (from the summary card until it
-// is live, cancelled or has failed), the tray stays as it was reviewed.
-// "moved": the site changed under the card (it was thrown away).
-const SETTLED = new Set(["live", "cancelled", "failed", "undone", "stopped", "moved"]);
-const locked = () => !!review.card && !SETTLED.has(review.card.state);
+// While a reviewed set of changes is on its way (from tapping Review until the
+// card is live, cancelled or has failed), the tray stays as it was reviewed.
+const locked = () => trayLocked(review);
 // Every editing screen has this line; it shows only while the tray is locked.
 const lockLine = () => el("p", { className: "flash lock-line", role: "status", text: SAY.locked, hidden: !locked() });
 let wasLocked = false;
@@ -1461,10 +1459,11 @@ function outcomeNodes(o) {
 
 async function propose() {
   if (review.pending) return;
-  review.pending = true;
+  review.pending = true; // locks the tray until the answer is in
   review.card = null;
   review.outcome = null;
   review.notice = "";
+  lockMaybeChanged();
   const sig = traySig();
   const ids = tray.map((t) => t.id); // exactly what this review covers
   const { ops, refs } = numberPhotos(trayOps());
@@ -1475,6 +1474,7 @@ async function propose() {
     review.pending = false;
     review.sig = sig;
     review.outcome = { kind: "text", text: SAY.photosTooBig };
+    lockMaybeChanged();
     if (route.name === "review") render();
     return;
   }
@@ -1490,8 +1490,19 @@ async function propose() {
   review.sig = sig;
   if (failure instanceof SignedOut) {
     review.outcome = { kind: "unreachable" };
+    lockMaybeChanged();
     renderedSig = ""; // drawn again after signing in, so it asks again
     showSignIn();
+    return;
+  }
+  if (data && data.kind === "proposal" && typeof data.id === "string" && traySig() !== sig) {
+    // The tray changed while the answer was on its way (it should not have, it
+    // was locked): this card is for changes she no longer has. Cancel it (best
+    // effort), keep nothing from it, and review the tray as it is now.
+    api("cancel", "POST", { id: data.id }).catch(() => {});
+    review.outcome = null;
+    lockMaybeChanged();
+    if (route.name === "review" && signedIn) render(); // with nothing stored, Review asks again
     return;
   }
   if (data && typeof data.notice === "string") review.notice = data.notice;
@@ -1500,6 +1511,7 @@ async function propose() {
     // The site changed since she opened it: load it again (which checks every
     // change in the tray against it) and stay here with the sentence.
     review.outcome = { kind: "text", text: data.text || SAY.wentWrong, sticky: true };
+    lockMaybeChanged();
     await loadSite({ quiet: true });
     if (route.name === "review" && signedIn) render(); // even if a load was already under way
     return;

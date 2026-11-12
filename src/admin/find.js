@@ -965,3 +965,13 @@ export function checkLabel(schema, file, path) {
   }
   return trail.join(" → ");
 }
+
+// ---- the review lock ----------------------------------------------------------
+
+// Card states in which the reviewed changes are no longer on their way.
+// "moved": the site changed under the card (it was thrown away).
+const SETTLED = new Set(["live", "cancelled", "failed", "undone", "stopped", "moved"]);
+
+// The tray stays as it was reviewed from the moment Review is tapped (while the
+// answer is on its way) until the card is live, cancelled or has failed.
+export const trayLocked = (review) => !!review.pending || (!!review.card && !SETTLED.has(review.card.state));
