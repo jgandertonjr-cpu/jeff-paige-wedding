@@ -1241,7 +1241,7 @@ main p a:not(.btn):hover,
   font-variant-numeric: lining-nums;
 }
 /* Each step stays at or below the hero names, which are the largest type. */
-@media (min-width: 700px) { .countdown__number { font-size: 4rem; } }
+@media (min-width: 700px) { .countdown__number { font-size: 3.75rem; } }
 @media (min-width: 920px) { .countdown__number { font-size: 4.5rem; } }
 
 .countdown__label {
