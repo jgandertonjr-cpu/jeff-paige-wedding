@@ -454,6 +454,45 @@ test("a photo that the change never uses is dropped", async () => {
   }
 });
 
+// Fix round 2, O5: a long title keeps the end, which says what changed.
+test("a long title drops leading steps, not the end; publish and the saved title match", async () => {
+  const t = await setup();
+  try {
+    t.client.queue(propose([set("details", "/ceremony/items/0/value", "4:30 PM")]));
+    const r = await ask(t.deps, { message: "the ceremony starts at 4:30 now" });
+    assert.equal(r.summary[0], "Details (ceremony, reception, schedule) → Ceremony → Ceremony details → “Time” → Value: Will be provided soon → 4:30 PM");
+    const p = seen(await publish(t.deps, r.id));
+    assert.equal(p.title, "… → Ceremony details → “Time” → Value: Will be provided soon → 4:30 PM");
+    assert.ok(p.title.length <= 72);
+    assert.equal((await t.repo.edits(1))[0].title, p.title);
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("a short title is unchanged, and a too-long last step is cut at its end", async () => {
+  const t = await setup();
+  try {
+    t.client.queue(propose([DEADLINE]));
+    let r = await ask(t.deps, { message: "deadline" });
+    let p = await publish(t.deps, r.id);
+    assert.equal(p.title, r.summary[0]);
+    assert.ok(r.summary[0].length <= 72);
+
+    const long = "Yes. ".repeat(40).trim();
+    t.client.queue(propose([set("faq", "/questions/0/answer", long)]));
+    r = await ask(t.deps, { message: "long answer" });
+    assert.ok(r.summary[0].split(" → ").at(-1).length > 72);
+    p = await publish(t.deps, r.id);
+    assert.equal(p.title.length, 72);
+    assert.ok(p.title.startsWith("… → Yes. Yes."), p.title);
+    assert.ok(p.title.endsWith("…"));
+    assert.equal((await t.repo.edits(1))[0].title, p.title);
+  } finally {
+    await t.cleanup();
+  }
+});
+
 test("the title drops the Please check prefix and is cut to 72 characters", async () => {
   const t = await setup();
   try {

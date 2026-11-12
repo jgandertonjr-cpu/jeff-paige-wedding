@@ -605,7 +605,7 @@
         this.state = "failed";
       } else if (data.stage === "publish") {
         // It went through. The server names an edit after its first summary line.
-        this.title = this.title || (this.summary[0] || "Site change").replace(/^Please check: /, "").slice(0, 72);
+        this.title = this.title || titleFor(this.summary);
         this.state = "publishing";
         this.poll("publish");
       } else if (stage === "preview") {
@@ -924,6 +924,21 @@
       if (hadFocus) this.node.focus({ preventScroll: true });
       if (moved) reveal(this.node);
     }
+  }
+
+  // The title the site gives an edit: a copy of titleOf in netlify/editor/service.mjs
+  // (keep the two the same). Used only when a publish's own answer never arrived.
+  function titleFor(summary) {
+    const max = 72;
+    const line = (summary[0] || "Site change").replace(/^Please check: /, "");
+    if (line.length <= max) return line;
+    const steps = line.split(" → ");
+    for (let i = 1; i < steps.length; i++) {
+      const shorter = `… → ${steps.slice(i).join(" → ")}`;
+      if (shorter.length <= max) return shorter;
+    }
+    const last = steps.length > 1 ? `… → ${steps[steps.length - 1]}` : line;
+    return `${last.slice(0, max - 1)}…`;
   }
 
   // "Done. I put back: …" and, when some were changed again since, the ones left alone.

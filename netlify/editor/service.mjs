@@ -222,7 +222,23 @@ const hashFiles = (files) => crypto.createHash("sha256")
   .update(JSON.stringify(Object.keys(files).sort().map((p) => [p, files[p]])))
   .digest("hex");
 
-const titleOf = (summary) => (summary[0] || "Site change").replace(/^Please check: /, "").slice(0, 72);
+// The first summary line, at most 72 characters. The end says what changed, so
+// a long line loses its leading steps ("… → " stands in for them); if the last
+// step alone is still too long, its own end is cut. The same text is the saved
+// title and the publish result's title (the page matches on it for "Undo this").
+// src/admin/admin.js keeps a copy (titleFor) for a publish whose answer was lost.
+const TITLE_MAX = 72;
+export function titleOf(summary) {
+  const line = (summary[0] || "Site change").replace(/^Please check: /, "");
+  if (line.length <= TITLE_MAX) return line;
+  const steps = line.split(" → ");
+  for (let i = 1; i < steps.length; i++) {
+    const shorter = `… → ${steps.slice(i).join(" → ")}`;
+    if (shorter.length <= TITLE_MAX) return shorter;
+  }
+  const last = steps.length > 1 ? `… → ${steps[steps.length - 1]}` : line;
+  return `${last.slice(0, TITLE_MAX - 1)}…`;
+}
 
 // ---- the store ------------------------------------------------------------------
 
