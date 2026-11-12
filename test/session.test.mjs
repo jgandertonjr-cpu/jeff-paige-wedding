@@ -75,6 +75,19 @@ test("hasSession rejects tampering, expiry and other secrets", () => {
   assert.equal(hasSession(v, { ...env, SESSION_SECRET: "t".repeat(40) }, NOW), false);
 });
 
+test("hasSession allows 5 minutes of clock difference on the 30-day cap, and no more", async () => {
+  const { createHmac } = await import("node:crypto");
+  const key = createHmac("sha256", env.SESSION_SECRET).update(env.ADMIN_PASSWORD).digest();
+  const cookie = (obj) => {
+    const p = Buffer.from(JSON.stringify(obj)).toString("base64url");
+    return `jp_admin=${p}.${createHmac("sha256", key).update(p).digest().toString("base64url")}`;
+  };
+  // Issued by a server whose clock is ahead: the verifier is a little behind.
+  assert.equal(hasSession(valueOf(sessionCookie(env, NOW + 50)), env, NOW), true);
+  assert.equal(hasSession(cookie({ exp: NOW + 30 * DAY + 5 * MIN }), env, NOW), true);
+  assert.equal(hasSession(cookie({ exp: NOW + 30 * DAY + 5 * MIN + 1 }), env, NOW), false);
+});
+
 test("changing ADMIN_PASSWORD invalidates an old cookie", () => {
   const v = valueOf(sessionCookie(env, NOW));
   assert.equal(hasSession(v, { ...env, ADMIN_PASSWORD: "another password" }, NOW), false);
@@ -238,31 +251,38 @@ test("success clears that address's count and is not counted site-wide", async (
   assert.equal(site.fails.length, 8);
 });
 
-test("a correct 5th and 30th attempt does not leave a lock behind", async () => {
+test("a correct 5th and 60th attempt does not leave a lock behind", async () => {
   const s = memoryStore();
   await attempts(s, "1.1.1.1", 5);
   await noteSuccess(s, "1.1.1.1");
   assert.equal((await lockState(s, "1.1.1.1", NOW + 5000)).locked, false);
   const s2 = memoryStore();
-  for (let i = 0; i < 30; i++) await noteAttempt(s2, `10.0.0.${i}`, NOW + i * 1000);
-  await noteSuccess(s2, "10.0.0.29");
-  assert.equal((await lockState(s2, "9.9.9.9", NOW + 31_000)).locked, false);
+  for (let i = 0; i < 60; i++) await noteAttempt(s2, `10.0.0.${i}`, NOW + i * 1000);
+  await noteSuccess(s2, "10.0.0.59");
+  assert.equal((await lockState(s2, "9.9.9.9", NOW + 61_000)).locked, false);
 });
 
-test("30 attempts across addresses in an hour lock everyone for an hour", async () => {
+test("60 attempts across addresses in an hour lock everyone for 15 minutes", async () => {
   const s = memoryStore();
-  for (let i = 0; i < 29; i++) await noteAttempt(s, `10.0.0.${i}`, NOW + i * MIN);
-  assert.equal((await lockState(s, "9.9.9.9", NOW + 29 * MIN)).locked, false);
-  assert.equal((await noteAttempt(s, "10.0.1.1", NOW + 29 * MIN)).allowed, true);
-  assert.deepEqual(await lockState(s, "9.9.9.9", NOW + 29 * MIN), { locked: true, minutes: 60 });
-  assert.deepEqual(await noteAttempt(s, "9.9.9.9", NOW + 30 * MIN), { allowed: false, minutes: 59 });
-  assert.equal((await lockState(s, "9.9.9.9", NOW + 89 * MIN - 1)).locked, true);
-  assert.equal((await lockState(s, "9.9.9.9", NOW + 89 * MIN)).locked, false);
+  const at = (i) => NOW + i * 59 * 1000;
+  for (let i = 0; i < 59; i++) await noteAttempt(s, `10.0.0.${i}`, at(i));
+  assert.equal((await lockState(s, "9.9.9.9", at(59))).locked, false);
+  assert.equal((await noteAttempt(s, "10.0.1.1", at(59))).allowed, true);
+  assert.deepEqual(await lockState(s, "9.9.9.9", at(59)), { locked: true, minutes: 15 });
+  assert.deepEqual(await noteAttempt(s, "9.9.9.9", at(59) + MIN), { allowed: false, minutes: 14 });
+  assert.equal((await lockState(s, "9.9.9.9", at(59) + 15 * MIN - 1)).locked, true);
+  assert.equal((await lockState(s, "9.9.9.9", at(59) + 15 * MIN)).locked, false);
+});
+
+test("30 wrong attempts across six addresses no longer lock everyone", async () => {
+  const s = memoryStore();
+  for (let a = 0; a < 6; a++) for (let i = 0; i < 5; i++) await noteAttempt(s, `10.2.${a}.1`, NOW + (a * 5 + i) * 1000);
+  assert.equal((await lockState(s, "9.9.9.9", NOW + MIN)).locked, false);
 });
 
 test("site-wide attempts older than an hour expire", async () => {
   const s = memoryStore();
-  for (let i = 0; i < 29; i++) await noteAttempt(s, `10.0.0.${i}`, NOW);
+  for (let i = 0; i < 59; i++) await noteAttempt(s, `10.0.0.${i}`, NOW);
   const r = await noteAttempt(s, "10.0.1.1", NOW + 61 * MIN);
   assert.equal(r.allowed, true);
   assert.equal((await lockState(s, "9.9.9.9", NOW + 61 * MIN)).locked, false);
@@ -275,10 +295,10 @@ test("50 concurrent attempts from one address: exactly 5 are allowed", async () 
   assert.equal((await lockState(s, "1.1.1.1", NOW)).locked, true);
 });
 
-test("100 concurrent attempts from 100 addresses: exactly 30 are allowed", async () => {
+test("100 concurrent attempts from 100 addresses: exactly 60 are allowed", async () => {
   const s = memoryStore();
   const r = await Promise.all(Array.from({ length: 100 }, (_, i) => noteAttempt(s, `10.1.${i}.1`, NOW)));
-  assert.equal(r.filter((x) => x.allowed).length, 30);
+  assert.equal(r.filter((x) => x.allowed).length, 60);
 });
 
 test("stored keys are safe and never contain the raw address", async () => {

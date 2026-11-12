@@ -104,7 +104,8 @@ an `Origin` header matching the site and a JSON content type.
   everyone out. Cookie flags: `HttpOnly; Secure; SameSite=Strict; Path=/`,
   30 days.
 - Lockout: five wrong passwords from one address locks that address for
-  15 minutes; 30 wrong passwords site-wide in an hour locks sign-in for an hour.
+  15 minutes; 60 wrong passwords site-wide in a rolling hour locks sign-in for
+  15 minutes.
   Counters live in Blobs.
 - The admin page itself is static HTML with no secrets. It shows the sign-in
   form until `/api/editor/session` says yes.

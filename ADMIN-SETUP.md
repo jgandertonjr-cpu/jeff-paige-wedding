@@ -100,7 +100,7 @@ Why: while the repo is public, the guest list file and every edit Paige makes (e
 - **Daily limit:** 150 requests a day, across all uses. After that the editor says it resets tomorrow.
 - **Where edits show up:** in the GitHub commit history, as **Website edit: …**. Undo is an edit too.
 - **Unpublished changes expire:** a change Paige has been shown but not published is forgotten after 24 hours ("That change has expired. Please ask again."). When a request fails, her typed message is put back in the box so she can send it again.
-- **Lockout:** 5 wrong passwords from one address locks that address for 15 minutes. 30 wrong passwords across everyone in an hour locks sign-in for an hour.
+- **Lockout:** 5 wrong passwords from one address locks that address for 15 minutes. 60 wrong passwords across everyone in an hour locks sign-in for 15 minutes.
 
 ---
 
@@ -141,7 +141,7 @@ When you no longer want it: delete `src/admin/forms/` and uninstall the provider
 | "This is a preview copy of the site, so publishing is turned off here." | Paige is on a Netlify preview address. Use jeffandpaige.net. |
 | A change says it's live but the page looks the same | Refresh the page. If it still looks the same, check **Deploys** for a failure. |
 | A deploy failed | Open the deploy log. The line after `site check` says what it found. The previous version stays live. |
-| Locked out | Wait 15 minutes (or an hour after a site-wide lockout). |
+| Locked out | Wait 15 minutes. |
 | The RSVP dashboard asks to sign in | Sign in at `/admin/` first, then open the dashboard. |
 | The dashboard says the Netlify token is invalid | Create a new token (step d), update `NETLIFY_RSVP_TOKEN`, trigger a deploy. |
 

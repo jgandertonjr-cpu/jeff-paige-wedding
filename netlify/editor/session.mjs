@@ -5,8 +5,14 @@ const MAX_AGE_S = 30 * 24 * 60 * 60;
 const MIN = 60 * 1000;
 const IP_LIMIT = 5;
 const IP_WINDOW = 15 * MIN;
-const SITE_LIMIT = 30;
+const IP_LOCK = 15 * MIN;
+// Site-wide: high enough that a handful of addresses cannot lock everyone out
+// for long, short enough that a wide guessing run is still slowed down.
+const SITE_LIMIT = 60;
 const SITE_WINDOW = 60 * MIN;
+const SITE_LOCK = 15 * MIN;
+// Servers' clocks differ slightly; a cookie issued a moment "in the future" is fine.
+const CLOCK_TOLERANCE = 5 * MIN;
 
 const sha256 = (s) => createHash("sha256").update(String(s)).digest();
 const b64u = (buf) => Buffer.from(buf).toString("base64url");
@@ -62,7 +68,7 @@ export function hasSession(cookieHeader, env, nowMs) {
     if (b64u(given) !== parts[1] || given.length !== expected.length || !timingSafeEqual(given, expected)) return false;
     const payload = JSON.parse(Buffer.from(parts[0], "base64url").toString("utf8"));
     const exp = payload && payload.exp;
-    return typeof exp === "number" && Number.isFinite(exp) && exp > nowMs && exp <= nowMs + MAX_AGE_S * 1000;
+    return typeof exp === "number" && Number.isFinite(exp) && exp > nowMs && exp <= nowMs + MAX_AGE_S * 1000 + CLOCK_TOLERANCE;
   } catch {
     return false;
   }
@@ -79,7 +85,7 @@ export async function lockState(store, ip, nowMs) {
 
 // Counts one attempt in a window; the limit-th attempt is allowed but sets a
 // lock, so the next one is refused. Refused attempts are not recorded.
-function countAttempt(limit, window, nowMs, outcome) {
+function countAttempt(limit, window, lock, nowMs, outcome) {
   return (rec) => {
     rec = rec || { fails: [], until: 0 };
     const fails = (rec.fails || []).filter((t) => t > nowMs - window);
@@ -88,7 +94,7 @@ function countAttempt(limit, window, nowMs, outcome) {
       return { fails, until: rec.until };
     }
     fails.push(nowMs);
-    return { fails, until: fails.length >= limit ? nowMs + window : 0 };
+    return { fails, until: fails.length >= limit ? nowMs + lock : 0 };
   };
 }
 
@@ -98,9 +104,9 @@ export async function noteAttempt(store, ip, nowMs) {
   const early = await lockState(store, ip, nowMs);
   if (early.locked) return { allowed: false, minutes: early.minutes };
   const outcome = { wait: 0 };
-  await store.update(ipKey(ip), (r) => countAttempt(IP_LIMIT, IP_WINDOW, nowMs, outcome)(r));
+  await store.update(ipKey(ip), (r) => countAttempt(IP_LIMIT, IP_WINDOW, IP_LOCK, nowMs, outcome)(r));
   if (outcome.wait) return { allowed: false, minutes: Math.ceil(outcome.wait / MIN) };
-  await store.update(SITE_KEY, (r) => countAttempt(SITE_LIMIT, SITE_WINDOW, nowMs, outcome)(r));
+  await store.update(SITE_KEY, (r) => countAttempt(SITE_LIMIT, SITE_WINDOW, SITE_LOCK, nowMs, outcome)(r));
   if (outcome.wait) return { allowed: false, minutes: Math.ceil(outcome.wait / MIN) };
   return { allowed: true, minutes: 0 };
 }
