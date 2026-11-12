@@ -488,7 +488,8 @@ main p a:not(.btn):hover,
 }
 .section--dark h1, .section--dark h2, .section--dark h3, .section--dark h4 { color: var(--color-dark); }
 .section--dark p { color: var(--color-muted-on-sage); }
-/* Lead paragraphs need 7:1; muted-on-sage only reaches about 5.4:1. */
+/* The site sets lead paragraphs at 7:1 or better (AA only asks 4.5:1); muted-on-sage
+   only reaches about 5.4:1. */
 .section--dark .section-subtitle { color: var(--color-dark); }
 .section--dark .section-label { color: var(--color-gold-on-sage); }
 .section--dark .section-title { color: var(--color-dark); }
@@ -2981,7 +2982,7 @@ main .form-success .section-ornament { display: block; }
 }
 
 /* Hero entrance: the photo, then the names, then the date block, each fading up
-   300ms after the last. Only with JS (the .js class) and only when motion is
+   120ms after the last (300ms each, 540ms in all). Only with JS (the .js class) and only when motion is
    welcome, so reduced-motion and no-JS visitors see the finished page at once. */
 @keyframes fadeRise {
   from { opacity: 0; transform: translateY(8px); }
@@ -3443,4 +3444,13 @@ main .rsvp-plus-header .section-ornament {
   body::after { display: none; }
   .hero { min-height: auto; padding: 2rem; }
   body  { font-size: 12pt; }
+
+  /* Never leave hero content transparent on paper, whatever the entrance was doing. */
+  [data-enter] .hero__photo-wrap,
+  [data-enter] .hero__eyebrow,
+  [data-enter] .hero__names,
+  [data-enter] .section-ornament,
+  [data-enter] .hero__date,
+  [data-enter] .hero__location,
+  [data-enter] .essentials { animation: none !important; opacity: 1 !important; transform: none !important; }
 }
