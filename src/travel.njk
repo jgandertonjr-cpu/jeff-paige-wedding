@@ -40,7 +40,7 @@ headerDark: true
             {%- endif %}
             <p class="hotel-card__meta">
               {{ icon("calendar", 16, true) }}
-              Block deadline: <strong>{{ (block.deadline | dateFormat('long')) if block.deadline else "To be announced" }}</strong>
+              {{ travel.labels.block_deadline }} <strong>{{ (block.deadline | dateFormat('long')) if block.deadline else travel.labels.to_be_announced }}</strong>
             </p>
             <p class="hotel-card__meta">
               {{ icon("house", 16, true) }}
@@ -49,10 +49,10 @@ headerDark: true
           </div>
           <div class="mt-6">
             {%- if block.booking_url %}
-            <a href="{{ block.booking_url }}" class="btn btn--primary" target="_blank" rel="noopener noreferrer">Book Your Room</a>
+            <a href="{{ block.booking_url }}" class="btn btn--primary" target="_blank" rel="noopener noreferrer">{{ travel.labels.book_your_room }}</a>
             {%- else %}
 {#- No booking link yet: say so in plain text rather than show a button that goes nowhere. #}
-            <p class="fine-print">Booking link coming soon</p>
+            <p class="fine-print">{{ travel.labels.booking_link_coming_soon }}</p>
             {%- endif %}
           </div>
         </div>
@@ -88,7 +88,7 @@ headerDark: true
             </div>
             {%- if hotel.url %}
             <div class="mt-6">
-              <a href="{{ hotel.url }}" class="btn btn--outline" target="_blank" rel="noopener noreferrer">Visit Website</a>
+              <a href="{{ hotel.url }}" class="btn btn--outline" target="_blank" rel="noopener noreferrer">{{ travel.labels.visit_website }}</a>
             </div>
             {%- endif %}
           </div>
@@ -120,7 +120,7 @@ headerDark: true
             </p>
             {%- endfor %}
           </div>
-          <p class="fine-print mt-6">{{ travel.airports.footnote }} <a href="{{ (v.name + ', ' + v.street + ', ' + v.city + ', ' + v.state + ' ' + v.zip) | mapsSearchUrl }}" target="_blank" rel="noopener">Get directions</a></p>
+          <p class="fine-print mt-6">{{ travel.airports.footnote }} <a href="{{ (v.name + ', ' + v.street + ', ' + v.city + ', ' + v.state + ' ' + v.zip) | mapsSearchUrl }}" target="_blank" rel="noopener">{{ site.labels.get_directions }}</a></p>
         </div>
       </div>
     </section>

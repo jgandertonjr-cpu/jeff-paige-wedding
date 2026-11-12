@@ -94,5 +94,10 @@
   "cta": {
     "title": "Ready to Celebrate?",
     "text": "Invitations and RSVPs will go out closer to the day. In the meantime, start planning your trip."
+  },
+  "labels": {
+    "venue": "Venue",
+    "address": "Address",
+    "plan_your_trip": "Plan Your Trip"
   }
 }

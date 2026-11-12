@@ -73,5 +73,8 @@
   "cta": {
     "title": "Can't Wait to See You There",
     "text": "Mark your calendar for August 5, 2028."
+  },
+  "labels": {
+    "see_the_details": "See the Details"
   }
 }

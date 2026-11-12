@@ -51,5 +51,12 @@
   "cta": {
     "title": "See You There",
     "text": "No need to go anywhere — when the reception wraps up, just follow the crowd to the Stone Barn."
+  },
+  "labels": {
+    "address": "Address",
+    "time": "Time",
+    "dress_code": "Dress Code",
+    "open_to": "Open To",
+    "wedding_details": "Wedding Details"
   }
 }

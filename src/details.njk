@@ -31,13 +31,13 @@ headerDark: true
             <h3 class="detail-block__heading">{{ details.ceremony.box_heading }}</h3>
             <address class="detail-list">
               <div class="detail-list__item">
-                <span class="detail-list__label">Venue</span>
+                <span class="detail-list__label">{{ details.labels.venue }}</span>
                 <span class="detail-list__value">{{ v.name }}</span>
               </div>
               <div class="detail-list__item">
-                <span class="detail-list__label">Address</span>
+                <span class="detail-list__label">{{ details.labels.address }}</span>
                 <span class="detail-list__value">{{ v.street }}<br>{{ v.city }}, {{ v.state }} {{ v.zip }}
-                  <p><a href="{{ fullAddress | mapsSearchUrl }}" target="_blank" rel="noopener">Get directions</a></p>
+                  <p><a href="{{ fullAddress | mapsSearchUrl }}" target="_blank" rel="noopener">{{ site.labels.get_directions }}</a></p>
                 </span>
               </div>
               {%- for item in details.ceremony.items %}
@@ -51,7 +51,7 @@ headerDark: true
               <button type="button" class="map-embed__load">
                 {{ icon("pin", 26, true) }}
                 <span class="map-embed__place">{{ v.name }}</span>
-                <span class="map-embed__cue">Show map</span>
+                <span class="map-embed__cue">{{ site.labels.show_map }}</span>
               </button>
             </div>
           </div>
@@ -116,7 +116,7 @@ headerDark: true
         <h2 class="section-title reveal">{{ details.cta.title }}</h2>
         <p class="section-subtitle mb-8 reveal reveal--delay-1">{{ details.cta.text }}</p>
         <div class="flex flex--center reveal reveal--delay-2">
-          <a href="travel.html" class="btn btn--primary">Plan Your Trip</a>
+          <a href="travel.html" class="btn btn--primary">{{ details.labels.plan_your_trip }}</a>
           {{ addToCalendar(calendar) }}
         </div>
       </div>

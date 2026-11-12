@@ -93,6 +93,24 @@ collections:
               - { name: description, label: Note in the event, widget: text, hint: "The website link is added automatically." }
           - { name: email, label: Contact email, widget: string, pattern: ['^[^\s@]+@[^\s@]+\.[^\s@]+$', "Enter an email address like name@example.com"], hint: "Every \"Email us\" link on the site uses this address." }
           - { name: footer_text, label: Footer text, widget: string, hint: "The small line at the bottom of every page." }
+          - name: labels
+            label: Button & label wording
+            widget: object
+            collapsed: true
+            hint: "The words on the Get directions links, Show map buttons and the Add to Calendar menu, which appear on several pages."
+            fields:
+              - { name: get_directions, label: "Link: Get directions", widget: string }
+              - { name: show_map, label: "Map button: Show map", widget: string }
+              - { name: opens_in_new_tab, label: "Hidden note for screen readers on links that open a new tab", widget: string }
+              - { name: add_to_calendar, label: "Button: Add to Calendar", widget: string }
+              - { name: apple_calendar, label: "Calendar choice: Apple", widget: string }
+              - { name: apple_calendar_hint, label: "Calendar choice: Apple, small text", widget: string }
+              - { name: google_calendar, label: "Calendar choice: Google", widget: string }
+              - { name: google_calendar_hint, label: "Calendar choice: Google, small text", widget: string }
+              - { name: outlook, label: "Calendar choice: Outlook", widget: string }
+              - { name: outlook_hint, label: "Calendar choice: Outlook, small text", widget: string }
+              - { name: other_calendar, label: "Calendar choice: Other", widget: string }
+              - { name: other_calendar_hint, label: "Calendar choice: Other, small text", widget: string }
       - name: theme
         label: Colours
         file: src/_data/theme.json
@@ -207,6 +225,20 @@ collections:
             fields:
               - { name: label, label: Small text, widget: string }
               - { name: text, label: Message, widget: text }
+          - name: labels
+            label: Button & label wording
+            widget: object
+            collapsed: true
+            hint: "The words on this page's buttons and small labels. Rarely needs changing."
+            fields:
+              - { name: plan_your_trip, label: "Button: Plan your trip", widget: string }
+              - { name: our_story, label: "Button: Our story", widget: string }
+              - { name: days, label: "Countdown word: Days", widget: string }
+              - { name: view_the_gallery, label: "Button: View the gallery", widget: string }
+              - { name: card_our_story, label: "Explore list: Our Story title", widget: string }
+              - { name: card_details, label: "Explore list: Details title", widget: string }
+              - { name: card_rsvp, label: "Explore list: RSVP title", widget: string }
+              - { name: card_wedding_party, label: "Explore list: Wedding Party title", widget: string }
 
       # Our Story -------------------------------------------------------------
       - name: story
@@ -257,6 +289,13 @@ collections:
               - { name: label, label: Small text, widget: string }
               - { name: title, label: Heading, widget: string }
               - { name: text, label: Message, widget: text }
+          - name: labels
+            label: Button & label wording
+            widget: object
+            collapsed: true
+            hint: "The words on this page's buttons and small labels. Rarely needs changing."
+            fields:
+              - { name: view_details, label: "Button: View details", widget: string }
 
       # Details ---------------------------------------------------------------
       - name: details
@@ -324,6 +363,15 @@ collections:
             fields:
               - { name: title, label: Heading, widget: string }
               - { name: text, label: Message, widget: text }
+          - name: labels
+            label: Button & label wording
+            widget: object
+            collapsed: true
+            hint: "The words on this page's buttons and small labels. Rarely needs changing."
+            fields:
+              - { name: venue, label: "Label: Venue", widget: string }
+              - { name: address, label: "Label: Address", widget: string }
+              - { name: plan_your_trip, label: "Button: Plan your trip", widget: string }
 
       # Wedding Party ---------------------------------------------------------
       - name: party
@@ -365,6 +413,13 @@ collections:
             fields:
               - { name: title, label: Heading, widget: string }
               - { name: text, label: Message, widget: text }
+          - name: labels
+            label: Button & label wording
+            widget: object
+            collapsed: true
+            hint: "The words on this page's buttons and small labels. Rarely needs changing."
+            fields:
+              - { name: see_the_details, label: "Button: See the details", widget: string }
 
       # RSVP ------------------------------------------------------------------
       - name: rsvp
@@ -583,6 +638,17 @@ collections:
                       - { label: "⭐ Star", value: star }
                   - { name: title, label: Title, widget: string }
                   - { name: text, label: Tip, widget: text }
+          - name: labels
+            label: Button & label wording
+            widget: object
+            collapsed: true
+            hint: "The words on this page's buttons and small labels. Rarely needs changing."
+            fields:
+              - { name: block_deadline, label: "Label: Block deadline", widget: string }
+              - { name: to_be_announced, label: "Text when there is no deadline yet", widget: string }
+              - { name: book_your_room, label: "Button: Book your room", widget: string }
+              - { name: booking_link_coming_soon, label: "Text when there is no booking link yet", widget: string }
+              - { name: visit_website, label: "Button: Visit website", widget: string }
 
       # After Party -----------------------------------------------------------
       - name: afterparty
@@ -629,6 +695,17 @@ collections:
             fields:
               - { name: title, label: Heading, widget: string }
               - { name: text, label: Message, widget: text }
+          - name: labels
+            label: Button & label wording
+            widget: object
+            collapsed: true
+            hint: "The words on this page's buttons and small labels. Rarely needs changing."
+            fields:
+              - { name: address, label: "Label: Address", widget: string }
+              - { name: time, label: "Label: Time", widget: string }
+              - { name: dress_code, label: "Label: Dress code", widget: string }
+              - { name: open_to, label: "Label: Open to", widget: string }
+              - { name: wedding_details, label: "Button: Wedding details", widget: string }
 
       # FAQ -------------------------------------------------------------------
       - name: faq
@@ -674,6 +751,14 @@ collections:
             fields:
               - { name: title, label: Heading, widget: string }
               - { name: text, label: Message, widget: text }
+          - name: labels
+            label: Button & label wording
+            widget: object
+            collapsed: true
+            hint: "The words on this page's buttons and small labels. Rarely needs changing."
+            fields:
+              - { name: email_us, label: "Button: Email us", widget: string }
+              - { name: see_the_details, label: "Button: See the details", widget: string }
 
       # Gallery ---------------------------------------------------------------
       - name: gallery
@@ -708,6 +793,13 @@ collections:
               - { name: label, label: Small text, widget: string }
               - { name: title, label: Heading, widget: string }
               - { name: text, label: Message, widget: text }
+          - name: labels
+            label: Button & label wording
+            widget: object
+            collapsed: true
+            hint: "The words on this page's buttons and small labels. Rarely needs changing."
+            fields:
+              - { name: see_the_details, label: "Button: See the details", widget: string }
 
       # 404 -------------------------------------------------------------------
       - name: notfound
@@ -723,6 +815,14 @@ collections:
               - { name: description, label: Description, widget: text }
           - { name: title, label: Heading, widget: string }
           - { name: text, label: Message, widget: text }
+          - name: labels
+            label: Button & label wording
+            widget: object
+            collapsed: true
+            hint: "The words on this page's buttons and small labels. Rarely needs changing."
+            fields:
+              - { name: back_to_home, label: "Button: Back to home", widget: string }
+              - { name: rsvp, label: "Button: RSVP", widget: string }
 
   # ── Guest list ───────────────────────────────────────────────────────────
   - name: guest_list

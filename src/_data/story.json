@@ -70,5 +70,8 @@
     "label": "Join Us",
     "title": "Be Part of Our Story",
     "text": "We'd love to have you celebrate with us."
+  },
+  "labels": {
+    "view_details": "View Details"
   }
 }

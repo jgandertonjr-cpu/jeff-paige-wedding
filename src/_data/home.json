@@ -54,5 +54,15 @@
   "save_the_date": {
     "label": "Save the Date",
     "text": "Nothing about this day works without the people we love in the room. Invitations and RSVPs will follow — for now, mark your calendar."
+  },
+  "labels": {
+    "plan_your_trip": "Plan Your Trip",
+    "our_story": "Our Story",
+    "days": "Days",
+    "view_the_gallery": "View the Gallery",
+    "card_our_story": "Our Story",
+    "card_details": "Details",
+    "card_rsvp": "RSVP",
+    "card_wedding_party": "Wedding Party"
   }
 }

@@ -79,5 +79,8 @@
     "label": "Coming Soon",
     "title": "Wedding Photos",
     "text": "Wedding photos are on their way — check back soon after the big day on August 5, 2028."
+  },
+  "labels": {
+    "see_the_details": "See the Details"
   }
 }

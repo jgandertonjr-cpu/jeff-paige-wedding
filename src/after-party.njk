@@ -30,15 +30,15 @@ headerDark: true
             <h3 class="detail-block__heading">{{ d.venue_name }}</h3>
             <div class="detail-list">
               <div class="detail-list__item">
-                <span class="detail-list__label">Address</span>
+                <span class="detail-list__label">{{ afterparty.labels.address }}</span>
                 <span class="detail-list__value">{{ d.address }}
                 {%- if d.map_address %}
-                  <p><a href="{{ d.map_address | mapsSearchUrl }}" target="_blank" rel="noopener">Get directions</a></p>
+                  <p><a href="{{ d.map_address | mapsSearchUrl }}" target="_blank" rel="noopener">{{ site.labels.get_directions }}</a></p>
                 {%- endif %}
                 </span>
               </div>
               <div class="detail-list__item">
-                <span class="detail-list__label">Time</span>
+                <span class="detail-list__label">{{ afterparty.labels.time }}</span>
                 <span class="detail-list__value">{{ d.time }}
                 {%- if d.time_note %}
                   <p>{{ d.time_note }}</p>
@@ -46,11 +46,11 @@ headerDark: true
                 </span>
               </div>
               <div class="detail-list__item">
-                <span class="detail-list__label">Dress Code</span>
+                <span class="detail-list__label">{{ afterparty.labels.dress_code }}</span>
                 <span class="detail-list__value">{{ d.dress_code }}</span>
               </div>
               <div class="detail-list__item">
-                <span class="detail-list__label">Open To</span>
+                <span class="detail-list__label">{{ afterparty.labels.open_to }}</span>
                 <span class="detail-list__value">{{ d.open_to }}</span>
               </div>
             </div>
@@ -62,7 +62,7 @@ headerDark: true
               <button type="button" class="map-embed__load">
                 {{ icon("pin", 26, true) }}
                 <span class="map-embed__place">{{ d.venue_name }}</span>
-                <span class="map-embed__cue">Show map</span>
+                <span class="map-embed__cue">{{ site.labels.show_map }}</span>
               </button>
             </div>
           {%- else %}
@@ -107,7 +107,7 @@ headerDark: true
         <h2 class="section-title reveal">{{ afterparty.cta.title }}</h2>
         <p class="section-subtitle mb-8 reveal reveal--delay-1">{{ afterparty.cta.text }}</p>
         <div class="flex flex--center reveal reveal--delay-2">
-          <a href="details.html" class="btn btn--primary">Wedding Details</a>
+          <a href="details.html" class="btn btn--primary">{{ afterparty.labels.wedding_details }}</a>
         </div>
       </div>
     </section>

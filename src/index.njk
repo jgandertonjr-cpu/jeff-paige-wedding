@@ -97,7 +97,7 @@ canonical: ""
         <p class="section-subtitle drop-cap text-left mt-6 mb-8 reveal">
           {{ home.welcome.text }}
         </p>
-        <a href="our-story.html" class="btn btn--ghost reveal">Our Story</a>
+        <a href="our-story.html" class="btn btn--ghost reveal">{{ home.labels.our_story }}</a>
       </div>
     </section>
 
@@ -108,7 +108,7 @@ canonical: ""
         <h2 class="section-title reveal">{{ home.countdown.title }}</h2>
         <div class="countdown reveal" data-countdown aria-live="polite" aria-atomic="true">
           <span class="countdown__number" data-days>---</span>
-          <span class="countdown__label">Days</span>
+          <span class="countdown__label">{{ home.labels.days }}</span>
         </div>
       </div>
     </section>
@@ -132,7 +132,7 @@ canonical: ""
           {%- endfor %}
         </div>
         <div class="text-center mt-12">
-          <a href="gallery.html" class="btn btn--outline reveal">View the Gallery</a>
+          <a href="gallery.html" class="btn btn--outline reveal">{{ home.labels.view_the_gallery }}</a>
         </div>
       </div>
     </section>
@@ -146,10 +146,10 @@ canonical: ""
         </div>
         <ul class="index-list reveal">
           {%- for row in [
-            { "url": "our-story.html", "title": "Our Story", "desc": home.quick_links.our_story },
-            { "url": "details.html", "title": "Details", "desc": home.quick_links.details },
-            { "url": "rsvp.html", "title": "RSVP", "desc": home.quick_links.rsvp },
-            { "url": "wedding-party.html", "title": "Wedding Party", "desc": home.quick_links.wedding_party }
+            { "url": "our-story.html", "title": home.labels.card_our_story, "desc": home.quick_links.our_story },
+            { "url": "details.html", "title": home.labels.card_details, "desc": home.quick_links.details },
+            { "url": "rsvp.html", "title": home.labels.card_rsvp, "desc": home.quick_links.rsvp },
+            { "url": "wedding-party.html", "title": home.labels.card_wedding_party, "desc": home.quick_links.wedding_party }
           ] %}
           <li>
             <a href="{{ row.url }}" class="index-list__row">
@@ -172,7 +172,7 @@ canonical: ""
           {{ home.save_the_date.text }}
         </p>
         <div class="flex flex--center reveal reveal--delay-3">
-          <a href="travel.html" class="btn btn--primary">Plan Your Trip</a>
+          <a href="travel.html" class="btn btn--primary">{{ home.labels.plan_your_trip }}</a>
           {{ addToCalendar(calendar) }}
         </div>
       </div>

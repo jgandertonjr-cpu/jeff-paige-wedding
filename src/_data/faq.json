@@ -67,5 +67,9 @@
   "cta": {
     "title": "Still Have Questions?",
     "text": "Drop us a line and we'll get back to you quickly."
+  },
+  "labels": {
+    "email_us": "Email Us",
+    "see_the_details": "See the Details"
   }
 }
