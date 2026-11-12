@@ -74,7 +74,49 @@ export function hasSession(cookieHeader, env, nowMs) {
   }
 }
 
-const ipKey = (ip) => `lock:ip:${sha256(ip).toString("hex").slice(0, 16)}`;
+const IPV4 = /^(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$/;
+const HEXTET = /^[0-9a-f]{1,4}$/;
+
+// The eight 16-bit groups of an IPv6 address as numbers, or null if it does
+// not parse. An embedded IPv4 tail ("::ffff:1.2.3.4") counts as two groups.
+function ipv6Groups(text) {
+  let s = text.toLowerCase();
+  const v4 = s.match(/^(.*:)(\d+\.\d+\.\d+\.\d+)$/);
+  let tail = [];
+  if (v4) {
+    if (!IPV4.test(v4[2])) return null;
+    const b = v4[2].split(".").map(Number);
+    tail = [(b[0] << 8) | b[1], (b[2] << 8) | b[3]];
+    s = v4[1].endsWith("::") ? v4[1] : v4[1].slice(0, -1);
+  }
+  const halves = s.split("::");
+  if (halves.length > 2) return null;
+  const part = (h) => (h === "" ? [] : h.split(":"));
+  const head = part(halves[0]);
+  const rest = halves.length === 2 ? part(halves[1]) : [];
+  if (![...head, ...rest].every((g) => HEXTET.test(g))) return null;
+  const given = head.length + rest.length + tail.length;
+  if (halves.length === 1 ? given !== 8 : given > 7) return null;
+  const zeros = Array(8 - given).fill(0);
+  return [...head.map((g) => parseInt(g, 16)), ...zeros, ...rest.map((g) => parseInt(g, 16)), ...tail];
+}
+
+// What one sign-in counter belongs to. An IPv6 client usually controls a whole
+// /64, so its first 64 bits are the unit; an IPv4-mapped address counts as the
+// IPv4 address. IPv4 and anything unparseable are keyed by the text as before.
+function rateUnit(ip) {
+  const text = String(ip);
+  if (!text.includes(":")) return text;
+  const g = ipv6Groups(text);
+  if (!g) return text;
+  if (g.slice(0, 5).every((n) => n === 0) && g[5] === 0xffff) {
+    return [g[6] >> 8, g[6] & 255, g[7] >> 8, g[7] & 255].join(".");
+  }
+  return `${g.slice(0, 4).map((n) => n.toString(16)).join(":")}::/64`;
+}
+
+export const rateKey = (ip) => `lock:ip:${sha256(rateUnit(ip)).toString("hex").slice(0, 16)}`;
+const ipKey = rateKey;
 const SITE_KEY = "lock:all";
 const remaining = (rec, nowMs) => (rec && rec.until > nowMs ? rec.until - nowMs : 0);
 

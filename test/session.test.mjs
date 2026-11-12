@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { memoryStore, casLoop } from "../netlify/editor/store.mjs";
 import {
   checkPassword, sessionCookie, clearCookie, hasSession,
-  lockState, noteAttempt, noteSuccess,
+  lockState, noteAttempt, noteSuccess, rateKey,
 } from "../netlify/editor/session.mjs";
 
 const SECRET = "s".repeat(40);
@@ -311,4 +311,36 @@ test("stored keys are safe and never contain the raw address", async () => {
     assert.match(k, /^[a-z0-9:_-]+$/);
     assert.ok(!k.includes("203"));
   }
+});
+
+test("IPv6: addresses in the same /64 share one counter; other /64s do not", async () => {
+  const s = memoryStore();
+  for (let i = 1; i <= 5; i++) {
+    assert.equal((await noteAttempt(s, `2001:db8:1:2::${i.toString(16)}`, NOW + i * 1000)).allowed, true);
+  }
+  // A new address in the same /64 is refused: the /64 is the attacker's unit.
+  assert.deepEqual(await noteAttempt(s, "2001:db8:1:2:ffff:1:2:3", NOW + 6000), { allowed: false, minutes: 15 });
+  // A neighbouring /64 has its own count.
+  assert.deepEqual(await noteAttempt(s, "2001:db8:1:3::1", NOW + 7000), { allowed: true, minutes: 0 });
+});
+
+test("IPv6: compressed, expanded and upper-case forms of one address give the same key", () => {
+  const k = rateKey("2001:db8::1");
+  assert.equal(rateKey("2001:0db8:0000:0000:0000:0000:0000:0001"), k);
+  assert.equal(rateKey("2001:DB8:0:0::1"), k);
+  assert.equal(rateKey("2001:db8::ffff:ffff"), k);
+  assert.notEqual(rateKey("2001:db8:0:1::1"), k);
+  assert.equal(rateKey("::1"), rateKey("0:0:0:0:0:0:0:2"));
+});
+
+test("IPv4 keys are unchanged, an IPv4-mapped IPv6 address counts as its IPv4 address, junk is hashed as before", async () => {
+  assert.equal(rateKey("::ffff:10.1.2.3"), rateKey("10.1.2.3"));
+  assert.equal(rateKey("::FFFF:10.1.2.3"), rateKey("10.1.2.3"));
+  assert.notEqual(rateKey("10.1.2.3"), rateKey("10.1.2.4"));
+  assert.notEqual(rateKey("not an address"), rateKey("not an address 2"));
+  assert.notEqual(rateKey("1:2:3"), rateKey("1:2:4"));
+  assert.notEqual(rateKey("1::2::3"), rateKey("1::2::4"));
+  // The IPv4 key is the hash of the address itself, as before this change.
+  const { createHash } = await import("node:crypto");
+  assert.equal(rateKey("10.1.2.3"), `lock:ip:${createHash("sha256").update("10.1.2.3").digest("hex").slice(0, 16)}`);
 });
