@@ -797,8 +797,13 @@ main p a:not(.btn):hover,
   position: relative;
   display: flex;
   justify-content: center;
+  /* The card owns the first screen and sits centred in the sage, so the
+     Welcome heading never peeks in below it. */
+  min-height: 100svh;
+  align-items: center;
   background-color: var(--color-dusty-sage);
-  padding: calc(var(--safe-area-top) + var(--header-height) + var(--space-4)) var(--space-3) var(--space-6);
+  /* Bottom edge matches the space every other band leaves on either side of a change of ground */
+  padding: calc(var(--safe-area-top) + var(--header-height) + var(--space-4)) var(--space-3) var(--section-padding-y);
 }
 
 .hero__card {
@@ -967,7 +972,7 @@ main p a:not(.btn):hover,
   .hero {
     min-height: 100svh;
     align-items: center;
-    padding: calc(var(--safe-area-top) + var(--header-height) + var(--space-10)) var(--gutter) var(--space-12);
+    padding: calc(var(--safe-area-top) + var(--header-height) + var(--space-10)) var(--gutter) var(--section-padding-y);
   }
 
   .hero__card {
@@ -1017,7 +1022,7 @@ main p a:not(.btn):hover,
 
 /* Tablets: the same single card, a size up */
 @media (min-width: 700px) and (max-width: 919px) and (min-height: 521px) {
-  .hero { padding-top: calc(var(--safe-area-top) + var(--header-height) + var(--space-8)); padding-bottom: var(--space-10); }
+  .hero { padding-top: calc(var(--safe-area-top) + var(--header-height) + var(--space-8)); padding-bottom: var(--section-padding-y); }
   .hero__card { max-width: 560px; padding: var(--space-12) var(--space-10) var(--space-10); }
   .hero__card::before { inset: 10px; }
   .hero__photo-wrap { width: 240px; margin-top: var(--space-6); }
@@ -1217,7 +1222,6 @@ main p a:not(.btn):hover,
 /* =============================================================
    COUNTDOWN — days only, on a slim Dusty Sage band
    ============================================================= */
-.countdown-band { padding-block: clamp(2.75rem, 7vw, 4.5rem); }
 .countdown-band .section-title { margin-bottom: var(--space-2); }
 
 .countdown {
@@ -2417,7 +2421,7 @@ main .form-success .section-ornament { display: block; }
 .site-footer {
   background-color: var(--color-dusty-sage);
   color: var(--color-muted-on-sage);
-  padding: clamp(4rem, 9vw, 6.5rem) var(--gutter) clamp(2rem, 5vw, 3rem);
+  padding: var(--section-padding-y) var(--gutter) clamp(2rem, 5vw, 3rem);
   text-align: center;
   position: relative;
 }
