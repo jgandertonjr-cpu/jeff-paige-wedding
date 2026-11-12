@@ -6,6 +6,7 @@ headerDark: true
 ---
 {%- extends "layouts/base.njk" -%}
 {%- from "add-to-calendar.njk" import addToCalendar -%}
+{%- from "icons.njk" import icon -%}
 {%- block main %}
 {%- set v = site.venue -%}
 {%- set fullAddress = v.name + ", " + v.street + ", " + v.city + ", " + v.state + " " + v.zip %}
@@ -45,8 +46,13 @@ headerDark: true
             </address>
           </div>
           <div class="reveal reveal--delay-1">
-            <div class="map-embed">
-              <iframe src="{{ fullAddress | mapsEmbedUrl }}" title="Map of {{ v.name }}, {{ v.city }}, {{ v.state }}" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
+            {#- The map loads when asked for: Google's embed is about 1.8 MB of script. #}
+            <div class="map-embed" data-map-src="{{ fullAddress | mapsEmbedUrl }}" data-map-title="Map of {{ v.name }}, {{ v.city }}, {{ v.state }}">
+              <button type="button" class="map-embed__load">
+                {{ icon("pin", 26, true) }}
+                <span class="map-embed__place">{{ v.name }}</span>
+                <span class="map-embed__cue">Show map</span>
+              </button>
             </div>
           </div>
         </div>
@@ -60,7 +66,7 @@ headerDark: true
           <span class="section-label reveal">{{ details.reception.label }}</span>
           <h2 id="reception-heading" class="section-title reveal reveal--delay-1">{{ details.reception.title }}</h2>
           <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
-          <p class="section-subtitle">{{ details.reception.subtitle }}</p>
+          <p class="section-subtitle{% if details.reception.subtitle | length > 120 %} section-subtitle--long{% endif %}">{{ details.reception.subtitle }}</p>
         </div>
 
         <div class="detail-block card--centered reveal">
@@ -82,7 +88,7 @@ headerDark: true
           <h2 id="schedule-heading" class="section-title reveal reveal--delay-1">{{ details.schedule.title }}</h2>
           <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
           {%- if details.schedule.subtitle %}
-          <p class="section-subtitle">{{ details.schedule.subtitle }}</p>
+          <p class="section-subtitle{% if details.schedule.subtitle | length > 120 %} section-subtitle--long{% endif %}">{{ details.schedule.subtitle }}</p>
           {%- endif %}
         </div>
 
@@ -110,8 +116,8 @@ headerDark: true
         <h2 class="section-title reveal">{{ details.cta.title }}</h2>
         <p class="section-subtitle mb-8 reveal reveal--delay-1">{{ details.cta.text }}</p>
         <div class="flex flex--center reveal reveal--delay-2">
-          {{ addToCalendar(calendar) }}
           <a href="travel.html" class="btn btn--primary">Plan Your Trip</a>
+          {{ addToCalendar(calendar) }}
         </div>
       </div>
     </section>

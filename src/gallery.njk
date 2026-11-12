@@ -22,13 +22,15 @@ headerDark: true
           <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
         </div>
 
-        <div class="gallery-grid" role="list" aria-label="Photo gallery">
+        <div class="gallery-grid" role="group" aria-label="Photo gallery">
           {%- for photo in gallery.photos %}
           {%- set size = photo.image | imgSize %}
-          <div class="gallery-item reveal{% if loop.index0 % 3 %} reveal--delay-{{ loop.index0 % 3 }}{% endif %}" role="listitem"
+          <div class="gallery-item reveal" role="button"
                data-src="{{ photo.image | relUrl }}" data-alt="{{ photo.alt }}"
                tabindex="0" aria-label="View larger: {{ photo.alt }}">
-            <img src="{{ photo.image | relUrl }}" width="{{ size.width }}" height="{{ size.height }}" alt="{{ photo.alt }}" loading="lazy">
+            {#- Sizes follow the mosaic (every 5th tile is full width on phones, every 6th is double width on
+                desktop). Square tiles ask for a little more than their width because they crop wide photos to fill. #}
+            <img src="{{ photo.image | relUrl }}" srcset="{{ photo.image | srcset }}" sizes="(max-width: 359px) 100vw, (min-width: 1200px) {{ '730px' if loop.index0 % 6 == 0 else '370px' }}, (min-width: 900px) {{ '64vw' if loop.index0 % 6 == 0 else '32vw' }}, {{ '100vw' if loop.index0 % 5 == 0 else '55vw' }}" width="{{ size.width }}" height="{{ size.height }}" alt="{{ photo.alt }}" loading="lazy" decoding="async">
           </div>
           {%- endfor %}
         </div>

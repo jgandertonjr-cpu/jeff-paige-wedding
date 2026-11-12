@@ -9,12 +9,14 @@ headerDark: true
 {%- macro partyGrid(members) %}
         <div class="party-grid">
           {%- for person in members %}
-          <article class="party-card reveal{% if loop.index0 % 4 %} reveal--delay-{{ loop.index0 % 4 }}{% endif %}">
+          {#- Until someone has a photo, their card is a compact entry rather than a tall empty frame. #}
+          <article class="party-card{% if not person.photo %} party-card--placeholder{% endif %} reveal">
             <div class="party-card__img">
             {%- if person.photo %}
-              <img src="{{ person.photo | relUrl }}" alt="{{ person.name }}" loading="lazy">
+              {%- set size = person.photo | imgSize %}
+              <img src="{{ person.photo | relUrl }}" srcset="{{ person.photo | srcset }}" sizes="(min-width: 700px) 300px, 230px" width="{{ size.width }}" height="{{ size.height }}" alt="{{ person.name }}" loading="lazy" decoding="async">
             {%- else %}
-              <div class="img-placeholder img-placeholder--circle" aria-label="Photo of {{ person.role }}"></div>
+              <div class="img-placeholder img-placeholder--circle" aria-hidden="true"></div>
             {%- endif %}
             </div>
             <h3 class="party-card__name">{{ person.name }}</h3>
@@ -62,8 +64,8 @@ headerDark: true
         <h2 class="section-title reveal">{{ party.cta.title }}</h2>
         <p class="section-subtitle mb-8 reveal reveal--delay-1">{{ party.cta.text }}</p>
         <div class="flex flex--center reveal reveal--delay-2">
-          {{ addToCalendar(calendar) }}
           <a href="details.html" class="btn btn--primary">See the Details</a>
+          {{ addToCalendar(calendar) }}
         </div>
       </div>
     </section>

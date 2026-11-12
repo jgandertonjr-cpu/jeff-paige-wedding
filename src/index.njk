@@ -7,8 +7,10 @@ canonical: ""
 {%- from "add-to-calendar.njk" import addToCalendar -%}
 {%- set c = site.couple -%}
 {%- set v = site.venue -%}
+{#- The arch crops a wide photo to a tall frame, so the photo is drawn about twice as wide as the frame. -#}
+{%- set heroSizes = "(min-width: 920px) 700px, 88vw" -%}
 {%- block preload %}
-  <link rel="preload" as="image" href="{{ home.hero.photo | relUrl }}">
+  <link rel="preload" as="image" href="{{ home.hero.photo | relUrl }}" imagesrcset="{{ home.hero.photo | srcset }}" imagesizes="{{ heroSizes }}">
 {%- endblock -%}
 {%- block headExtra %}
   {#- Site name Google shows above the result instead of the bare domain. #}
@@ -27,7 +29,11 @@ canonical: ""
     "@type": "Event",
     "name": {{ (c.partner1_first + " and " + c.partner2_first + "'s Wedding") | dump | safe }},
     "description": {{ ("The wedding of " + c.partner1_full + " and " + c.partner2_full + " at " + v.name + " in " + v.city + ", " + v.state + ".") | dump | safe }},
-    "startDate": "{{ site.wedding_date | dateFormat('iso') }}",
+    "startDate": "{{ calendar.startIso }}",
+    "endDate": "{{ calendar.endIso }}",
+    {%- if home.hero.photo %}
+    "image": ["https://jeffandpaige.net/{{ home.hero.photo | relUrl }}"],
+    {%- endif %}
     "eventStatus": "https://schema.org/EventScheduled",
     "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
     "location": {
@@ -44,8 +50,8 @@ canonical: ""
     },
     "url": "https://jeffandpaige.net",
     "organizer": [
-      { "@type": "Person", "name": {{ c.partner1_full | dump | safe }}{% if c.partner1_formal and c.partner1_formal != c.partner1_full %}, "alternateName": {{ c.partner1_formal | dump | safe }}{% endif %} },
-      { "@type": "Person", "name": {{ c.partner2_full | dump | safe }}{% if c.partner2_formal and c.partner2_formal != c.partner2_full %}, "alternateName": {{ c.partner2_formal | dump | safe }}{% endif %} }
+      { "@type": "Person", "name": {{ c.partner1_full | dump | safe }}{% if c.partner1_formal and c.partner1_formal != c.partner1_full %}, "alternateName": {{ c.partner1_formal | dump | safe }}{% endif %}, "url": "https://jeffandpaige.net/" },
+      { "@type": "Person", "name": {{ c.partner2_full | dump | safe }}{% if c.partner2_formal and c.partner2_formal != c.partner2_full %}, "alternateName": {{ c.partner2_formal | dump | safe }}{% endif %}, "url": "https://jeffandpaige.net/" }
     ]
   }
   </script>
@@ -53,61 +59,32 @@ canonical: ""
 {%- block main %}
 {%- set hero = home.hero -%}
 {%- set heroSize = hero.photo | imgSize %}
-    <!-- ── HERO — EDITORIAL ── -->
+    <!-- ── HERO — THE INVITATION ── -->
     <section class="hero" aria-label="{{ c.partner1_first }} and {{ c.partner2_first }} are getting married">
-      <div class="hero__editorial">
-        <p class="hero__eyebrow">{{ hero.eyebrow }}</p>
+      <div class="hero__card" data-enter>
         <div class="hero__photo-wrap">
           <div class="hero__photo">
-            <img src="{{ hero.photo | relUrl }}" width="{{ heroSize.width }}" height="{{ heroSize.height }}" alt="{{ hero.photo_alt }}" fetchpriority="high">
+            <img src="{{ hero.photo | relUrl }}" srcset="{{ hero.photo | srcset }}" sizes="{{ heroSizes }}" width="{{ heroSize.width }}" height="{{ heroSize.height }}" alt="{{ hero.photo_alt }}" fetchpriority="high">
           </div>
         </div>
-        <h1 class="hero__names">
-          <span class="hero__name hero__name--first">{{ c.partner1_first }}</span>
-          <span class="hero__and" aria-hidden="true">&amp;</span>
-          <span class="sr-only">and</span>
-          <span class="hero__name hero__name--second">{{ c.partner2_first }}</span>
-          <span class="sr-only"> — {{ c.partner1_formal or c.partner1_full }} &amp; {{ c.partner2_formal or c.partner2_full }}</span>
-        </h1>
-        <p class="hero__date">{{ site.wedding_date | dateFormat('weekday') }} &middot; {{ site.wedding_date | dateFormat('long') }}</p>
-        <p class="hero__location">{{ v.name }}<span class="hero__sep"> &middot; </span>{{ (v.city + ", " + v.state) | nbsp | safe }}</p>
-        <div class="hero__cta">
-          <a href="details.html" class="btn btn--primary">See the Details</a>
-          <a href="our-story.html" class="btn btn--ghost">Our Story</a>
-        </div>
-      </div>
-      <div class="hero__scroll-cue" aria-hidden="true">
-        <svg width="14" height="22" viewBox="0 0 14 22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M7 3v16M1 13l6 6 6-6"/>
-        </svg>
-      </div>
-    </section>
-
-    <!-- ── COUNTDOWN — sage band ── -->
-    <section class="section section--dark section--sage" aria-label="Countdown to the wedding">
-      <div class="container container--narrow text-center">
-        <span class="section-label reveal">{{ home.countdown.label }}</span>
-        <h2 class="section-title reveal reveal--delay-1">{{ home.countdown.title }}</h2>
-
-        <div class="section-ornament section-ornament--light" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
-
-        <div class="countdown mt-8 reveal reveal--delay-2" data-countdown aria-live="polite" aria-atomic="true">
-          <div class="countdown__unit">
-            <span class="countdown__number" data-days>---</span>
-            <span class="countdown__label">Days</span>
-          </div>
-          <div class="countdown__unit">
-            <span class="countdown__number" data-hours>--</span>
-            <span class="countdown__label">Hours</span>
-          </div>
-          <div class="countdown__unit">
-            <span class="countdown__number" data-minutes>--</span>
-            <span class="countdown__label">Minutes</span>
-          </div>
-          <div class="countdown__unit">
-            <span class="countdown__number" data-seconds>--</span>
-            <span class="countdown__label">Seconds</span>
-          </div>
+        <div class="hero__text">
+          <p class="hero__eyebrow">{{ hero.eyebrow }}</p>
+          <h1 class="hero__names">
+            <span class="hero__name hero__name--first">{{ c.partner1_first }}</span>
+            <span class="hero__and" aria-hidden="true">&amp;</span>
+            <span class="sr-only">and</span>
+            <span class="hero__name hero__name--second">{{ c.partner2_first }}</span>
+            <span class="sr-only"> — {{ c.partner1_formal or c.partner1_full }} &amp; {{ c.partner2_formal or c.partner2_full }}</span>
+          </h1>
+          <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
+          <p class="hero__date">{{ site.wedding_date | dateFormat('weekday') }} &middot; {{ site.wedding_date | dateFormat('long') }}</p>
+          <p class="hero__location">{{ v.name }}<span class="hero__sep"> &middot; </span>{{ (v.city + ", " + v.state) | nbsp | safe }}</p>
+          {#- The four things guests come for, one tap from the first screen #}
+          <nav class="essentials" aria-label="Wedding essentials">
+            {%- for item in nav.essentials %}
+            <a href="{{ item.url }}" class="essentials__link{% if item.rsvp %} essentials__link--rsvp{% endif %}">{{ item.label }}</a>
+            {%- endfor %}
+          </nav>
         </div>
       </div>
     </section>
@@ -116,14 +93,23 @@ canonical: ""
     <section class="section" aria-labelledby="welcome-heading">
       <div class="container container--narrow text-center">
         <span class="section-label reveal">{{ home.welcome.label }}</span>
-        <h2 id="welcome-heading" class="section-title reveal reveal--delay-1">{{ home.welcome.title }}</h2>
-
-        <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
-
-        <p class="section-subtitle drop-cap text-left mb-8 reveal reveal--delay-2">
+        <h2 id="welcome-heading" class="section-title reveal">{{ home.welcome.title }}</h2>
+        <p class="section-subtitle drop-cap text-left mt-6 mb-8 reveal">
           {{ home.welcome.text }}
         </p>
-        <a href="details.html" class="btn btn--ghost reveal reveal--delay-3">See the Details</a>
+        <a href="our-story.html" class="btn btn--ghost reveal">Our Story</a>
+      </div>
+    </section>
+
+    <!-- ── COUNTDOWN — sage band, days only ── -->
+    <section class="section section--dark section--sage countdown-band" aria-label="Countdown to the wedding">
+      <div class="container container--narrow text-center">
+        <span class="section-label reveal">{{ home.countdown.label }}</span>
+        <h2 class="section-title reveal">{{ home.countdown.title }}</h2>
+        <div class="countdown reveal" data-countdown aria-live="polite" aria-atomic="true">
+          <span class="countdown__number" data-days>---</span>
+          <span class="countdown__label">Days</span>
+        </div>
       </div>
     </section>
 
@@ -139,7 +125,7 @@ canonical: ""
           {%- set size = item.image | imgSize %}
           <figure class="photo-strip__item reveal{% if loop.index0 % 3 %} reveal--delay-{{ loop.index0 % 3 }}{% endif %}">
             <div class="photo-strip__frame">
-              <img src="{{ item.image | relUrl }}" width="{{ size.width }}" height="{{ size.height }}" alt="{{ item.alt }}" loading="lazy"{% if item.focus and item.focus != 'center' %} class="img-focus-{{ item.focus }}"{% endif %}>
+              <img src="{{ item.image | relUrl }}" srcset="{{ item.image | srcset }}" sizes="(min-width: 1200px) 480px, (min-width: 700px) 42vw, 100vw" width="{{ size.width }}" height="{{ size.height }}" alt="{{ item.alt }}" loading="lazy" decoding="async"{% if item.focus and item.focus != 'center' %} class="img-focus-{{ item.focus }}"{% endif %}>
             </div>
             <figcaption class="photo-strip__caption">{{ item.caption }}</figcaption>
           </figure>
@@ -151,48 +137,28 @@ canonical: ""
       </div>
     </section>
 
-    <!-- ── QUICK LINKS ── -->
+    <!-- ── EXPLORE — a printed index rather than icon tiles ── -->
     <section class="section" aria-labelledby="quicklinks-heading">
-      <div class="container">
+      <div class="container container--narrow">
         <div class="section-header">
           <span class="section-label reveal">{{ home.quick_links.label }}</span>
-          <h2 id="quicklinks-heading" class="section-title reveal reveal--delay-1">{{ home.quick_links.title }}</h2>
+          <h2 id="quicklinks-heading" class="section-title reveal">{{ home.quick_links.title }}</h2>
         </div>
-        <div class="grid grid--4">
-          <a href="our-story.html" class="quick-card reveal">
-            <svg class="quick-card__icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 21C12 21 3 15 3 9a9 9 0 0118 0c0 6-9 12-9 12z"/>
-              <circle cx="12" cy="9" r="2"/>
-            </svg>
-            <span class="quick-card__title">Our Story</span>
-            <span class="quick-card__desc">{{ home.quick_links.our_story }}</span>
-          </a>
-          <a href="details.html" class="quick-card reveal reveal--delay-1">
-            <svg class="quick-card__icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="3" y="4" width="18" height="18" rx="2"/>
-              <path d="M16 2v4M8 2v4M3 10h18"/>
-            </svg>
-            <span class="quick-card__title">Details</span>
-            <span class="quick-card__desc">{{ home.quick_links.details }}</span>
-          </a>
-          <a href="rsvp.html" class="quick-card reveal reveal--delay-2">
-            <svg class="quick-card__icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M4 4h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2z"/>
-              <polyline points="22,6 12,13 2,6"/>
-            </svg>
-            <span class="quick-card__title">RSVP</span>
-            <span class="quick-card__desc">{{ home.quick_links.rsvp }}</span>
-          </a>
-          <a href="wedding-party.html" class="quick-card reveal reveal--delay-3">
-            <svg class="quick-card__icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-              <circle cx="9" cy="7" r="4"/>
-              <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
-            </svg>
-            <span class="quick-card__title">Wedding Party</span>
-            <span class="quick-card__desc">{{ home.quick_links.wedding_party }}</span>
-          </a>
-        </div>
+        <ul class="index-list reveal">
+          {%- for row in [
+            { "url": "our-story.html", "title": "Our Story", "desc": home.quick_links.our_story },
+            { "url": "details.html", "title": "Details", "desc": home.quick_links.details },
+            { "url": "rsvp.html", "title": "RSVP", "desc": home.quick_links.rsvp },
+            { "url": "wedding-party.html", "title": "Wedding Party", "desc": home.quick_links.wedding_party }
+          ] %}
+          <li>
+            <a href="{{ row.url }}" class="index-list__row">
+              <span class="index-list__title">{{ row.title }}</span>
+              <span class="index-list__desc">{{ row.desc }}</span>
+            </a>
+          </li>
+          {%- endfor %}
+        </ul>
       </div>
     </section>
 
@@ -206,8 +172,8 @@ canonical: ""
           {{ home.save_the_date.text }}
         </p>
         <div class="flex flex--center reveal reveal--delay-3">
-          {{ addToCalendar(calendar) }}
           <a href="travel.html" class="btn btn--primary">Plan Your Trip</a>
+          {{ addToCalendar(calendar) }}
         </div>
       </div>
     </section>

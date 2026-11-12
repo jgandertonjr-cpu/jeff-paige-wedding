@@ -17,6 +17,9 @@
 /images/*
   Cache-Control: public, max-age=2592000
 
+/fonts/*
+  Cache-Control: public, max-age=2592000
+
 # Add to Calendar file: always fetch the latest event details
 /wedding.ics
   Content-Type: text/calendar; charset=utf-8

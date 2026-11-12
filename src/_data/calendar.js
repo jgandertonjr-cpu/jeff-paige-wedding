@@ -118,10 +118,23 @@ export default function () {
     ...(allDay ? { allday: "true" } : {}),
   });
 
+  // Start and end for the home page's Event structured data: dates alone for
+  // an all-day event, otherwise Eastern local time with its UTC offset.
+  const offsetMin = easternOffsetMinutes(y, mo, d);
+  const offset = `${offsetMin < 0 ? "-" : "+"}${pad(Math.floor(Math.abs(offsetMin) / 60))}:${pad(Math.abs(offsetMin) % 60)}`;
+  const isoLocal = (dt) => {
+    const local = new Date(dt.getTime() + offsetMin * 60000);
+    return `${isoDate(local)}T${pad(local.getUTCHours())}:${pad(local.getUTCMinutes())}:00${offset}`;
+  };
+  const startIso = allDay ? isoDate(start) : isoLocal(start);
+  const endIso = allDay ? isoDate(start) : isoLocal(end);
+
   return {
     title,
     allDay,
     location,
+    startIso,
+    endIso,
     ics: lines.map(fold).join("\r\n") + "\r\n",
     icsPath: "wedding.ics",
     googleUrl: google,

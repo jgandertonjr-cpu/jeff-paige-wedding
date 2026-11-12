@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { imageSize } from "image-size";
+import sharp from "sharp";
 import markdownIt from "markdown-it";
 
 const INPUT = "src";
@@ -30,6 +31,7 @@ export default function (eleventyConfig) {
 
   for (const p of [
     "src/css",
+    "src/fonts/*.woff2",
     "src/images",
     "src/study",
     "src/pd-tracker",
@@ -94,6 +96,54 @@ export default function (eleventyConfig) {
       sizeCache.set(rel, orientation >= 5 ? { width: height, height: width } : { width, height });
     }
     return sizeCache.get(rel);
+  });
+
+  // Phone-sized copies of a photo, as a srcset. The page keeps the original
+  // file in `src`; browsers pick the smallest copy that is sharp enough for
+  // the screen, so a phone no longer downloads a 2000px photo for a 180px
+  // frame. Copies are WebP, written to _site/images/sized/ during the build.
+  //   <img src="{{ photo | relUrl }}" srcset="{{ photo | srcset }}" sizes="…">
+  const SIZED_WIDTHS = [400, 550, 700, 900, 1200, 1600];
+  const SIZED_QUALITY = 72;
+  const SIZED_DIR = path.join("_site", "images", "sized");
+  const resizeJobs = [];
+  const srcsetCache = new Map();
+  eleventyConfig.addFilter("srcset", (value) => {
+    const rel = String(value || "").replace(/^\//, "");
+    if (!srcsetCache.has(rel)) {
+      const file = path.join(INPUT, rel);
+      if (!fs.existsSync(file)) throw new Error(`Image not found: ${file}`);
+      const bytes = fs.readFileSync(file);
+      const { width, height, orientation } = imageSize(bytes);
+      const fullWidth = orientation >= 5 ? height : width;
+      // Never enlarge: the listed widths that are smaller than the photo, plus
+      // the photo's own width. The file's fingerprint is in the name, so a
+      // replaced photo gets new URLs and no browser keeps the old copies.
+      const widths = [...SIZED_WIDTHS.filter((w) => w < fullWidth), fullWidth];
+      // (The quality setting is part of the fingerprint too, so changing it re-makes the copies.)
+      const stem = `${path.parse(rel).name}-${crypto.createHash("sha256").update(bytes).update(`q${SIZED_QUALITY}`).digest("hex").slice(0, 8)}`;
+      const copies = widths.map((w) => ({ w, name: `${stem}-${w}.webp` }));
+      for (const { w, name } of copies) {
+        const out = path.join(SIZED_DIR, name);
+        if (fs.existsSync(out)) continue;
+        resizeJobs.push((async () => {
+          await fs.promises.mkdir(SIZED_DIR, { recursive: true });
+          // rotate() honours a phone photo's rotation flag before resizing
+          await sharp(bytes).rotate().resize({ width: w }).webp({ quality: SIZED_QUALITY }).toFile(out + ".tmp");
+          await fs.promises.rename(out + ".tmp", out);
+        })());
+      }
+      // Relative URLs, like every other image path on the site.
+      srcsetCache.set(rel, copies.map(({ w, name }) => `images/sized/${name} ${w}w`).join(", "));
+    }
+    return srcsetCache.get(rel);
+  });
+  // Each build checks the copies afresh, so a long-running `npm start` re-makes
+  // any that were deleted from _site while it was running.
+  eleventyConfig.on("eleventy.before", () => srcsetCache.clear());
+  // The build is not finished until every copy has been written.
+  eleventyConfig.on("eleventy.after", async () => {
+    await Promise.all(resizeJobs.splice(0));
   });
 
   // ── Text helpers ────────────────────────────────────────────────────────

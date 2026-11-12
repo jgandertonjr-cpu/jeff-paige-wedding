@@ -1,0 +1,15 @@
+{
+  "essentials": [
+    { "label": "Details", "url": "details.html" },
+    { "label": "Travel", "url": "travel.html" },
+    { "label": "Registry", "url": "registry.html" },
+    { "label": "RSVP", "url": "rsvp.html", "rsvp": true }
+  ],
+  "more": [
+    { "label": "Our Story", "url": "our-story.html" },
+    { "label": "Wedding Party", "url": "wedding-party.html" },
+    { "label": "After Party", "url": "after-party.html" },
+    { "label": "FAQ", "url": "faq.html" },
+    { "label": "Gallery", "url": "gallery.html" }
+  ]
+}

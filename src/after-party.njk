@@ -24,47 +24,49 @@ headerDark: true
           <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
         </div>
 
-        <div class="grid grid--2 grid--loose">
+        <div class="venue-grid">
 
-          <!-- Info card -->
-          <div class="hotel-card card--featured reveal">
-            <h3 class="hotel-card__name mb-4">{{ d.venue_name }}</h3>
-            <div class="stack stack--loose">
-
-              <div>
-                <p class="fact__label">Address</p>
-                <p class="fact__value">{{ d.address }}</p>
+          <div class="detail-block reveal">
+            <h3 class="detail-block__heading">{{ d.venue_name }}</h3>
+            <div class="detail-list">
+              <div class="detail-list__item">
+                <span class="detail-list__label">Address</span>
+                <span class="detail-list__value">{{ d.address }}
+                {%- if d.map_address %}
+                  <p><a href="{{ d.map_address | mapsSearchUrl }}" target="_blank" rel="noopener">Get directions</a></p>
+                {%- endif %}
+                </span>
               </div>
-
-              <div>
-                <p class="fact__label">Time</p>
-                <p class="fact__value">{{ d.time }}
+              <div class="detail-list__item">
+                <span class="detail-list__label">Time</span>
+                <span class="detail-list__value">{{ d.time }}
                 {%- if d.time_note %}
-                  <span class="fact__note">{{ d.time_note }}</span>
-                {% endif -%}
-                </p>
+                  <p>{{ d.time_note }}</p>
+                {%- endif %}
+                </span>
               </div>
-
-              <div>
-                <p class="fact__label">Dress Code</p>
-                <p class="fact__value">{{ d.dress_code }}</p>
+              <div class="detail-list__item">
+                <span class="detail-list__label">Dress Code</span>
+                <span class="detail-list__value">{{ d.dress_code }}</span>
               </div>
-
-              <div>
-                <p class="fact__label">Open To</p>
-                <p class="fact__value">{{ d.open_to }}</p>
+              <div class="detail-list__item">
+                <span class="detail-list__label">Open To</span>
+                <span class="detail-list__value">{{ d.open_to }}</span>
               </div>
             </div>
           </div>
 
-          <div class="reveal reveal--delay-1">
+          <div class="reveal">
           {%- if d.map_address %}
-            <div class="map-embed">
-              <iframe src="{{ d.map_address | mapsEmbedUrl }}" title="Map of {{ d.venue_name }}" loading="lazy" allowfullscreen referrerpolicy="no-referrer-when-downgrade"></iframe>
+            <div class="map-embed" data-map-src="{{ d.map_address | mapsEmbedUrl }}" data-map-title="Map of {{ d.venue_name }}">
+              <button type="button" class="map-embed__load">
+                {{ icon("pin", 26, true) }}
+                <span class="map-embed__place">{{ d.venue_name }}</span>
+                <span class="map-embed__cue">Show map</span>
+              </button>
             </div>
-            <p class="fine-print mt-4"><a href="{{ d.map_address | mapsSearchUrl }}" target="_blank" rel="noopener">Get directions</a></p>
           {%- else %}
-            <div class="map-embed img-placeholder map-embed--empty" aria-label="Map placeholder — after party location TBD">
+            <div class="map-embed img-placeholder map-embed--empty" role="img" aria-label="Map placeholder — after party location TBD">
               <span class="fine-print">{{ d.map_note }}</span>
             </div>
           {%- endif %}

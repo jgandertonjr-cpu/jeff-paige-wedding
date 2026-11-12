@@ -15,23 +15,19 @@
 {%- set c = site.couple -%}
 {#- Changes whenever main.js or the site settings it uses change. -#}
 {%- set mainJsVersion = [mainJsSource, site] | fingerprint -%}
-{%- set navigation = [
-  { "label": "Home", "url": "index.html" },
-  { "label": "Our Story", "url": "our-story.html" },
-  { "label": "Details", "url": "details.html" },
-  { "label": "Wedding Party", "url": "wedding-party.html" },
-  { "label": "RSVP", "url": "rsvp.html", "rsvp": true },
-  { "label": "Registry", "url": "registry.html" },
-  { "label": "Travel", "url": "travel.html" },
-  { "label": "After Party", "url": "after-party.html" },
-  { "label": "FAQ", "url": "faq.html" },
-  { "label": "Gallery", "url": "gallery.html" }
-] -%}
+{#- Navigation comes from src/_data/nav.json: "essentials" are the four pages
+    guests need most (they lead every menu); "more" is everything else. -#}
+{%- set homeLink = { "label": "Home", "url": "index.html" } -%}
+{#- The 404 page is served at whatever address was mistyped (it can be several
+    folders deep), so its links and files are addressed from the site root. -#}
+{%- set root = "/" if bare else "" -%}
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  {#- Marks that scripts run, so content is only held back for the scroll fade when it can also be revealed. #}
+  <script>document.documentElement.classList.add('js')</script>
 
   <meta name="theme-color" content="#FBF8F2">
   <meta name="msapplication-navbutton-color" content="#FBF8F2">
@@ -48,7 +44,18 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="{{ site.couple.partner1_first }} &amp; {{ site.couple.partner2_first }}">
   <meta property="og:url" content="https://jeffandpaige.net/{{ canonical }}">
-  <meta property="og:image" content="https://jeffandpaige.net/images/hero.jpg">
+  {#- The picture shown when the link is texted or posted: a 1200 x 630 card in the
+      invitation's style (artwork in design/share-card). #}
+  <meta property="og:image" content="https://jeffandpaige.net/images/share-card.jpg">
+  <meta property="og:image:type" content="image/jpeg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="{{ c.partner1_first }} &amp; {{ c.partner2_first }} — {{ site.wedding_date | dateFormat('weekdayLong') }}, {{ site.venue.name }}, {{ site.venue.city }}, {{ site.venue.state }}">
+  <meta property="og:locale" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ seo.social_title or seo.title }}">
+  <meta name="twitter:description" content="{{ seo.social_description or seo.description }}">
+  <meta name="twitter:image" content="https://jeffandpaige.net/images/share-card.jpg">
 {%- endif %}
   {#- Google only shows favicons sized in multiples of 48px; the others are for browser tabs. #}
   <link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
@@ -56,26 +63,33 @@
   <link rel="icon" type="image/png" sizes="96x96" href="/images/favicon-96.png">
   <link rel="icon" type="image/png" sizes="192x192" href="/images/favicon-192.png">
   <link rel="apple-touch-icon" href="/images/apple-touch-icon.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@300;400;500&family=Pinyon+Script&display=swap" rel="stylesheet">
+  {#- Fonts are self-hosted (src/fonts, declared at the top of styles.css). The two
+      files every page needs for its first screen are fetched early. #}
+  <link rel="preload" as="font" type="font/woff2" href="{{ root }}fonts/cormorant-garamond-latin.woff2" crossorigin>
+  <link rel="preload" as="font" type="font/woff2" href="{{ root }}fonts/jost-latin.woff2" crossorigin>
 {%- block preload %}{% endblock %}
-  <link rel="stylesheet" href="css/styles.css?v=18">
+  <link rel="stylesheet" href="{{ root }}css/styles.css?v=21">
 {%- block headExtra %}{% endblock %}
 </head>
 <body>
 
   <a class="skip-link" href="#main-content">Skip to main content</a>
-{% if not bare %}
+
   <!-- ── HEADER ── -->
   <header class="site-header{% if headerDark %} site-header--dark{% endif %}" role="banner">
     <div class="header-inner">
-      <a href="index.html" class="site-logo" aria-label="{{ c.partner1_first }} &amp; {{ c.partner2_first }} — Home">{{ c.partner1_first | first }}<span class="amp">&amp;</span>{{ c.partner2_first | first }}</a>
+      <a href="{{ root }}index.html" class="site-logo">{{ c.partner1_first | first }}<span class="amp">&amp;</span>{{ c.partner2_first | first }}<span class="sr-only"> — {{ c.partner1_first }} &amp; {{ c.partner2_first }}, home</span></a>
       <nav class="site-nav" aria-label="Primary navigation">
         <ul class="site-nav__list">
-          {%- for item in navigation %}
-          <li><a href="{{ item.url }}" class="site-nav__link{% if item.rsvp %} site-nav__link--rsvp{% endif %}">{{ item.label }}</a></li>
+          {%- for item in nav.essentials %}{% if not item.rsvp %}
+          <li><a href="{{ root }}{{ item.url }}" class="site-nav__link">{{ item.label }}</a></li>
+          {%- endif %}{% endfor %}
+          {%- for item in nav.more %}
+          <li><a href="{{ root }}{{ item.url }}" class="site-nav__link">{{ item.label }}</a></li>
           {%- endfor %}
+          {%- for item in nav.essentials %}{% if item.rsvp %}
+          <li><a href="{{ root }}{{ item.url }}" class="site-nav__link site-nav__link--rsvp">{{ item.label }}</a></li>
+          {%- endif %}{% endfor %}
         </ul>
       </nav>
       <button class="hamburger" aria-expanded="false" aria-controls="mobile-nav" aria-label="Open menu">
@@ -88,16 +102,25 @@
 
   <!-- ── MOBILE NAV ── -->
   <nav class="mobile-nav" id="mobile-nav" aria-label="Mobile navigation">
-    {%- for item in navigation %}
-    <a href="{{ item.url }}" class="mobile-nav__link">{{ item.label }}</a>
-    {%- endfor %}
+    <div class="mobile-nav__primary">
+      {%- for item in nav.essentials %}
+      <a href="{{ root }}{{ item.url }}" class="mobile-nav__link mobile-nav__link--primary{% if item.rsvp %} mobile-nav__link--rsvp{% endif %}">{{ item.label }}</a>
+      {%- endfor %}
+    </div>
+    <div class="mobile-nav__more">
+      <a href="{{ root }}{{ homeLink.url }}" class="mobile-nav__link">{{ homeLink.label }}</a>
+      {%- for item in nav.more %}
+      <a href="{{ root }}{{ item.url }}" class="mobile-nav__link">{{ item.label }}</a>
+      {%- endfor %}
+    </div>
+    <p class="mobile-nav__note">{{ site.wedding_date | dateFormat('long') }} &middot; {{ (site.venue.city + ", " + site.venue.state) | nbsp | safe }}</p>
   </nav>
-{% endif %}
+
   <main id="main-content">
 {% block main %}{% endblock %}
   </main>
 {% block afterMain %}{% endblock %}
-{%- if not bare %}
+
   <!-- ── FOOTER ── -->
   <footer class="site-footer" role="contentinfo">
     <div class="container text-center">
@@ -106,17 +129,30 @@
       <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
 
       <nav class="footer__nav" aria-label="Footer navigation">
-        {%- for item in navigation %}
-        <a href="{{ item.url }}" class="footer__nav-link">{{ item.label }}</a>
+        <a href="{{ root }}{{ homeLink.url }}" class="footer__nav-link">{{ homeLink.label }}</a>
+        {%- for item in nav.essentials %}
+        <a href="{{ root }}{{ item.url }}" class="footer__nav-link">{{ item.label }}</a>
+        {%- endfor %}
+        {%- for item in nav.more %}
+        <a href="{{ root }}{{ item.url }}" class="footer__nav-link">{{ item.label }}</a>
         {%- endfor %}
       </nav>
       <div class="footer__divider"></div>
       <p class="footer__copy">{{ site.footer_text }}</p>
     </div>
   </footer>
+
+{%- if not bare %}
+  {#- Phones and tablets: the four essentials stay one tap away on every page.
+      main.js slides it in (see initEssentialsBar). #}
+  <nav class="essentials essentials-bar" aria-label="Quick links" data-essentials-bar>
+    {%- for item in nav.essentials %}
+    <a href="{{ root }}{{ item.url }}" class="essentials__link{% if item.rsvp %} essentials__link--rsvp{% endif %}">{{ item.label }}</a>
+    {%- endfor %}
+  </nav>
 {%- endif %}
 {% block scripts %}
-  <script src="js/main.js?v={{ mainJsVersion }}" defer></script>
+  <script src="{{ root }}js/main.js?v={{ mainJsVersion }}" defer></script>
 {%- endblock %}
 </body>
 </html>

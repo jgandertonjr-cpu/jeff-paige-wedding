@@ -29,7 +29,7 @@ headerDark: true
           {%- endset %}
           {%- set figure %}
             <figure class="timeline__img{% if size.width > size.height %} timeline__img--landscape{% endif %}">
-              <img src="{{ event.photo | relUrl }}" width="{{ size.width }}" height="{{ size.height }}" alt="{{ event.photo_alt }}" loading="lazy"{% if event.focus and event.focus != 'center' %} class="img-focus-{{ event.focus }}"{% endif %}>
+              <img src="{{ event.photo | relUrl }}" srcset="{{ event.photo | srcset }}" sizes="(min-width: 1200px) 490px, (min-width: 900px) 42vw, 90vw" width="{{ size.width }}" height="{{ size.height }}" alt="{{ event.photo_alt }}" loading="lazy" decoding="async"{% if event.focus and event.focus != 'center' %} class="img-focus-{{ event.focus }}"{% endif %}>
             </figure>
           {%- endset %}
 

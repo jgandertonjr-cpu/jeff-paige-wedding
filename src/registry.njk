@@ -33,7 +33,7 @@ headerDark: true
         {%- if registry.photo %}
         {%- set size = registry.photo | imgSize %}
         <figure class="registry-photo">
-          <img src="{{ registry.photo | relUrl }}" width="{{ size.width }}" height="{{ size.height }}" alt="{{ registry.photo_alt }}"{% if registry.focus and registry.focus != 'center' %} class="img-focus-{{ registry.focus }}"{% endif %}>
+          <img src="{{ registry.photo | relUrl }}" srcset="{{ registry.photo | srcset }}" sizes="(min-width: 1000px) 920px, 92vw" width="{{ size.width }}" height="{{ size.height }}" alt="{{ registry.photo_alt }}" fetchpriority="high"{% if registry.focus and registry.focus != 'center' %} class="img-focus-{{ registry.focus }}"{% endif %}>
         </figure>
         {%- endif %}
 
