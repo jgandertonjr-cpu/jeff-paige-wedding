@@ -754,3 +754,35 @@ test("discardAfterUndo: only an idle card that has not been published", () => {
     assert.equal(discardAfterUndo({ state, busy: false }), false, state);
   }
 });
+
+// A move the site does not have yet, whose item another change on the site
+// shifted onto the move's target index, is kept and still lands where she put it.
+test("pruneTray: an unpublished move is kept when the site shifts its item onto the target index", () => {
+  const q = content.faq.questions;
+  const name = (x) => x.question;
+  // 3→2, then the site removes item 0: item 3 is now at index 2.
+  let tray = add([], { op: "move", file: "faq", path: "/questions/3", to: 2 });
+  let fresh = structuredClone(content);
+  fresh.faq.questions.splice(0, 1);
+  let r = pruneTray(fresh, tray);
+  assert.equal(r.dropped, 0);
+  assert.equal(r.tray.length, 1, "the move is kept");
+  let out = applyLocal(fresh, r.tray.map((t) => t.op)).faq.questions.map(name);
+  assert.deepEqual(out.slice(0, 3), [q[1], q[3], q[2]].map(name), "it still goes above the item it was put above");
+  // 3→4, then the site adds an item at the top: item 3 is now at index 4.
+  tray = add([], { op: "move", file: "faq", path: "/questions/3", to: 4 });
+  fresh = structuredClone(content);
+  fresh.faq.questions.unshift({ question: "New at the top?", answer: "Yes." });
+  r = pruneTray(fresh, tray);
+  assert.equal(r.dropped, 0);
+  assert.equal(r.tray.length, 1, "the move is kept");
+  out = applyLocal(fresh, r.tray.map((t) => t.op)).faq.questions.map(name);
+  assert.deepEqual(out.slice(0, 7), ["New at the top?", ...[q[0], q[1], q[2], q[4], q[3], q[5]].map(name)]);
+});
+
+test("a move's landing spot survives the tab's storage", () => {
+  const tray = add([], { op: "move", file: "faq", path: "/questions/3", to: 2 });
+  const published = applyLocal(content, [tray[0].op]);
+  const back = fromStorage(JSON.parse(JSON.stringify(toStorage(tray)))).tray;
+  assert.deepEqual(pruneTray(published, back), { tray: [], dropped: 0 });
+});

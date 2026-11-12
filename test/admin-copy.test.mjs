@@ -101,3 +101,16 @@ for (const rel of PAGES) {
     assert.deepEqual(problems, []);
   });
 }
+
+// The DOM's replaceChildren/append/prepend/before/after turn null, undefined and
+// false into text ("null" under the search results was one). Every insertion on
+// the editor page goes through its put() helper, which passes only real nodes.
+test("src/admin/admin.js inserts nodes only through put(), never with the DOM methods directly", () => {
+  const src = read("src/admin/admin.js");
+  const lines = src.split("\n");
+  const direct = lines
+    .map((line, i) => ({ line, n: i + 1 }))
+    .filter(({ line }) => !/^\s*\/\//.test(line) && /\.(replaceChildren|append|prepend|before|after)\(\s*[^)\s]/.test(line));
+  assert.deepEqual(direct.map(({ n, line }) => `${n}: ${line.trim()}`), []);
+  assert.match(src, /function put\(target, how, \.\.\.kids\)/);
+});

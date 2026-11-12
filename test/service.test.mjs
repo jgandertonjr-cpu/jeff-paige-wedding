@@ -1609,3 +1609,40 @@ test("preview and publish of a change naming a section that is no longer there s
     await t.cleanup();
   }
 });
+
+// Once the edit is on the site, publish says so whatever its own record-keeping
+// does afterwards, and status finds the edit by its title.
+test("publish: a store failure after the edit is written still answers ok with the sha; status then follows the publish", async () => {
+  const t = await setup();
+  const logs = [];
+  t.deps.log = (event, fields) => logs.push({ event, ...fields });
+  let broken = false;
+  const store = t.store;
+  t.deps.store = {
+    ...store,
+    get: (k) => store.get(k),
+    set: (k, v) => store.set(k, v),
+    delete: (k) => store.delete(k),
+    update: (k, fn) => (broken ? Promise.reject(new RangeError("store down")) : store.update(k, fn)),
+  };
+  const write = t.repo.write.bind(t.repo);
+  t.deps.repo = Object.assign(Object.create(t.repo), { write: async (args) => { const sha = await write(args); broken = true; return sha; } });
+  try {
+    const r = await propose(t.deps, { ops: [DEADLINE] });
+    const p = await publish(t.deps, r.id);
+    const { sha, title } = (await t.repo.edits(1))[0];
+    assert.deepEqual(p, { ok: true, title, sha });
+    assert.ok(logs.some((l) => l.event === "publish_bookkeeping_failed" && l.name === "RangeError"), JSON.stringify(logs));
+    assert.ok(logs.every((l) => Object.keys(l).every((k) => k === "event" || k === "name")), "logged by name only");
+    const stored = await store.get(`proposal:${r.id}`);
+    assert.equal(stored.published, undefined, "the record was not updated");
+    assert.ok(stored.publishing, "the claim is still there");
+
+    broken = false;
+    assert.deepEqual(await status(t.deps, { id: r.id }), { stage: "publish", state: "waiting", sha, title });
+    assert.deepEqual((await store.get(`proposal:${r.id}`)).published, { sha, title });
+    assert.deepEqual(await unconfirmedIds(t), [r.id]);
+  } finally {
+    await t.cleanup();
+  }
+});

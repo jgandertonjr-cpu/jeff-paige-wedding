@@ -647,8 +647,20 @@ export function remark(content, tray) {
     } catch {
       /* left as it is; pruneTray deals with it */
     }
-    return { ...t, marks };
+    const { landed, ...rest } = t;
+    return t.op.op === "move" ? { ...rest, marks, landed: landingOf(copy, t.op) } : { ...rest, marks };
   });
+}
+
+// Where a move put its item: the items just before and after it (as stable
+// text, null at an end) in the list as the move left it. Telling a move the
+// site already has from one whose item merely shifted onto the same index.
+function landingOf(content, op) {
+  const list = valueAt(content, op.file, parentOf(op.path));
+  if (!Array.isArray(list) || !list.length) return null;
+  const at = op.to === -1 ? list.length - 1 : Math.min(op.to, list.length - 1);
+  const around = (i) => (i >= 0 && i < list.length ? stable(list[i]) : null);
+  return { prev: around(at - 1), next: around(at + 1) };
 }
 
 // Does `later` rely on `earlier` having happened? Anything in a list after an
@@ -764,8 +776,8 @@ export function removeEntries(tray, ids) {
 // Is this change already in the content (it was published)? A setting that
 // already has its value, an item already where it would be added, an item
 // to remove that is no longer there, or an item already where it would be moved
-// (for a move, `t.op.path` must be where its item was found now; replaying the
-// move would change nothing).
+// (for a move, `t.op.path` must be where its item was found now: it already sits
+// at the move's target, between the same neighbours the move left it between).
 // `later` are the tray's changes after this one: an added item may have been
 // edited after it was added, and is compared as those edits leave it.
 function alreadyThere(content, t, later = []) {
@@ -801,7 +813,10 @@ function alreadyThere(content, t, later = []) {
     const list = valueAt(content, op.file, parentOf(op.path));
     if (!Array.isArray(list) || !list.length) return false;
     const target = op.to === -1 ? list.length - 1 : Math.min(op.to, list.length - 1);
-    return lastIndex(op.path) === target;
+    const at = lastIndex(op.path);
+    const around = (i) => (i >= 0 && i < list.length ? stable(list[i]) : null);
+    const landed = isObj(t.landed) ? t.landed : null;
+    return at === target && !!landed && around(at - 1) === landed.prev && around(at + 1) === landed.next;
   }
   return false;
 }
@@ -856,8 +871,9 @@ export function pruneTray(content, tray) {
 // What is kept in the tab's storage: every change, the ones that use a new photo
 // marked, since photos themselves can't be kept.
 export function toStorage(tray) {
-  return tray.map(({ id, op, entryLabel, marks, photoRef }) => {
+  return tray.map(({ id, op, entryLabel, marks, landed, photoRef }) => {
     const out = { id, op, entryLabel, marks };
+    if (landed) out.landed = landed;
     if (photoRef || photoRefs(op.value).length) out.photo = true;
     return out;
   });

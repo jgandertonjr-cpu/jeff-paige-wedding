@@ -45,18 +45,21 @@ export function createNetlify({ token, siteId, fetch }) {
     return { state: "building" };
   }
 
-  // A stopped production build: ready once a later production build is ready
-  // (with that build's address); otherwise still under way, so nothing is put
-  // back. Only builds of the same kind count, so a stopped preview never takes
-  // the live site's result.
+  // A stopped production build: the newest later production build of the same
+  // branch decides, since it carries the edit. Ready → ready (with its
+  // address); error or rejected → failed (the main copy now holds the edit in a
+  // failing build, so it is put back); still under way, or none yet → building.
+  // A later build that was itself stopped is passed over. Only builds of the
+  // same kind count, so a stopped preview never takes the live site's result.
   function laterResult(seen, stopped) {
     if (stopped.context !== "production") return { state: "building" };
-    const later = seen
-      .filter((x) => x.context === "production" && x.branch === stopped.branch && when(x) > when(stopped))
-      .sort((a, b) => when(b) - when(a));
-    const ready = later.find((x) => x.state === "ready");
-    if (ready) return { state: "ready", url: ready.deploy_ssl_url };
-    return { state: "building" }; // one still under way, or none yet
+    const newest = seen
+      .filter((x) => x.context === "production" && x.branch === stopped.branch && when(x) > when(stopped) && !STOPPED.has(x.state))
+      .sort((a, b) => when(b) - when(a))[0];
+    if (!newest) return { state: "building" };
+    if (newest.state === "ready") return { state: "ready", url: newest.deploy_ssl_url };
+    if (FAILED.has(newest.state)) return { state: "failed" };
+    return { state: "building" };
   }
   return { deployFor };
 }

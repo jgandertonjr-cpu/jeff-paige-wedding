@@ -37,10 +37,15 @@
 //       url only when state is "ready"; text with "failed" (thrown away, expired, put back or not).
 //       sha and title (the published edit's) on a published change that has not failed.
 //       While another poll is putting the site back: { stage: "publish", state: "building" }.
+//       A change still claimed for publishing whose edit is found on the site
+//       (by title, dated after the claim) is recorded as published and reported
+//       as such: publish answers ok even when its own record-keeping failed.
 //       When Netlify or the store fails while checking a change that exists, it
 //       is reported as still under way ("building", with sha and title when
 //       published) and logged by name; never thrown.
 //   publish(deps, id)   → { ok: true, title, sha } | { ok: false, text } | { ok: false, text, reload: true }
+//     Once the edit is written the answer is { ok: true, … }, even if recording
+//     it fails (logged by name as publish_bookkeeping_failed; status catches up).
 //     reload: as for preview; nothing is written and the publishing claim is released.
 //     sha is the edit it wrote, the one undo takes; title is one line.
 //   cancel(deps, id)    → { ok: true } | { ok: false, text }
@@ -502,8 +507,22 @@ export async function preview(deps, id) {
 const report = (stage, d) => (d.url ? { stage, state: d.state, url: d.url } : { stage, state: d.state });
 
 export async function status(deps, { id } = {}) {
-  const p = await loadProposal(deps, id);
+  let p = await loadProposal(deps, id);
   if (!p) return { stage: "preview", state: "failed", text: TEXT.expired };
+
+  // A publish whose record-keeping failed after its edit was written: the edit
+  // is found by its title among the recent ones, dated after the claim.
+  if (!p.published && p.publishing) {
+    try {
+      const landed = await landedSince(deps, id, p.publishing);
+      if (landed) {
+        p = { ...p, published: landed };
+        await markPublished(deps, id, p.publishing, landed);
+      }
+    } catch (err) {
+      logEvent(deps, "status_failed", { name: err?.name || "Error" });
+    }
+  }
 
   // The change exists: a failure asking Netlify or the store about it is not an
   // answer, so the page is told it is still under way and asks again.
@@ -632,13 +651,29 @@ export async function publish(deps, id) {
     return refuse(result.stale ? TEXT.movedPublish : result.problem);
   }
 
+  // The edit is on the site: from here on the answer is ok whatever the
+  // record-keeping does. If it fails, status finds the edit by its title later.
   // A record that vanished meanwhile is not brought back.
-  await deps.store.update(key(id), (cur) => {
+  const markDone = (cur) => {
     if (!cur) return null;
     const { publishing, photos, cancelled, ...rest } = cur;
     return { ...rest, published: { sha: result.sha, title } };
+  };
+  const bookkeeping = async (step) => {
+    try {
+      await step();
+    } catch (err) {
+      logEvent(deps, "publish_bookkeeping_failed", { name: err?.name || "Error" });
+    }
+  };
+  await bookkeeping(async () => {
+    try {
+      await deps.store.update(key(id), markDone);
+    } catch {
+      await deps.store.update(key(id), markDone); // once more
+    }
   });
-  await rememberUnconfirmed(deps, id, result.sha);
+  await bookkeeping(() => rememberUnconfirmed(deps, id, result.sha));
   if (p.preview) {
     try { await deps.repo.closePreview({ id, number: p.preview.number }); } catch {}
   }

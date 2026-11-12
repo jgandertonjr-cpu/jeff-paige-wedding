@@ -137,6 +137,14 @@ async function api(route, method, body) {
 
 // ---- small DOM helpers ----------------------------------------------------
 
+// Puts nodes in place with one of the DOM's insertion methods ("append",
+// "replaceChildren", "before", "after", "prepend"), skipping null, undefined and
+// false: the DOM itself would turn them into text (a "null" under the search
+// results was one). Every insertion on this page goes through here.
+function put(target, how, ...kids) {
+  target[how](...kids.flat().filter((k) => k !== null && k !== undefined && k !== false));
+}
+
 function el(tag, props, ...children) {
   const node = document.createElement(tag);
   for (const [k, v] of Object.entries(props || {})) {
@@ -148,7 +156,7 @@ function el(tag, props, ...children) {
     else if (k === "onChange") node.addEventListener("change", v);
     else node.setAttribute(k, v === true ? "" : v);
   }
-  for (const c of children.flat()) if (c) node.append(c);
+  for (const c of children.flat()) if (c) put(node, "append", c);
   return node;
 }
 const button = (label, kind, onClick, props) =>
@@ -170,7 +178,7 @@ function icon(d) {
   path.setAttribute("stroke-width", "1.5");
   path.setAttribute("stroke-linecap", "round");
   path.setAttribute("stroke-linejoin", "round");
-  svg.append(path);
+  put(svg, "append", path);
   return svg;
 }
 const chevronRight = () => icon("M9 5l7 7-7 7");
@@ -460,7 +468,7 @@ function render({ scroll = 0, keepFocus = null } = {}) {
   followRoute();
   const draw = SCREENS[route.name] || findScreen;
   const parts = draw(route);
-  ui.screen.replaceChildren(...parts);
+  put(ui.screen, "replaceChildren", ...parts);
   ui.screen.hidden = false;
   // Remember what this screen shows, as of now, so it can be found again.
   const spot = routeSpot(route);
@@ -495,7 +503,10 @@ function flash(text) {
   const old = ui.screen.querySelector(".flash");
   const node = el("p", { className: "flash", role: "status", text });
   if (old) old.replaceWith(node);
-  else ui.screen.querySelector(".screen-head")?.after(node);
+  else {
+    const head = ui.screen.querySelector(".screen-head");
+    if (head) put(head, "after", node);
+  }
 }
 
 const trailText = (trail) => trail.join(" › ");
@@ -574,9 +585,9 @@ function findScreen(r) {
     const all = search(searchIndex(), q, SHOW_MATCHES + 1);
     const found = all.slice(0, SHOW_MATCHES);
     if (!found.length) {
-      results.replaceChildren(el("p", { className: "lead no-match", text: SAY.noMatch }));
+      put(results, "replaceChildren", el("p", { className: "lead no-match", text: SAY.noMatch }));
     } else {
-      results.replaceChildren(el("ol", { className: "rows", "aria-label": "Matches" },
+      put(results, "replaceChildren", el("ol", { className: "rows", "aria-label": "Matches" },
         found.map((e) => rowButton({
           eyebrow: e.trail[0],
           label: trailText(e.trail.slice(1)),
@@ -644,7 +655,7 @@ function pageScreen(r) {
         rows = el("ul", { className: "rows" });
         out.push(rows);
       }
-      rows.append(rowButton({ label: f.label, value: valueView(entry), pending: pendingAt(r.file, p), onClick: () => openEntry(entry) }));
+      put(rows, "append", rowButton({ label: f.label, value: valueView(entry), pending: pendingAt(r.file, p), onClick: () => openEntry(entry) }));
     }
     return out;
   };
@@ -752,7 +763,7 @@ function control({ entry, id, labelId, describedBy, onEdit = () => {}, onPhoto }
       const order = Array.isArray(value) ? [...value] : [];
       const list = el("ol", { className: "order", id, "aria-labelledby": labelId, "aria-describedby": describedBy || null });
       const draw = (focusName, dir) => {
-        list.replaceChildren(...order.map((o, i) => {
+        put(list, "replaceChildren", ...order.map((o, i) => {
           const name = names[o] ?? o;
           const up = button("Move up", "text", () => move(i, -1), { "aria-label": `Move ${name} up`, disabled: i === 0 });
           const down = button("Move down", "text", () => move(i, 1), { "aria-label": `Move ${name} down`, disabled: i === order.length - 1 });
@@ -814,7 +825,7 @@ function control({ entry, id, labelId, describedBy, onEdit = () => {}, onPhoto }
       let current = typeof value === "string" ? value : "";
       const drawPhoto = () => {
         const t = thumb(current, "The photo chosen now");
-        preview.replaceChildren(t || el("span", { className: "row-value", text: "No photo yet" }));
+        put(preview, "replaceChildren", t || el("span", { className: "row-value", text: "No photo yet" }));
       };
       drawPhoto();
       const choose = button(current ? "Choose a different photo" : "Choose a photo", "line", () => onPhoto && onPhoto(), {
@@ -986,7 +997,7 @@ function listScreen(r) {
         button("Move down", "text", () => move(i, i + 1, "down"), { "aria-label": `Move ${name} down`, disabled: frozen || i === items.length - 1, "data-act": "down" }),
       ];
       if (!atMin) btns.push(button("Remove", "text", () => !hushed() && confirmRemove(), { "aria-label": `Remove ${name}`, disabled: frozen }));
-      actions.replaceChildren(...btns);
+      put(actions, "replaceChildren", ...btns);
     };
     const confirmRemove = () => {
       const yes = button("Yes, remove", "dark", () => {
@@ -1006,12 +1017,12 @@ function listScreen(r) {
         showActions();
         actions.querySelector("button")?.focus();
       });
-      actions.replaceChildren(el("p", { className: "confirm-question", text: "Remove this?" }), yes, keep);
+      put(actions, "replaceChildren", el("p", { className: "confirm-question", text: "Remove this?" }), yes, keep);
       yes.focus();
     };
     showActions();
     const t = photoField ? thumb(item && item[photoField.name]) : null;
-    li.append(el("div", { className: "item-line" }, t, el("p", { className: "item-name", text: name },
+    put(li, "append", el("div", { className: "item-line" }, t, el("p", { className: "item-name", text: name },
       pendingAt(r.file, `${r.path}/${i}`) ? el("span", { className: "pending", text: "Changed" }) : null)), actions);
     return li;
   });
@@ -1371,7 +1382,7 @@ function trayScreen() {
     const li = el("li", { className: "change" });
     const words = el("p", { className: "change-words", text: t.entryLabel });
     const actions = el("div", { className: "item-actions" });
-    const offer = () => actions.replaceChildren(button("Undo this one", "text", () => ask(), { "aria-label": `Undo this one: ${t.entryLabel}`, disabled: frozen }));
+    const offer = () => put(actions, "replaceChildren", button("Undo this one", "text", () => ask(), { "aria-label": `Undo this one: ${t.entryLabel}`, disabled: frozen }));
     const ask = () => {
       if (hushed() || locked()) return;
       const plan = dropChange(tray, i);
@@ -1382,14 +1393,14 @@ function trayScreen() {
         offer();
         actions.querySelector("button")?.focus();
       });
-      actions.replaceChildren(
+      put(actions, "replaceChildren",
         el("p", { className: "confirm-question", text: others === 1 ? "One later change depends on this one, so it goes too. Undo both?" : `${others} later changes depend on this one, so they go too. Undo them all?` }),
         yes, keep);
       yes.focus();
     };
     offer();
     const photoValue = t.photoRef ? `@photo:${t.photoRef}` : null;
-    li.append(el("div", { className: "item-line" }, photoValue ? thumb(photoValue) : null, words), actions);
+    put(li, "append", el("div", { className: "item-line" }, photoValue ? thumb(photoValue) : null, words), actions);
     return li;
   });
   const drop = (next) => {
@@ -1421,20 +1432,20 @@ function reviewScreen() {
   let card = review.card;
   if (card && card.state === "cancelled" && (fresh || card.sig !== sig)) card = review.card = null;
   if (card && (card.sig === sig || card.published)) {
-    if (review.notice) body.append(el("p", { className: "notice", text: review.notice }));
-    body.append(card.node);
+    if (review.notice) put(body, "append", el("p", { className: "notice", text: review.notice }));
+    put(body, "append", card.node);
   } else if (review.outcome && review.outcome.sticky && !fresh) {
     // The site changed under her: she checks her changes before asking again.
-    body.append(...outcomeNodes(review.outcome));
-    if (!tray.length) body.append(el("p", { className: "lead", text: SAY.noChanges }));
+    put(body, "append", ...outcomeNodes(review.outcome));
+    if (!tray.length) put(body, "append", el("p", { className: "lead", text: SAY.noChanges }));
   } else if (!tray.length) {
-    body.append(el("p", { className: "lead", text: SAY.noChanges }));
+    put(body, "append", el("p", { className: "lead", text: SAY.noChanges }));
   } else if (review.pending) {
-    body.append(working());
+    put(body, "append", working());
   } else if (review.outcome && review.sig === sig && !fresh && review.outcome.kind !== "unreachable") {
-    body.append(...outcomeNodes(review.outcome));
+    put(body, "append", ...outcomeNodes(review.outcome));
   } else {
-    body.append(working());
+    put(body, "append", working());
     propose();
   }
   return parts;
@@ -2014,7 +2025,7 @@ class ProposalCard {
     }
 
     const hadFocus = this.node.contains(document.activeElement);
-    this.node.replaceChildren(...parts);
+    put(this.node, "replaceChildren", ...parts);
     if (hadFocus) this.node.focus({ preventScroll: true });
     if (moved && this.node.isConnected) reveal(this.node);
     if (moved) announce(this.node.querySelector(".card-status, .card-done, .card-said")?.textContent || "");
@@ -2220,7 +2231,7 @@ ui.signOut.addEventListener("click", async () => {
 let loadingRecent = false;
 // The outcome of the last undo made from this list; it stays while the list reloads.
 const recentResult = el("div", { className: "recent-result" });
-ui.recentList.before(recentResult);
+put(ui.recentList, "before", recentResult);
 
 ui.recentToggle.addEventListener("click", () => {
   const open = ui.recentToggle.getAttribute("aria-expanded") !== "true";
@@ -2246,7 +2257,7 @@ async function loadRecent() {
     }
     const edits = Array.isArray(data.edits) ? data.edits : [];
     ui.recentStatus.textContent = edits.length ? "" : SAY.noRecent;
-    ui.recentList.replaceChildren(...edits.map(recentRow));
+    put(ui.recentList, "replaceChildren", ...edits.map(recentRow));
   } catch (err) {
     if (err instanceof SignedOut) showSignIn();
     else ui.recentStatus.textContent = SAY.cantReach;
@@ -2273,7 +2284,7 @@ function recentRow(edit) {
   const say = (text) => {
     if (saidNode) saidNode.remove();
     saidNode = text ? el("p", { className: "card-said", text }) : null;
-    if (saidNode) row.append(saidNode);
+    if (saidNode) put(row, "append", saidNode);
   };
 
   const offerUndo = () => {
@@ -2300,7 +2311,7 @@ function recentRow(edit) {
         offerUndo();
       } else if (result.ok) {
         setActions();
-        recentResult.replaceChildren(...undoResult(result));
+        put(recentResult, "replaceChildren", ...undoResult(result));
         loadRecent(); // the undo is itself a new change at the top of the list
         // A review made before this undo no longer matches the site: it is
         // thrown away and she reviews again. A publish under way (or one whose
@@ -2325,11 +2336,11 @@ function recentRow(edit) {
   function setActions(...nodes) {
     const next = nodes.length ? el("div", { className: "actions" }, nodes) : null;
     if (actionsNode) actionsNode.replaceWith(...(next ? [next] : []));
-    else if (next) title.after(next);
+    else if (next) put(title, "after", next);
     actionsNode = next;
   }
 
-  row.append(title);
+  put(row, "append", title);
   offerUndo();
   return row;
 }

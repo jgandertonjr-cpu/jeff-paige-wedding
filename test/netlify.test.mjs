@@ -115,14 +115,55 @@ test("a cancelled build with a later production build still under way is buildin
   assert.deepEqual(await nl.deployFor("abc"), { state: "building" });
 });
 
-test("a cancelled build with no later production build is building; older, preview and failed builds do not count", async () => {
+test("a cancelled build with no later production build is building; older and preview builds do not count", async () => {
   const { nl } = client(200, [
     prod("ready", "pr", "2026-01-01T00:06:00Z", { context: "deploy-preview", branch: "editor-preview-x" }),
-    prod("error", "broken", "2026-01-01T00:05:00Z"),
     prod("skipped", "abc", "2026-01-01T00:01:00Z"),
     prod("ready", "older", "2026-01-01T00:00:00Z"),
   ]);
   assert.deepEqual(await nl.deployFor("abc"), { state: "building" });
+});
+
+// The newest later production build that has finished decides; one still
+// under way at the top means wait.
+for (const [later, to] of [["error", "failed"], ["rejected", "failed"]]) {
+  test(`a cancelled build whose later production build ended "${later}" is ${to}`, async () => {
+    const { nl } = client(200, [
+      prod(later, "later", "2026-01-01T00:05:00Z"),
+      prod("canceled", "abc", "2026-01-01T00:01:00Z"),
+    ]);
+    assert.deepEqual(await nl.deployFor("abc"), { state: to });
+  });
+}
+
+test("the newest later production build decides, not an older one", async () => {
+  let r = client(200, [
+    prod("error", "newest", "2026-01-01T00:09:00Z"),
+    prod("ready", "middle", "2026-01-01T00:05:00Z"),
+    prod("skipped", "abc", "2026-01-01T00:01:00Z"),
+  ]);
+  assert.deepEqual(await r.nl.deployFor("abc"), { state: "failed" });
+  r = client(200, [
+    prod("ready", "newest", "2026-01-01T00:09:00Z"),
+    prod("error", "middle", "2026-01-01T00:05:00Z"),
+    prod("skipped", "abc", "2026-01-01T00:01:00Z"),
+  ]);
+  assert.deepEqual(await r.nl.deployFor("abc"), { state: "ready", url: "https://newest.example" });
+  r = client(200, [
+    prod("building", "newest", "2026-01-01T00:09:00Z"),
+    prod("error", "middle", "2026-01-01T00:05:00Z"),
+    prod("skipped", "abc", "2026-01-01T00:01:00Z"),
+  ]);
+  assert.deepEqual(await r.nl.deployFor("abc"), { state: "building" });
+});
+
+test("a later production build that was itself stopped is passed over for the next one", async () => {
+  const { nl } = client(200, [
+    prod("canceled", "newest", "2026-01-01T00:09:00Z"),
+    prod("ready", "middle", "2026-01-01T00:05:00Z"),
+    prod("skipped", "abc", "2026-01-01T00:01:00Z"),
+  ]);
+  assert.deepEqual(await nl.deployFor("abc"), { state: "ready", url: "https://middle.example" });
 });
 
 test("a cancelled preview build does not take a production build's result", async () => {
