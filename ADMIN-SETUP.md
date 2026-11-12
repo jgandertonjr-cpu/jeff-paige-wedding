@@ -133,7 +133,9 @@ When you no longer want it: delete `src/admin/forms/` and uninstall the provider
 | Symptom | What to do |
 |---|---|
 | "The editor isn't set up yet." | A variable is missing or too short (password under 8 characters, secret under 32). Open **Logs → Functions** in Netlify; the entry says which one. Fix it, then trigger a deploy. |
-| "I can't reach the site right now." every time | The Anthropic key is wrong or out of credit, or the GitHub token expired. The function log shows a short code such as `auth`. Renew the key or token and update the variable. |
+| "I can't reach the site right now. Try again in a minute." every time | A problem with the Anthropic key (wrong, revoked, or out of credit) or Anthropic itself. In **Logs → Functions** look for a line with event `ask_failed` and a short code: `auth` (key wrong or not allowed), `bad_request`, `rate_limited`, `unreachable` or `timeout`. For `auth`, renew the key (step a) and update `ANTHROPIC_API_KEY`; check your credit and monthly limit too. |
+| "Something went wrong. Nothing changed. Try again in a minute." every time | Usually GitHub or Netlify, for example an expired GitHub token. In **Logs → Functions** look for a line with event `error`, the route and an error name (nothing more). Renew the GitHub token (step b) and update `GITHUB_TOKEN`, or check `NETLIFY_RSVP_TOKEN`, then trigger a deploy. |
+| Reading the logs | The function log never contains the keys, tokens or passwords themselves, only event names, short codes and error names. |
 | "This is a preview copy of the site, so publishing is turned off here." | Paige is on a Netlify preview address. Use jeffandpaige.net. |
 | A change says it's live but the page looks the same | Refresh the page. If it still looks the same, check **Deploys** for a failure. |
 | A deploy failed | Open the deploy log. The line after `site check` says what it found. The previous version stays live. |
@@ -168,3 +170,38 @@ Editable content is in `src/_data/`, one JSON file per page or section. The edit
 Most page files also hold a `labels` block (the words on buttons and small labels). Home, Details, Travel, After Party and Wedding Party hold a `section_order` list, which is how Paige can ask to move sections around.
 
 Elsewhere: pages are built by [Eleventy](https://www.11ty.dev/) from `src/*.njk`; the editor's server code is `netlify/functions/editor.mjs` and `netlify/editor/`; the editor page is `src/admin/`; the RSVP dashboard is `src/rsvp-dashboard.njk`, backed by `netlify/functions/rsvp-responses.mjs`.
+
+---
+
+## 9. The RSVP dashboard
+
+**https://jeffandpaige.net/admin/rsvps/** shows live totals, meal counts, every response, and who hasn't replied yet. Sign in at `/admin/` first; the same password and sign-in cover the dashboard. It is also linked from the editor as **RSVP responses**.
+
+**Connecting it:** the dashboard reads responses from Netlify using `NETLIFY_RSVP_TOKEN`, set up in step d. If it says the token is invalid, make a new one and trigger a deploy. Guests' IP addresses and other Netlify metadata are never sent to the page.
+
+- **Filters** (top row): Everyone / Attending / Declined / Awaiting, meal, dietary group, and a search box (names, emails, notes, songs). Every number, chart, list and the table follow the filters. Clicking a bar or a segment in any chart filters by it; click it again to undo. **Clear filters** resets everything.
+- **Totals:** people attending, declined and awaiting, plus the response rate for the guest list.
+- **Where replies stand:** everyone invited, split by reply.
+- **Replies over time:** invitations answered each day, with the reply-by date marked when it's set. Hover, or use the arrow keys, to see a day.
+- **Meals:** counts among people attending, for the caterer.
+- **After party:** how many attending are joining, maybe, or not joining (and who hasn't answered).
+- **Wedding songs:** each married couple's wedding song with their names, for the cocktail-hour playlist.
+- **Dietary needs:** what guests typed, grouped (nut allergy, gluten-free, vegetarian, dairy, shellfish and so on), with allergies flagged. One reply can fall in several groups. Hover a bar to see who.
+- **Song requests:** most-requested first. The same song typed differently counts once. Click a song to see who asked.
+- **Haven't replied yet:** everyone on the guest list who hasn't responded, with their party.
+- **Every invitation:** one row per invitation, including those still waiting. Click a column heading to sort. If someone replies twice, the latest answer counts (marked "Updated"). Replies from names not on the guest list are flagged.
+- **Download Excel:** a workbook with Summary, People, Invitations, Not replied, Dietary, Songs and Wedding songs sheets. Downloads follow your current filters, so filter to "Attending" first for a caterer-only sheet.
+- **Google Sheets:** in Google Sheets choose **File → Import → Upload** and pick the Excel file (or drag it into Google Drive and open it with Google Sheets).
+- **CSV:** the People sheet as a plain CSV.
+- **Refresh** loads new responses.
+- **Raw responses** are still in Netlify → **Forms** → **rsvp**. There, `guest_1_…`, `guest_2_…` are the people in each party in the order listed, and `party_size` is that response's head count.
+
+---
+
+## 10. Good to know
+
+- **Wedding date:** changing it updates the countdown, the home page, the Details and RSVP pages and the search-engine info. Sentences that mention the date also need changing; the editor does this and says so in its summary, but it is worth a look.
+- **Only names on the guest list can RSVP.** Guests type and must choose their name; if a name can't be found the form asks them to email you. Add them to the guest list (spelled as on the invitation) and they can reply right after the next publish.
+- **Opening RSVPs:** Paige can ask for it ("Open RSVPs, and ask for replies by May 1"). Check the RSVP card text on the Home page and the RSVP page subtitle read right too.
+- **Guest-list privacy:** the guest list has always been part of the public site code (the RSVP form needs it), so anyone who knows where to look can read the names. See section 3.
+- **Don't drag-and-drop deploy.** Netlify builds the site from GitHub. Dragging the `src` folder into Netlify would publish raw templates instead of the finished site.
