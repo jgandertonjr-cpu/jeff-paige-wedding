@@ -129,7 +129,8 @@ export default function (eleventyConfig) {
         resizeJobs.push((async () => {
           await fs.promises.mkdir(SIZED_DIR, { recursive: true });
           // rotate() honours a phone photo's rotation flag before resizing
-          await sharp(bytes).rotate().resize({ width: w }).webp({ quality: SIZED_QUALITY }).toFile(out);
+          await sharp(bytes).rotate().resize({ width: w }).webp({ quality: SIZED_QUALITY }).toFile(out + ".tmp");
+          await fs.promises.rename(out + ".tmp", out);
         })());
       }
       // Relative URLs, like every other image path on the site.
