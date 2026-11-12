@@ -168,6 +168,7 @@ export async function realServiceDeps(env, { fetch: fetchImpl = fetch, store }) 
     now: () => Date.now(),
     random: (n) => crypto.randomBytes(n).toString("hex"),
     env,
+    log: logLine,
   };
 }
 

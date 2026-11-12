@@ -468,3 +468,23 @@ test("the site's fallback id is written in one shared place", async () => {
     assert.match(src, /from "\.\.\/editor\/site\.mjs"/, f);
   }
 });
+
+// Final review, item 6: the put-back notice reaches the page with the answer.
+test("ask passes a notice through, with a reply or a failure", async () => {
+  const NOTICE = "An earlier change didn't work on the site, so I put the site back as it was.";
+  for (const [answer, expected] of [
+    [{ kind: "message", text: "Which page?", notice: NOTICE }, { kind: "message", text: "Which page?", notice: NOTICE }],
+    [{ kind: "message", text: "Too long.", failed: true, notice: NOTICE }, { kind: "message", text: "Too long.", notice: NOTICE, retry: true }],
+  ]) {
+    const { handle } = setup({ service: { ask: async () => answer } });
+    const cookie = await login(handle);
+    const res = await handle(post("ask", { message: "x" }, { cookie }), ctx());
+    assert.deepEqual(await res.json(), expected);
+  }
+});
+
+test("the real wiring gives the service a name-only logger", async () => {
+  const { realServiceDeps } = await import("../netlify/functions/editor.mjs");
+  const deps = await realServiceDeps(ENV, { fetch: async () => { throw new Error("no network in tests"); }, store: memoryStore() });
+  assert.equal(typeof deps.log, "function");
+});

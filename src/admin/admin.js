@@ -376,6 +376,8 @@
       if (sentPhoto) body.photo = sentPhoto.base64;
       const data = await api("ask", "POST", body);
       working.remove();
+      // An earlier change that failed on the site was put back: a quiet line above the answer.
+      if (typeof data.notice === "string" && data.notice) note(data.notice);
       if (data.error || data.retry) {
         putBack();
         note(data.error || (typeof data.text === "string" ? data.text : SAY.cantReach));

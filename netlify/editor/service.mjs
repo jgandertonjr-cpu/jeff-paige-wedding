@@ -1,15 +1,17 @@
 // The editor's ask → preview → publish → undo flow. Wires the pure modules to
 // the site's files (repo), the hosting status (netlify), the small store and
 // the model client, all passed in as `deps`:
-//   { repo, netlify, store, client, schema, now() → ms, random(nBytes) → hex, env }
+//   { repo, netlify, store, client, schema, now() → ms, random(nBytes) → hex, env, log?(event, fields) }
 // Every sentence returned for Paige is fixed here; no collaborator's error
 // text is ever passed on (their errors are thrown for the HTTP layer).
 //
 // Result shapes, exactly as implemented:
 //   ask(deps, { message, history?, photo? })
 //     photo: a base64 string (a "data:image/...;base64," prefix is fine) or { base64 }
-//     → { kind: "proposal", id, summary: string[], note, needsPreview: boolean }
-//     | { kind: "message", text, error?, failed? }
+//     → { kind: "proposal", id, summary: string[], note, needsPreview: boolean, notice? }
+//     | { kind: "message", text, error?, failed?, notice? }
+//       notice: a sentence to show before the answer, when an earlier change failed
+//       on the live site and was put back just now (see settleUnconfirmed).
 //       error: askClaude's failure code, when it gives one. failed: true when the
 //       message reports a failure (empty or too long, refused photo, daily limit,
 //       the model call failed, couldn't make it safely, nothing would change), so
@@ -66,6 +68,7 @@ export const TEXT = {
   movedPublish: "The site changed while I was saving, so nothing was published. Please try again.",
   thrownAway: "That change didn't work on the site, so I've thrown it away.",
   putBack: "Something went wrong and I've put the site back.",
+  earlierPutBack: "An earlier change didn't work on the site, so I put the site back as it was.",
   notYetPutBack: "Something went wrong with that change, and I'm still putting the site back. Please check again in a minute.",
   notPutBack: "Something went wrong with that change, and I couldn't put the site back. Please check the site.",
   undoNotFound: "I can't find that change in the recent list, so I can't undo it.",
@@ -288,9 +291,74 @@ async function takeDailyAllowance({ store, now }) {
   return allowed;
 }
 
+// ---- published changes whose live result has not been seen --------------------
+// A publish is put back if the live site fails to update with it. While her page
+// is open, its status polls do that. So that it also happens after she closes
+// the page, each publish is listed under UNCONFIRMED until the live result is
+// seen (ready) or handled (put back, or given up on), and ask, history and
+// publish settle the list first. Entries: { id, sha, at } in the order published.
+
+const UNCONFIRMED = "unconfirmed";
+const SETTLE_MAX = 5;
+const UNCONFIRMED_MAX_MS = 30 * 60 * 1000;
+
+async function rememberUnconfirmed(deps, id, sha) {
+  await deps.store.update(UNCONFIRMED, (cur) => {
+    const entries = (Array.isArray(cur?.entries) ? cur.entries : []).filter((e) => e.id !== id);
+    return { entries: [...entries, { id, sha, at: deps.now() }] };
+  });
+}
+
+async function forgetUnconfirmed(deps, id) {
+  await deps.store.update(UNCONFIRMED, (cur) => {
+    if (!Array.isArray(cur?.entries) || !cur.entries.some((e) => e.id === id)) return cur;
+    return { entries: cur.entries.filter((e) => e.id !== id) };
+  });
+}
+
+const logEvent = (deps, event, fields) => {
+  try { deps.log?.(event, fields); } catch {}
+};
+
+// Checks the oldest few listed changes. Returns { putBack: true } when this call
+// put the site back. Never throws: a failure is logged by name and the caller
+// carries on.
+export async function settleUnconfirmed(deps) {
+  let putBack = false;
+  try {
+    const entries = (await deps.store.get(UNCONFIRMED))?.entries;
+    for (const e of (Array.isArray(entries) ? entries : []).slice(0, SETTLE_MAX)) {
+      try {
+        const d = await deps.netlify.deployFor(e.sha);
+        if (d.state === "ready") {
+          await forgetUnconfirmed(deps, e.id);
+        } else if (d.state === "failed") {
+          // The same path, with the same guards, as her page's status poll. It
+          // takes the entry off the list once the put-back is done or given up.
+          if ((await putSiteBack(deps, e.id, e.sha)).justPutBack) putBack = true;
+        } else if (deps.now() - e.at > UNCONFIRMED_MAX_MS) {
+          await forgetUnconfirmed(deps, e.id);
+          logEvent(deps, "unconfirmed_dropped");
+        }
+      } catch (err) {
+        logEvent(deps, "settle_failed", { name: err?.name || "Error" });
+      }
+    }
+  } catch (err) {
+    logEvent(deps, "settle_failed", { name: err?.name || "Error" });
+  }
+  return { putBack };
+}
+
 // ---- the flow -----------------------------------------------------------------
 
-export async function ask(deps, { message: text, history = [], photo } = {}) {
+export async function ask(deps, input) {
+  const { putBack } = await settleUnconfirmed(deps);
+  const answer = await answerRequest(deps, input);
+  return putBack ? { ...answer, notice: TEXT.earlierPutBack } : answer;
+}
+
+async function answerRequest(deps, { message: text, history = [], photo } = {}) {
   if (typeof text !== "string" || text.trim() === "") return failure(TEXT.empty);
   if (text.length > MAX_MESSAGE_CHARS) return failure(TEXT.tooLong);
 
@@ -396,8 +464,10 @@ export async function status(deps, { id } = {}) {
   if (p.published) {
     const d = await deps.netlify.deployFor(p.published.sha);
     // The sha and title let the page offer "Undo this" even if it lost the publish answer.
+    if (d.state === "ready") await forgetUnconfirmed(deps, id);
     if (d.state !== "failed") return { ...report("publish", d), sha: p.published.sha, title: p.published.title };
-    return putSiteBack(deps, id, p.published.sha);
+    const { justPutBack, ...answer } = await putSiteBack(deps, id, p.published.sha);
+    return answer;
   }
 
   if (!p.preview) return { stage: "preview", state: "waiting" };
@@ -412,7 +482,8 @@ export async function status(deps, { id } = {}) {
 // The live site failed to update with this edit, so undo it: one poll at a
 // time (others are told it is still under way), at most MAX_REVERT_TRIES times.
 async function putSiteBack(deps, id, sha) {
-  const failed = (text) => ({ stage: "publish", state: "failed", text });
+  // `justPutBack` (this call undid the edit) is for settleUnconfirmed; status leaves it out.
+  const failed = (text, extra) => ({ stage: "publish", state: "failed", text, ...extra });
   let step = null;
   await deps.store.update(key(id), (cur) => {
     step = null;
@@ -426,9 +497,11 @@ async function putSiteBack(deps, id, sha) {
     }
     return cur;
   });
-  if (step === "done") return failed(TEXT.putBack);
   if (step === "wait") return { stage: "publish", state: "building" };
-  if (step !== "undo") return failed(TEXT.notPutBack);
+  if (step !== "undo") {
+    await forgetUnconfirmed(deps, id);
+    return failed(step === "done" ? TEXT.putBack : TEXT.notPutBack);
+  }
 
   let ok = false;
   try {
@@ -442,11 +515,13 @@ async function putSiteBack(deps, id, sha) {
     if (ok) return { ...rest, revertDone: true };
     return (rest.revertTries || 0) >= MAX_REVERT_TRIES ? { ...rest, revertFailed: true } : rest;
   });
-  if (ok) return failed(TEXT.putBack);
+  if (ok || saved?.revertFailed) await forgetUnconfirmed(deps, id);
+  if (ok) return failed(TEXT.putBack, { justPutBack: true });
   return failed(saved?.revertFailed ? TEXT.notPutBack : TEXT.notYetPutBack);
 }
 
 export async function publish(deps, id) {
+  await settleUnconfirmed(deps);
   const p = await loadProposal(deps, id);
   if (!p) return refuse(TEXT.expired);
   if (p.published) return { ok: true, title: p.published.title, sha: p.published.sha };
@@ -511,6 +586,7 @@ export async function publish(deps, id) {
     const { publishing, photo, cancelled, ...rest } = cur;
     return { ...rest, published: { sha: result.sha, title } };
   });
+  await rememberUnconfirmed(deps, id, result.sha);
   if (p.preview) {
     try { await deps.repo.closePreview({ id, number: p.preview.number }); } catch {}
   }
@@ -580,6 +656,7 @@ async function markPublished(deps, id, claim, { sha, title }) {
     const { publishing, photo, ...rest } = cur;
     return { ...rest, published: { sha, title } };
   });
+  await rememberUnconfirmed(deps, id, sha);
   if (openPreview) {
     try { await deps.repo.closePreview({ id, number: openPreview.number }); } catch {}
   }
@@ -587,6 +664,7 @@ async function markPublished(deps, id, claim, { sha, title }) {
 }
 
 export async function history(deps) {
+  await settleUnconfirmed(deps);
   return (await deps.repo.edits(30)).map((e) => ({ sha: e.sha, when: new Date(e.date).toISOString(), title: e.title }));
 }
 

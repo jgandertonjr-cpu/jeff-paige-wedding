@@ -1356,3 +1356,138 @@ test("titleOf: one line, the Please check prefix dropped, at most 72 characters"
     assert.doesNotMatch(t, /[\n\t]|\s\s/);
   }
 });
+
+// ---- final review, item 6: a failed publish is put back even if the page was closed ----
+
+const NOTICE = "An earlier change didn't work on the site, so I put the site back as it was.";
+const unconfirmedIds = async (t) => ((await t.store.get("unconfirmed"))?.entries || []).map((e) => e.id);
+
+async function publishAndLeave(t) {
+  t.client.queue(propose([DEADLINE]));
+  const r = await ask(t.deps, { message: "deadline" });
+  const p = await publish(t.deps, r.id);
+  assert.equal(p.ok, true);
+  return { id: r.id, sha: p.sha };
+}
+
+test("publish, never poll, the live update fails: the next ask puts the site back and says so", async () => {
+  const t = await setup();
+  try {
+    const { id, sha } = await publishAndLeave(t);
+    assert.deepEqual(await unconfirmedIds(t), [id]);
+    t.netlify.states.set(sha, "failed");
+    t.client.queue(say("Which page?"));
+    const r = seen(await ask(t.deps, { message: "change something" }));
+    assert.deepEqual(r, { kind: "message", text: "Which page?", notice: NOTICE });
+    assert.ok(!/\b(commit|deploy|json|branch|repository|merge|build|token)/i.test(r.notice));
+    assert.equal((await t.readData("src/_data/travel.json")).room_block.deadline, "");
+    assert.match((await t.repo.edits(1))[0].title, /^Undo — /);
+    assert.deepEqual(await unconfirmedIds(t), []);
+    // Her page, polling later, hears the same outcome; nothing is undone twice.
+    assert.deepEqual(await status(t.deps, { id }), { stage: "publish", state: "failed", text: PUT_BACK });
+    t.client.queue(say("ok"));
+    assert.deepEqual(await ask(t.deps, { message: "hi" }), { kind: "message", text: "ok" });
+    assert.equal((await t.repo.edits(10)).length, 2);
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("a live update that went fine is taken off the list, with no notice", async () => {
+  const t = await setup();
+  try {
+    const { sha } = await publishAndLeave(t);
+    t.netlify.states.set(sha, "ready");
+    t.client.queue(say("ok"));
+    assert.deepEqual(await ask(t.deps, { message: "hi" }), { kind: "message", text: "ok" });
+    assert.deepEqual(await unconfirmedIds(t), []);
+    assert.equal((await t.repo.edits(10)).length, 1);
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("status seeing the live site ready takes the change off the list", async () => {
+  const t = await setup();
+  try {
+    const { id, sha } = await publishAndLeave(t);
+    t.netlify.states.set(sha, "ready");
+    assert.equal((await status(t.deps, { id })).state, "ready");
+    assert.deepEqual(await unconfirmedIds(t), []);
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("status completing a put-back takes the change off the list", async () => {
+  const t = await setup();
+  try {
+    const { id, sha } = await publishAndLeave(t);
+    t.netlify.states.set(sha, "failed");
+    assert.deepEqual(await status(t.deps, { id }), { stage: "publish", state: "failed", text: PUT_BACK });
+    assert.deepEqual(await unconfirmedIds(t), []);
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("a collaborator error while settling never stops ask, and is logged by name only", async () => {
+  const t = await setup();
+  const logs = [];
+  t.deps.log = (event, fields) => logs.push({ event, ...fields });
+  try {
+    const { id } = await publishAndLeave(t);
+    t.netlify.deployFor = async () => { throw new TypeError("secret detail https://api.netlify.com"); };
+    t.client.queue(say("Still here."));
+    assert.deepEqual(await ask(t.deps, { message: "hi" }), { kind: "message", text: "Still here." });
+    assert.deepEqual(logs, [{ event: "settle_failed", name: "TypeError" }]);
+    assert.deepEqual(await unconfirmedIds(t), [id]);
+    // A broken store is survived too.
+    t.deps.store = { ...t.store, get: async () => { throw new RangeError("x"); } };
+    t.client.queue(say("Still here."));
+    assert.equal((await ask(t.deps, { message: "hi" })).text, "Still here.");
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("an update still under way stays on the list, and is dropped and logged after 30 minutes", async () => {
+  const t = await setup();
+  const logs = [];
+  t.deps.log = (event, fields) => logs.push({ event, ...fields });
+  try {
+    const { id, sha } = await publishAndLeave(t);
+    t.netlify.states.set(sha, "building");
+    await history(t.deps);
+    assert.deepEqual(await unconfirmedIds(t), [id]);
+    t.advance(31 * 60 * 1000);
+    await history(t.deps);
+    assert.deepEqual(await unconfirmedIds(t), []);
+    assert.deepEqual(logs, [{ event: "unconfirmed_dropped" }]);
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("history and publish settle the list too, and at most five are checked at a time", async () => {
+  const t = await setup();
+  try {
+    const first = await publishAndLeave(t);
+    t.netlify.states.set(first.sha, "failed");
+    await history(t.deps);
+    assert.equal((await t.readData("src/_data/travel.json")).room_block.deadline, "");
+    assert.deepEqual(await unconfirmedIds(t), []);
+
+    await t.store.set("unconfirmed", { entries: Array.from({ length: 7 }, (_, i) => ({ id: `00000000000000a${i}`, sha: `s${i}`, at: t.deps.now() })) });
+    for (let i = 0; i < 7; i++) t.netlify.states.set(`s${i}`, "ready");
+    t.netlify.calls.length = 0;
+    t.client.queue(propose([set("faq", "/hero/title", "Questions")]));
+    const r = await ask(t.deps, { message: "faq title" });
+    assert.equal(t.netlify.calls.length, 5);
+    assert.deepEqual(await unconfirmedIds(t), ["00000000000000a5", "00000000000000a6"]);
+    await publish(t.deps, r.id);
+    assert.deepEqual(await unconfirmedIds(t), [r.id]);
+  } finally {
+    await t.cleanup();
+  }
+});
