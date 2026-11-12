@@ -253,17 +253,76 @@ test("missing env: 500 'not set up', names only in the log, session still works"
   delete env.GITHUB_TOKEN;
   delete env.ANTHROPIC_API_KEY;
   const { handle, logs } = setup({ env });
-  let res = await handle(post("login", { password: ENV.ADMIN_PASSWORD }), ctx());
+  // Final review, item 5: signing in needs only the password and the secret.
+  const cookie = await login(handle);
+  let res = await handle(get("history", cookie), ctx());
   assert.equal(res.status, 500);
   const text = await res.text();
   assert.deepEqual(JSON.parse(text), { error: "The editor isn't set up yet." });
   assert.ok(!/GITHUB|ANTHROPIC/.test(text));
-  assert.deepEqual(logs.find((l) => l.event === "setup"), { event: "setup", missing: ["ANTHROPIC_API_KEY", "GITHUB_TOKEN"] });
+  assert.deepEqual(logs.find((l) => l.event === "setup"), { event: "setup", missing: ["GITHUB_TOKEN"] });
   assert.ok(!JSON.stringify(logs).includes("secret"));
-  res = await handle(get("history"), ctx());
+  res = await handle(post("ask", { message: "hi" }, { cookie }), ctx());
   assert.equal(res.status, 500);
-  res = await handle(get("session"), ctx());
-  assert.deepEqual(await res.json(), { signedIn: false });
+  assert.deepEqual(logs.at(-1), { event: "setup", missing: ["ANTHROPIC_API_KEY", "GITHUB_TOKEN"] });
+  res = await handle(get("session", cookie), ctx());
+  assert.deepEqual(await res.json(), { signedIn: true });
+});
+
+// Final review, item 5: each route checks only the variables it uses.
+test("each route needs only its own variables", async () => {
+  const NEEDS = {
+    login: [], logout: [], ask: ["ANTHROPIC_API_KEY", "GITHUB_TOKEN"],
+    preview: ["GITHUB_TOKEN"], publish: ["GITHUB_TOKEN"], undo: ["GITHUB_TOKEN"], cancel: ["GITHUB_TOKEN"], history: ["GITHUB_TOKEN"],
+    status: ["GITHUB_TOKEN", "NETLIFY_RSVP_TOKEN"],
+  };
+  const send = (handle, route, cookie) => {
+    if (route === "history") return handle(get("history", cookie), ctx());
+    if (route === "status") return handle(get(`status?id=${ID}`, cookie), ctx());
+    if (route === "login") return handle(post("login", { password: ENV.ADMIN_PASSWORD }), ctx());
+    return handle(post(route, { message: "x", id: ID, sha: "abc1234" }, { cookie }), ctx());
+  };
+  for (const gone of ["ANTHROPIC_API_KEY", "GITHUB_TOKEN", "NETLIFY_RSVP_TOKEN"]) {
+    const env = { ...ENV };
+    delete env[gone];
+    const { handle, logs, calls } = setup({ env });
+    const cookie = await login(handle);
+    for (const [route, needs] of Object.entries(NEEDS)) {
+      logs.length = 0;
+      calls.length = 0;
+      const res = await send(handle, route, cookie);
+      if (needs.includes(gone)) {
+        assert.equal(res.status, 500, `${route} without ${gone}`);
+        assert.deepEqual(await res.json(), { error: "The editor isn't set up yet." });
+        assert.deepEqual(logs, [{ event: "setup", missing: [gone] }], route);
+        assert.deepEqual(calls, [], route);
+      } else {
+        assert.equal(res.status, 200, `${route} without ${gone}`);
+      }
+    }
+  }
+  for (const gone of ["ADMIN_PASSWORD", "SESSION_SECRET"]) {
+    const env = { ...ENV };
+    delete env[gone];
+    const { handle, logs } = setup({ env });
+    for (const route of Object.keys(NEEDS)) {
+      logs.length = 0;
+      const res = await send(handle, route, "");
+      assert.equal(res.status, 500, `${route} without ${gone}`);
+      assert.deepEqual(logs, [{ event: "setup", missing: [gone] }], route);
+    }
+    assert.deepEqual(await (await handle(get("session"), ctx())).json(), { signedIn: false });
+  }
+});
+
+test("the real wiring builds the model client only when its key is set", async () => {
+  const { realServiceDeps } = await import("../netlify/functions/editor.mjs");
+  const env = { ADMIN_PASSWORD: ENV.ADMIN_PASSWORD, SESSION_SECRET: ENV.SESSION_SECRET };
+  const bare = await realServiceDeps(env, { fetch: async () => { throw new Error("no network in tests"); }, store: memoryStore() });
+  assert.equal(bare.client, null);
+  assert.equal(typeof bare.repo.head, "function");
+  const full = await realServiceDeps(ENV, { fetch: async () => { throw new Error("no network in tests"); }, store: memoryStore() });
+  assert.equal(typeof full.client.beta.messages.create, "function");
 });
 
 test("short password or secret counts as missing", async () => {

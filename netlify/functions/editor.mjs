@@ -11,7 +11,15 @@ import { siteIdFrom } from "../editor/site.mjs";
 import schema from "../editor/schema.gen.mjs";
 
 const MAX_BODY = 6_000_000;
-const REQUIRED = ["ADMIN_PASSWORD", "SESSION_SECRET", "ANTHROPIC_API_KEY", "GITHUB_TOKEN", "NETLIFY_RSVP_TOKEN"];
+// Signing in needs only the password and the secret (the RSVP dashboard shares
+// the sign-in); every other route also needs the variables it uses.
+const SIGN_IN_VARS = ["ADMIN_PASSWORD", "SESSION_SECRET"];
+const ROUTE_VARS = {
+  login: [], logout: [], session: [],
+  ask: ["ANTHROPIC_API_KEY", "GITHUB_TOKEN"],
+  preview: ["GITHUB_TOKEN"], publish: ["GITHUB_TOKEN"], undo: ["GITHUB_TOKEN"], cancel: ["GITHUB_TOKEN"], history: ["GITHUB_TOKEN"],
+  status: ["GITHUB_TOKEN", "NETLIFY_RSVP_TOKEN"],
+};
 const WRITE_ROUTES = new Set(["preview", "publish", "undo"]);
 const ROUTES = {
   login: "POST", logout: "POST", session: "GET", ask: "POST", preview: "POST",
@@ -73,7 +81,7 @@ export function createHandler(deps) {
   async function route(name, req, ip) {
     if (name === "session") return json(200, { signedIn: sess.hasSession(req.headers.get("cookie"), env, now()) });
 
-    const missing = REQUIRED.filter((k) => typeof env[k] !== "string" || env[k] === "" ||
+    const missing = [...SIGN_IN_VARS, ...ROUTE_VARS[name]].filter((k) => typeof env[k] !== "string" || env[k] === "" ||
       (k === "ADMIN_PASSWORD" && env[k].length < 8) || (k === "SESSION_SECRET" && env[k].length < 32));
     if (missing.length) {
       log("setup", { missing });
@@ -143,13 +151,19 @@ export function createHandler(deps) {
 
 // The service's real collaborators, from the environment. Exported for tests,
 // which pass their own fetch and store.
+// A missing variable leaves its collaborator unusable, never a failure here:
+// each route checks the variables it needs before it runs.
 export async function realServiceDeps(env, { fetch: fetchImpl = fetch, store }) {
-  const { default: Anthropic } = await import("@anthropic-ai/sdk");
+  let client = null;
+  if (env.ANTHROPIC_API_KEY) {
+    const { default: Anthropic } = await import("@anthropic-ai/sdk");
+    client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+  }
   return {
     repo: createGitHub({ token: env.GITHUB_TOKEN, repo: env.EDITOR_REPO || "jgandertonjr-cpu/jeff-paige-wedding", fetch: fetchImpl }),
     netlify: createNetlify({ token: env.NETLIFY_RSVP_TOKEN, siteId: siteIdFrom(env), fetch: fetchImpl }),
     store,
-    client: new Anthropic({ apiKey: env.ANTHROPIC_API_KEY || "missing" }),
+    client,
     schema,
     now: () => Date.now(),
     random: (n) => crypto.randomBytes(n).toString("hex"),
