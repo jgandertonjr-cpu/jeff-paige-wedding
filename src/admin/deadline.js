@@ -3,11 +3,11 @@
 (function (root) {
   "use strict";
 
-  const ASK_MS = 75 * 1000; // a request to change something can take most of a minute
+  const PROPOSE_MS = 75 * 1000; // sending changes with photos on a slow phone connection can take most of a minute
   const OTHER_MS = 30 * 1000;
 
   function deadlineFor(route) {
-    return String(route).split("?")[0] === "ask" ? ASK_MS : OTHER_MS;
+    return String(route).split("?")[0] === "propose" ? PROPOSE_MS : OTHER_MS;
   }
 
   // Runs request(signal). Settles with its result, or, once `ms` have passed,

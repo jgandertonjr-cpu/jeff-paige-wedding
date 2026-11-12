@@ -11,7 +11,8 @@ import { applyOps } from "../netlify/editor/ops.mjs";
 import {
   PAGE_ORDER, fileOrder, buildIndex, search, opFor, applyLocal, checkLocal, describe, formatDate, formatTime,
   emptyItem, itemName, locate, controlFor, optionLabels, addChange, dropChange, pruneTray, numberPhotos,
-  photoRefs, checkLabel, describeOp, isShown, canAdd,
+  photoRefs, checkLabel, describeOp, isShown, canAdd, remark, removeEntries, toStorage, fromStorage, currentSpots,
+  marksOf, relocate,
 } from "../src/admin/find.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -187,15 +188,42 @@ test("search: synonyms, every word must match, a limit, and nothing for nonsense
   assert.deepEqual(search(index, "zzqx"), []);
   assert.deepEqual(search(index, "   "), []);
   assert.deepEqual(search(index, "parking zzqx"), [], "every word must match");
-  assert.ok(search(index, "the").length <= 12);
+  assert.ok(search(index, "the").length <= 20);
   assert.equal(search(index, "photo", 3).length, 3);
 });
 
-test("search ranks words in the trail above words only in the value", () => {
-  const r = search(index, "deadline", 50);
-  const trailHits = r.findIndex((e) => !e.trail.join(" ").toLowerCase().includes("deadline"));
-  const lastTrail = r.map((e) => e.trail.join(" ").toLowerCase().includes("deadline")).lastIndexOf(true);
-  assert.ok(trailHits === -1 || lastTrail < trailHits || lastTrail === -1);
+const top = (q, n = 1) => search(index, q).slice(0, n).map((e) => `${e.file}:${e.path}`);
+
+test("search: the obvious match comes first, not the page's own settings", () => {
+  assert.deepEqual(top("hotel"), ["travel:/room_block/hotel_name"]);
+  const where = top("where is the hotel", 2);
+  assert.ok(where.includes("travel:/room_block/hotel_name") || where.includes("travel:/room_block/hotel_details"), where.join());
+  assert.deepEqual(top("registry link"), ["registry:/amazon/url"]);
+  assert.ok(top("date", 3).includes("site:/wedding_date"), top("date", 3).join());
+  assert.deepEqual(top("wedding date"), ["site:/wedding_date"]);
+  assert.ok(top("address", 2).includes("site:/venue/street"), top("address", 2).join());
+  assert.deepEqual(top("email"), ["site:/email"]);
+  const dress = top("dress code", 2);
+  const dressRow = content.details.ceremony.items.findIndex((x) => /dress/i.test(x.label));
+  assert.ok(dress.some((p) => p === "afterparty:/details/dress_code" || p.startsWith(`details:/ceremony/items/${dressRow}/`)), dress.join());
+  const maids = top("bridesmaids", 2);
+  assert.ok(maids.length === 2 && maids.every((p) => p.startsWith("party:/bridesmaids/")), maids.join());
+  assert.deepEqual(top("footer"), ["site:/footer_text"]);
+  const welcome = top("welcome", 2);
+  assert.ok(welcome.some((p) => p === "home:/welcome/text" || p === "home:/welcome/title"), welcome.join());
+});
+
+test("search: search-engine and button-wording settings come after everything else that scores the same", () => {
+  const r = search(index, "title", 200);
+  const firstDemoted = r.findIndex((e) => /^\/(seo|labels)\//.test(e.path));
+  assert.ok(firstDemoted > 0, "something else comes first");
+  assert.ok(search(index, "browser tab title").length > 0, "they can still be found");
+});
+
+test("search: shows up to 20 by default, and the stop words are ignored", () => {
+  assert.equal(search(index, "photo").length, 20);
+  assert.deepEqual(top("where is my hotel"), top("hotel"));
+  assert.deepEqual(top("change the footer"), top("footer"));
 });
 
 // ---- operations -----------------------------------------------------------------
@@ -332,6 +360,10 @@ test("a new list item has every field at a sensible empty value", () => {
   const ids = content.guests.guests.map((g) => Number(g.id));
   assert.deepEqual(emptyItem(guests, content.guests.guests), { id: String(Math.max(...ids) + 1), name: "", party: [] });
   assert.deepEqual(emptyItem(guests, []), { id: "1", name: "", party: [] });
+  // A guest removed in the tray still has their number on the site: it is never reused.
+  const top1 = content.guests.guests.reduce((a, g) => (Number(g.id) > Number(a.id) ? g : a));
+  const pending = content.guests.guests.filter((g) => g !== top1);
+  assert.equal(emptyItem(guests, pending, content.guests.guests).id, String(Number(top1.id) + 1));
   assert.deepEqual(emptyItem(field("faq", "/questions"), content.faq.questions), { question: "", answer: "" });
   const tip = emptyItem(field("travel", "/tips/list"), []);
   assert.equal(tip.icon, "sun", "a required choice starts on its first option");
@@ -432,4 +464,144 @@ test("the server's problem labels can be matched back to a change", () => {
   assert.equal(checkLabel(schema, "travel", "/room_block/deadline"), "Travel & Hotels → Room block → Booking deadline");
   assert.equal(checkLabel(schema, "faq", "/questions/3/answer"), "FAQ → Questions → item 4 → Answer");
   assert.equal(checkLabel(schema, "guests", "/guests/0/party/1/name"), "Guest List → Guests → item 1 → Others on this invitation → item 2 → Name");
+});
+
+// ---- the site moving under the tray ------------------------------------------------
+
+const answerOf = (c, question) => c.faq.questions.find((x) => x.question === question)?.answer;
+const add = (tray, op, extra) => addChange(schema, content, tray, op, extra).tray;
+
+test("fingerprints: each list position on a change's path is recorded", () => {
+  const m = marksOf(content, "guests", "/guests/2/party/0/name");
+  assert.equal(m.length, 2);
+  assert.deepEqual(m.map((x) => x.at), [1, 3]);
+  assert.deepEqual(marksOf(content, "travel", "/room_block/deadline"), []);
+  assert.equal(relocate(content, "guests", "/guests/2/party/0/name", m), "/guests/2/party/0/name");
+});
+
+test("a change follows its item when an item above it is removed on the site", () => {
+  const target = content.faq.questions[3].question;
+  const tray = add([], setOp("faq", "/questions/3/answer", "New answer."));
+  const fresh = structuredClone(content);
+  fresh.faq.questions.splice(0, 1);
+  const r = pruneTray(fresh, tray);
+  assert.equal(r.dropped, 0);
+  assert.equal(r.tray[0].op.path, "/questions/2/answer");
+  const after = applyLocal(fresh, r.tray.map((t) => t.op));
+  assert.equal(answerOf(after, target), "New answer.");
+  assert.equal(after.faq.questions.filter((x) => x.answer === "New answer.").length, 1);
+});
+
+test("a change to an item removed on the site is dropped", () => {
+  const tray = add([], setOp("faq", "/questions/3/answer", "New answer."));
+  const fresh = structuredClone(content);
+  fresh.faq.questions.splice(3, 1);
+  assert.deepEqual(pruneTray(fresh, tray), { tray: [], dropped: 1 });
+});
+
+test("a change follows its item when the list is reordered on the site", () => {
+  const target = content.faq.questions[3].question;
+  let tray = add([], setOp("faq", "/questions/3/answer", "New answer."));
+  tray = add(tray, { op: "move", file: "faq", path: "/questions/3", to: 2 });
+  tray = add(tray, { op: "remove", file: "faq", path: "/questions/0" });
+  const fresh = structuredClone(content);
+  fresh.faq.questions.reverse();
+  const r = pruneTray(fresh, tray);
+  assert.equal(r.dropped, 0);
+  const n = content.faq.questions.length;
+  assert.equal(r.tray[0].op.path, `/questions/${n - 4}/answer`);
+  assert.equal(r.tray[1].op.path, `/questions/${n - 4}`);
+  assert.equal(r.tray[1].op.to, n - 5, "the move keeps its direction and distance");
+  assert.equal(r.tray[2].op.path, `/questions/${n - 1}`, "the removal finds its own item");
+  const after = applyLocal(fresh, r.tray.map((t) => t.op));
+  assert.equal(answerOf(after, target), "New answer.");
+  assert.ok(!after.faq.questions.some((x) => x.question === content.faq.questions[0].question));
+});
+
+test("when an item now appears twice, the change is dropped rather than guessed", () => {
+  const tray = add([], setOp("faq", "/questions/3/answer", "New answer."));
+  const fresh = structuredClone(content);
+  fresh.faq.questions.splice(0, 1);
+  fresh.faq.questions.push(structuredClone(content.faq.questions[3]));
+  assert.equal(pruneTray(fresh, tray).dropped, 1);
+});
+
+test("nested lists: a change to a guest's other names follows the guest", () => {
+  const guest = content.guests.guests[2];
+  assert.ok(guest.party.length > 0);
+  let tray = add([], setOp("guests", "/guests/2/party/0/name", "Renamed"));
+  tray = add(tray, { op: "insert", file: "guests", path: "/guests/2/party", index: -1, value: { name: "Plus One" } });
+  const fresh = structuredClone(content);
+  fresh.guests.guests.splice(0, 1);
+  const r = pruneTray(fresh, tray);
+  assert.equal(r.dropped, 0);
+  assert.equal(r.tray[0].op.path, "/guests/1/party/0/name");
+  assert.equal(r.tray[1].op.path, "/guests/1/party");
+  const after = applyLocal(fresh, r.tray.map((t) => t.op)).guests.guests.find((g) => g.id === guest.id);
+  assert.deepEqual(after.party.map((p) => p.name), ["Renamed", ...guest.party.slice(1).map((p) => p.name), "Plus One"]);
+});
+
+test("her own later edits to the same item keep its changes in step", () => {
+  let tray = add([], setOp("faq", "/questions/3/answer", "A"));
+  tray = add(tray, setOp("faq", "/questions/3/question", "Q?"));
+  tray = add(tray, setOp("faq", "/questions/3/answer", "B"));
+  assert.equal(tray.length, 2);
+  assert.deepEqual(pruneTray(content, tray).dropped, 0);
+  const rest = remark(content, dropChange(tray, 0).tray);
+  assert.equal(pruneTray(content, rest).dropped, 0);
+});
+
+// ---- publishing takes exactly what was reviewed ---------------------------------------
+
+test("each change has its own id, and a publish removes exactly the reviewed ones", () => {
+  let tray = add([], setOp("travel", "/room_block/hotel_name", "Inn"));
+  tray = add(tray, { op: "insert", file: "faq", path: "/questions", index: -1, value: { question: "New?", answer: "Yes." } });
+  tray = add(tray, setOp("rsvp", "/rsvp_open", true));
+  assert.equal(new Set(tray.map((t) => t.id)).size, 3);
+  const reviewed = tray.map((t) => t.id);
+  // Meanwhile the first was dropped and another added.
+  let now = remark(content, dropChange(tray, 0).tray);
+  now = add(now, setOp("site", "/footer_text", "Bye"));
+  const left = removeEntries(now, reviewed);
+  assert.deepEqual(left.map((t) => t.op.path), ["/footer_text"]);
+  assert.deepEqual(removeEntries(now, []), now);
+});
+
+// ---- keeping the tray across a reload --------------------------------------------------
+
+test("a reload keeps every change except those that used a new photo, and the ones relying on them", () => {
+  let tray = add([], setOp("travel", "/room_block/hotel_name", "Inn"));
+  tray = add(tray, { op: "insert", file: "gallery", path: "/photos", index: -1, value: { image: "@photo:p1", alt: "New" } }, { photoRef: "p1" });
+  const n = content.gallery.photos.length;
+  tray = add(tray, setOp("gallery", `/photos/${n}/alt`, "Newer"));
+  tray = add(tray, setOp("home", "/hero/photo", "@photo:p2"), { photoRef: "p2" });
+  const saved = JSON.parse(JSON.stringify(toStorage(tray)));
+  assert.equal(saved.length, 4, "every change is written down");
+  assert.deepEqual(saved.map((t) => !!t.photo), [false, true, false, true]);
+  const back = fromStorage(saved);
+  assert.equal(back.lost, 3);
+  assert.deepEqual(back.tray.map((t) => t.op.path), ["/room_block/hotel_name"]);
+  assert.deepEqual(fromStorage("nonsense"), { tray: [], lost: 0 });
+  assert.deepEqual(fromStorage([{ op: null }, 3]), { tray: [], lost: 0 });
+});
+
+// ---- where each change is now ------------------------------------------------------------
+
+test("each change's spot is followed through the later changes in the tray", () => {
+  let tray = add([], setOp("faq", "/questions/3/answer", "A"));
+  tray = add(tray, { op: "remove", file: "faq", path: "/questions/0" });
+  tray = add(tray, setOp("faq", "/questions/0/answer", "B"));
+  tray = add(tray, { op: "move", file: "faq", path: "/questions/0", to: 4 });
+  tray = add(tray, { op: "insert", file: "faq", path: "/questions", index: -1, value: { question: "New?", answer: "Yes." } });
+  tray = add(tray, setOp("faq", "/questions/1/answer", "C"));
+  tray = add(tray, { op: "remove", file: "faq", path: "/questions/1" });
+  const n = content.faq.questions.length;
+  // Item 3 → 2 (an item above removed) → 1 (the item at 0 moved below it) → removed: no spot.
+  // Item 1 (at 0 once item 0 went) → moved to 4 → 3 once the item at 1 was removed.
+  assert.deepEqual(currentSpots(content, tray), [
+    null, "/questions", "/questions/3/answer", "/questions/3", `/questions/${n - 2}`, null, "/questions",
+  ]);
+  const view = applyLocal(content, tray.map((t) => t.op));
+  assert.equal(view.faq.questions[3].answer, "B");
+  assert.equal(view.faq.questions[n - 2].question, "New?");
 });

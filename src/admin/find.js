@@ -83,18 +83,21 @@ export function buildIndex(schema, content) {
   const out = [];
   for (const file of fileOrder(schema)) {
     const def = schema.files[file];
-    collect(out, file, def.fields, content[file], "", [def.label], false, null);
+    collect(out, file, def.fields, content[file], "", [def.label], false, null, -1);
   }
   return out;
 }
 
-function collect(out, file, fields, obj, path, trail, inList, ownNameKey) {
+// `rowAt` is where in the trail a label-and-value row's label sits (-1: none):
+// for such rows (a detail's "Time", a meal's name) that label is what the row is
+// called, so search weighs it like the field's own label.
+function collect(out, file, fields, obj, path, trail, inList, ownNameKey, rowAt) {
   for (const f of fields || []) {
     if (!isShown(f, inList)) continue;
     const p = `${path}/${escapeSegment(f.name)}`;
     const v = isObj(obj) ? obj[f.name] : undefined;
     if (f.type === "object") {
-      collect(out, file, f.fields, v, p, [...trail, f.label], false, null);
+      collect(out, file, f.fields, v, p, [...trail, f.label], false, null, rowAt);
       continue;
     }
     if (f.type === "list") {
@@ -102,13 +105,15 @@ function collect(out, file, fields, obj, path, trail, inList, ownNameKey) {
       out.push({ file, path: p, trail: [...trail, f.label], type: "list", field: f, value: v });
       if (!f.fields) continue;
       items.forEach((item, i) => {
-        collect(out, file, f.fields, item, `${p}/${i}`, [...trail, f.label, itemName(item, i)], true, nameKey(item));
+        const key = nameKey(item);
+        collect(out, file, f.fields, item, `${p}/${i}`, [...trail, f.label, itemName(item, i)], true, key, key === "label" ? trail.length + 1 : -1);
       });
       continue;
     }
     const leafTrail = ownNameKey === f.name ? [...trail.slice(0, -1), f.label] : [...trail, f.label];
     const entry = { file, path: p, trail: leafTrail, type: f.type, field: f, value: v };
     if (f.type === "select") entry.choices = optionLabels(f, fields);
+    if (rowAt >= 0 && ownNameKey !== f.name) entry.rowAt = rowAt;
     out.push(entry);
   }
 }
@@ -226,17 +231,22 @@ export function describe(entry, value = entry.value) {
 
 // ---- search -----------------------------------------------------------------
 
-const STOP = new Set(["the", "a", "an", "of", "to", "on", "in", "for", "my", "our", "and", "change", "edit", "update", "please", "i", "want", "is", "are", "what", "where", "how", "do", "can", "at", "it"]);
+const STOP = new Set([
+  "the", "a", "an", "of", "to", "on", "in", "for", "my", "our", "and", "change", "edit", "update", "please", "i", "want",
+  "is", "are", "what", "where", "how", "do", "can", "at", "it", "where's", "whats", "what's",
+]);
 const GROUPS = [
   ["hotel", "room block", "nearby hotels"],
-  ["time", "ceremony", "schedule"],
   ["picture", "pic", "photo", "image"],
   ["kids", "children", "child"],
   ["colour", "color"],
   ["menu", "nav", "navigation"],
   ["guests", "guest list", "invitation"],
+  ["bridesmaids", "paige's side"],
+  ["groomsmen", "jeff's side"],
 ];
 const ONE_WAY = {
+  time: ["ceremony", "schedule"],
   pink: ["rsvp pink", "rosette"],
   green: ["banner green"],
   deadline: ["reply-by", "reply by"],
@@ -251,7 +261,7 @@ const SYNONYMS = (() => {
 
 const norm = (s) => String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[‘’]/g, "'");
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const startsWord = (text, word) => new RegExp(`(?:^|[^\\p{L}\\p{N}])${escapeRe(word)}`, "u").test(text);
+const tokensOf = (text) => norm(text).split(/[^\p{L}\p{N}:#@']+/u).filter(Boolean);
 
 function queryWords(query) {
   const words = norm(query).split(/\s+/).map((w) => w.replace(/^[^\p{L}\p{N}#@]+|[^\p{L}\p{N}]+$/gu, "")).filter(Boolean);
@@ -270,37 +280,68 @@ function valueText(e) {
   return String(v);
 }
 
-// Entries matching every word of the query, best first: all words in the trail,
-// then some in the trail and some in the value, then the value only. Within
-// those, words matched as typed come before words matched only through a
-// synonym; ties keep page order.
-export function search(index, query, limit = 12) {
+// Where a word is found decides how much it counts: the thing's own label most,
+// then a section it is in, then its current value, then only the page's name.
+// A word found as the start of a longer word counts a little less, and one found
+// only through a synonym less again.
+const LEVEL = { own: 400, section: 300, value: 200, page: 100 };
+const PARTIAL = 10;
+const SYNONYM = 25;
+const DEMOTED = /^\/(seo|labels)\//; // search-engine and button-wording settings
+
+// How well `form` is found in a piece of text: 0 none, 1 as a word start, 2 a whole word.
+function found(tokens, text, form) {
+  if (form.includes(" ")) return new RegExp(`(?:^|[^\\p{L}\\p{N}])${escapeRe(form)}`, "u").test(text) ? 2 : 0;
+  if (tokens.includes(form)) return 2;
+  return tokens.some((t) => t.startsWith(form)) ? 1 : 0;
+}
+
+function pieces(e) {
+  const last = e.trail.length - 1;
+  const out = e.trail.map((text, i) => ({
+    text, level: i === 0 && last > 0 ? LEVEL.page : i === last || i === e.rowAt ? LEVEL.own : LEVEL.section, label: i === last || i === e.rowAt,
+  }));
+  out.push({ text: valueText(e), level: LEVEL.value, label: false });
+  for (const p of out) {
+    p.norm = norm(p.text);
+    p.tokens = tokensOf(p.text);
+  }
+  return out;
+}
+
+// Up to `limit` entries matching every word of the query, best first. Ties go to
+// anything outside the search-engine and button-wording settings, then to the
+// label most fully matched, then to the shallower entry, then to page order.
+export function search(index, query, limit = 20) {
   const words = queryWords(query);
   if (!words.length) return [];
   const scored = [];
   index.forEach((e, order) => {
-    const trail = norm(e.trail.join(" "));
-    const value = norm(valueText(e));
-    let allTrail = true;
-    let anyTrail = false;
-    let direct = 0;
+    const parts = pieces(e);
+    const covered = parts.map(() => new Set());
+    let score = 0;
     for (const w of words) {
       const forms = w.length > 3 && w.endsWith("s") ? [w, w.slice(0, -1)] : [w];
-      const alts = forms.flatMap((x) => SYNONYMS.get(x) || []);
-      const inTrail = forms.some((x) => startsWord(trail, x));
-      const inValue = forms.some((x) => startsWord(value, x));
-      // A word counts where it matched best: as typed before through a synonym.
-      const synTrail = !inTrail && !inValue && alts.some((x) => startsWord(trail, x));
-      const synValue = !inTrail && !inValue && !synTrail && alts.some((x) => startsWord(value, x));
-      if (!inTrail && !inValue && !synTrail && !synValue) return;
-      const trailHit = inTrail || synTrail;
-      allTrail = allTrail && trailHit;
-      anyTrail = anyTrail || trailHit;
-      if (inTrail || inValue) direct++;
+      // A synonym that is itself one of her words is already counted as that word.
+      const alts = forms.flatMap((x) => SYNONYMS.get(x) || []).filter((x) => !words.includes(x));
+      let best = 0;
+      parts.forEach((p, i) => {
+        for (const [list, cost] of [[forms, 0], [alts, SYNONYM]]) {
+          for (const form of list) {
+            const how = found(p.tokens, p.norm, form);
+            if (!how) continue;
+            best = Math.max(best, p.level - cost - (how === 1 ? PARTIAL : 0));
+            if (p.label) for (const t of p.tokens) if (t.startsWith(form.split(" ")[0])) covered[i].add(t);
+          }
+        }
+      });
+      if (!best) return;
+      score += best;
     }
-    scored.push({ e, tier: allTrail ? 0 : anyTrail ? 1 : 2, direct, order });
+    const coverage = Math.max(0, ...parts.map((p, i) => (p.label && p.tokens.length ? covered[i].size / p.tokens.length : 0)));
+    scored.push({ e, score, demoted: DEMOTED.test(e.path) ? 1 : 0, coverage, depth: e.trail.length, order });
   });
-  scored.sort((a, b) => a.tier - b.tier || b.direct - a.direct || a.order - b.order);
+  scored.sort((a, b) => b.score - a.score || a.demoted - b.demoted || b.coverage - a.coverage || a.depth - b.depth || a.order - b.order);
   return scored.slice(0, limit).map((s) => s.e);
 }
 
@@ -456,13 +497,15 @@ function emptyValue(f) {
 }
 
 // A new item for a list, every field at a sensible empty value. Settings that
-// are never shown are left out; an item "id" is the next unused number.
-export function emptyItem(listField, items = []) {
+// are never shown are left out. An item "id" is the next number not used in
+// `items` (the list as it will be) or `alsoUsed` (the list on the site now), so
+// a number removed in the tray is never handed out again.
+export function emptyItem(listField, items = [], alsoUsed = []) {
   const out = {};
   for (const f of listField.fields || []) {
     if (f.type === "hidden") continue;
     if (f.name === "id") {
-      const used = items.map((x) => Number.parseInt(x && x.id, 10)).filter(Number.isFinite);
+      const used = [...items, ...alsoUsed].map((x) => Number.parseInt(x && x.id, 10)).filter(Number.isFinite);
       out.id = String(used.length ? Math.max(...used) + 1 : 1);
       continue;
     }
@@ -472,12 +515,87 @@ export function emptyItem(listField, items = []) {
 }
 
 // ---- the tray ---------------------------------------------------------------
-// The tray is an ordered list of { op, entryLabel, photoRef? }. The page always
-// shows applyLocal(serverContent, the tray's ops).
+// The tray is an ordered list of { id, op, entryLabel, marks, photoRef? }. The
+// page always shows applyLocal(serverContent, the tray's ops).
+//
+// Operations name list items by position, and the site can change underneath
+// (an undo, a publish from another phone). So each change also keeps `marks`:
+// for every list position on its path, the item that was there when the change
+// was made (as stable text). Before a change is applied to fresh content, each
+// mark is checked; an item that moved is followed, and a change whose item is
+// gone (or now appears twice) is dropped rather than guessed.
 
 const within = (path, prefix) => path === prefix || path.startsWith(`${prefix}/`);
 const parentOf = (path) => path.slice(0, path.lastIndexOf("/"));
 const lastIndex = (path) => Number(path.slice(path.lastIndexOf("/") + 1));
+const joinPath = (segs) => segs.map((s) => `/${escapeSegment(s)}`).join("");
+
+// JSON with object keys in a fixed order, so equal items give equal text.
+function stable(v) {
+  if (Array.isArray(v)) return `[${v.map(stable).join(",")}]`;
+  if (isObj(v)) return `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${stable(v[k])}`).join(",")}}`;
+  return JSON.stringify(v ?? null);
+}
+
+// The item at each list position along `path`: [{ at: segment number, item }].
+export function marksOf(content, file, path) {
+  const segs = segmentsOf(path) || [];
+  const marks = [];
+  let node = content[file];
+  for (let k = 0; k < segs.length; k++) {
+    if (Array.isArray(node)) {
+      const i = Number(segs[k]);
+      if (!INDEX.test(segs[k]) || i >= node.length) break;
+      marks.push({ at: k, item: stable(node[i]) });
+      node = node[i];
+    } else if (isObj(node)) node = node[segs[k]];
+    else break;
+  }
+  return marks;
+}
+
+// `path` with each marked position moved to wherever its item is now in
+// `content`; null when an item is gone or appears more than once.
+export function relocate(content, file, path, marks) {
+  if (!Array.isArray(marks) || !marks.length) return path;
+  const segs = segmentsOf(path);
+  if (!segs) return null;
+  let node = content[file];
+  for (let k = 0; k < segs.length; k++) {
+    if (Array.isArray(node)) {
+      const mark = marks.find((m) => m.at === k);
+      let i = Number(segs[k]);
+      if (mark && !(i < node.length && stable(node[i]) === mark.item)) {
+        const hits = [];
+        node.forEach((x, j) => {
+          if (stable(x) === mark.item) hits.push(j);
+        });
+        if (hits.length !== 1) return null;
+        i = hits[0];
+        segs[k] = String(i);
+      }
+      node = node[i];
+    } else if (isObj(node)) node = node[segs[k]];
+    else node = undefined;
+  }
+  return joinPath(segs);
+}
+
+// The tray with every change's marks taken again, by replaying it on `content`.
+// Called whenever the tray changes, since an earlier change can alter an item a
+// later change marked.
+export function remark(content, tray) {
+  const copy = structuredClone(content);
+  return tray.map((t) => {
+    const marks = marksOf(copy, t.op.file, t.op.path);
+    try {
+      applyOne(copy, t.op);
+    } catch {
+      /* left as it is; pruneTray deals with it */
+    }
+    return { ...t, marks };
+  });
+}
 
 // Does `later` rely on `earlier` having happened? Anything in a list after an
 // item was added, removed or moved in it counts on those positions; anything
@@ -524,13 +642,18 @@ export function describeOp(schema, before, op) {
   return `Moved ${name} ${to > from ? "down" : "up"} in ${trail}`;
 }
 
+let changeCount = 0;
+const newChangeId = () => `c${Date.now().toString(36)}-${(++changeCount).toString(36)}`;
+
 // Adds a change to the tray and returns { tray, unchanged? } (a new array; the
 // one given is not changed). Setting something again replaces the earlier
 // setting, and setting it back to how it was drops it; moving the item just
 // moved folds into one move. `unchanged` is true when it would change nothing.
+// `extra` is kept on the new entry (photoRef; id to choose the id).
 export function addChange(schema, content, tray, op, extra = {}) {
   const ops = tray.map((t) => t.op);
-  const entry = (o, before) => ({ ...extra, op: o, entryLabel: describeOp(schema, before, o) });
+  const entry = (o, before) => ({ id: newChangeId(), ...extra, op: o, entryLabel: describeOp(schema, before, o) });
+  const done = (next) => ({ tray: remark(content, next) });
 
   if (op.op === "set") {
     let k = -1;
@@ -547,11 +670,11 @@ export function addChange(schema, content, tray, op, extra = {}) {
       const next = [...tray];
       if (same(valueAt(before, op.file, op.path), op.value)) next.splice(k, 1);
       else next[k] = entry(op, before);
-      return { tray: next };
+      return done(next);
     }
     const now = applyLocal(content, ops);
     if (same(valueAt(now, op.file, op.path), op.value)) return { tray, unchanged: true };
-    return { tray: [...tray, entry(op, now)] };
+    return done([...tray, entry(op, now)]);
   }
 
   const prev = ops[ops.length - 1];
@@ -561,13 +684,14 @@ export function addChange(schema, content, tray, op, extra = {}) {
     const merged = { op: "move", file: op.file, path: prev.path, to: op.to };
     const next = tray.slice(0, -1);
     if (lastIndex(prev.path) !== op.to) next.push(entry(merged, before));
-    return { tray: next };
+    return done(next);
   }
-  return { tray: [...tray, entry(op, applyLocal(content, ops))] };
+  return done([...tray, entry(op, applyLocal(content, ops))]);
 }
 
 // Dropping change `i` also drops every later change that relies on it.
-// Returns { tray, dropped: positions in the given tray }.
+// Returns { tray, dropped: positions in the given tray }. Take the marks again
+// (remark) before keeping the result.
 export function dropChange(tray, i) {
   const dropped = [i];
   for (let j = i + 1; j < tray.length; j++) {
@@ -576,26 +700,125 @@ export function dropChange(tray, i) {
   return { tray: tray.filter((_, j) => !dropped.includes(j)), dropped };
 }
 
-// After fresh content arrives: drops the changes that no longer apply to it,
-// and those that relied on them. Returns { tray, dropped: count }; the same
-// tray when nothing was dropped.
+// The tray without the changes whose ids are listed: what is left once the
+// changes that went into a publish are on the site.
+export function removeEntries(tray, ids) {
+  const gone = new Set(ids);
+  return gone.size ? tray.filter((t) => !gone.has(t.id)) : tray;
+}
+
+// After fresh content arrives: each change is checked against its marks and
+// moved with its item, or dropped (with the changes that relied on it) when its
+// item is gone or can't be told apart, or when it no longer applies.
+// Returns { tray, dropped: count }; the same tray when nothing had to change.
 export function pruneTray(content, tray) {
-  let current = content;
+  const copy = structuredClone(content);
   const keep = [];
   const gone = [];
+  let moved = false;
   for (const t of tray) {
     if (gone.some((g) => dependsOn(t.op, g))) {
       gone.push(t.op);
       continue;
     }
+    let op = t.op;
+    const path = relocate(copy, op.file, op.path, t.marks);
+    if (path === null) {
+      gone.push(t.op);
+      continue;
+    }
+    if (path !== op.path) {
+      op = { ...op, path };
+      if (op.op === "move" && op.to !== -1) {
+        const list = valueAt(copy, op.file, parentOf(path));
+        const to = op.to + (lastIndex(path) - lastIndex(t.op.path));
+        op.to = Math.max(0, Math.min(to, Array.isArray(list) ? list.length - 1 : 0));
+      }
+      moved = true;
+    }
     try {
-      current = applyLocal(current, [t.op]);
-      keep.push(t);
+      applyOne(copy, op);
+      keep.push(op === t.op ? t : { ...t, op });
     } catch {
       gone.push(t.op);
     }
   }
-  return gone.length ? { tray: keep, dropped: gone.length } : { tray, dropped: 0 };
+  return gone.length || moved ? { tray: keep, dropped: gone.length } : { tray, dropped: 0 };
+}
+
+// What is kept in the tab's storage: every change, the ones that use a new photo
+// marked, since photos themselves can't be kept.
+export function toStorage(tray) {
+  return tray.map(({ id, op, entryLabel, marks, photoRef }) => {
+    const out = { id, op, entryLabel, marks };
+    if (photoRef || photoRefs(op.value).length) out.photo = true;
+    return out;
+  });
+}
+
+// The tray as kept, minus the changes that used a new photo and those relying
+// on them. Returns { tray, lost: how many were dropped }.
+export function fromStorage(saved) {
+  let tray = (Array.isArray(saved) ? saved : []).filter((t) =>
+    isObj(t) && isObj(t.op) && typeof t.op.file === "string" && typeof t.op.path === "string" && typeof t.entryLabel === "string");
+  tray = tray.map((t) => ({ ...t, id: typeof t.id === "string" ? t.id : newChangeId(), marks: Array.isArray(t.marks) ? t.marks : [] }));
+  let lost = 0;
+  for (let i = tray.length - 1; i >= 0; i--) {
+    if (i >= tray.length || !(tray[i].photo || photoRefs(tray[i].op.value).length)) continue;
+    const r = dropChange(tray, i);
+    lost += r.dropped.length;
+    tray = r.tray;
+  }
+  return { tray: tray.map(({ photo, ...t }) => t), lost };
+}
+
+// Where each change is in the content the whole tray makes (the page shows),
+// following it through the later changes; null when a later change removed it.
+// A set's spot is its field, an added or moved item's spot is the item, and a
+// removal's spot is its list.
+export function currentSpots(content, tray) {
+  const copy = structuredClone(content);
+  const spots = [];
+  for (const t of tray) {
+    const op = t.op;
+    let spot = op.path;
+    let shift = null;
+    if (op.op === "insert") {
+      const list = valueAt(copy, op.file, op.path);
+      const n = Array.isArray(list) ? list.length : 0;
+      const at = op.index === -1 || op.index === undefined ? n : op.index;
+      spot = `${op.path}/${at}`;
+      shift = (i) => (i >= at ? i + 1 : i);
+    } else if (op.op === "remove") {
+      spot = parentOf(op.path);
+      const k = lastIndex(op.path);
+      shift = (i) => (i === k ? null : i > k ? i - 1 : i);
+    } else if (op.op === "move") {
+      const list = valueAt(copy, op.file, parentOf(op.path));
+      const from = lastIndex(op.path);
+      const to = op.to === -1 ? (Array.isArray(list) ? list.length - 1 : 0) : op.to;
+      spot = `${parentOf(op.path)}/${to}`;
+      shift = (i) => (i === from ? to : from < to && i > from && i <= to ? i - 1 : from > to && i >= to && i < from ? i + 1 : i);
+    }
+    if (shift) {
+      const list = op.op === "insert" ? op.path : parentOf(op.path);
+      for (let j = 0; j < spots.length; j++) {
+        const s = spots[j];
+        if (!s || tray[j].op.file !== op.file || !s.startsWith(`${list}/`)) continue;
+        const rest = s.slice(list.length + 1);
+        const cut = rest.indexOf("/");
+        const i = shift(Number(cut < 0 ? rest : rest.slice(0, cut)));
+        spots[j] = i === null ? null : `${list}/${i}${cut < 0 ? "" : rest.slice(cut)}`;
+      }
+    }
+    try {
+      applyOne(copy, op);
+    } catch {
+      /* a change that doesn't apply keeps the spot it named */
+    }
+    spots.push(spot);
+  }
+  return spots;
 }
 
 // The phone photos a value uses ("@photo:<ref>"), in order.

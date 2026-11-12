@@ -7,6 +7,7 @@ import "./deadline.js";
 import {
   fileOrder, buildIndex, search, locate, controlFor, describe, isShown, canAdd, itemName, isPhonePhoto, optionLabels,
   opFor, applyLocal, checkLocal, emptyItem, addChange, dropChange, pruneTray, numberPhotos, photoRefs, checkLabel,
+  remark, removeEntries, toStorage, fromStorage, currentSpots, marksOf, relocate,
 } from "./find.js";
 
 const API = "/api/editor/";
@@ -19,6 +20,9 @@ const PHOTO_MAX_BYTES = 2.8 * 1024 * 1024;
 const PHOTOS_TOTAL_BYTES = 4.2 * 1024 * 1024; // three photos and the changes must fit in one request
 const TRAY_KEY = "editor-tray";
 const MORE_GROUPS = new Set(["seo", "labels"]);
+const SHOW_MATCHES = 20;
+const MAX_REQUEST_CHARS = 5_500_000; // the server takes 6 MB; keep clear of it
+const QUIET_MS = 400; // after a tap that redraws a list, taps are ignored this long
 
 const SAY = {
   cantReach: "I can't reach the site right now. Try again in a minute.",
@@ -43,7 +47,10 @@ const SAY = {
   same: "That's the same as before, so nothing was added.",
   tooMany: "That's a lot of changes at once. Review and publish these first.",
   photoLimit: "You can add three new photos at a time. Publish these first.",
-  photosLost: "New photos can't be kept when the page reloads, so I removed the changes that used them.",
+  locked: "Finish or cancel the review first.",
+  siteMovedScreen: "The site changed, so what you had open isn't there any more.",
+  photosTooBig: "Those photos are too big to send together. Remove one and try again.",
+  moreMatches: `Showing the first ${SHOW_MATCHES}. Add a word to narrow it down.`,
   gettingReady: "Getting your changes ready.",
   fixFirst: "A few things need fixing first.",
   noChanges: "There are no changes to review yet.",
@@ -53,6 +60,8 @@ const SAY = {
 const siteChanged = (n) =>
   n === 1 ? "The site changed, so I removed one change that no longer fits." : `The site changed, so I removed ${n} changes that no longer fit.`;
 const changesReady = (n) => (n === 1 ? "1 change ready" : `${n} changes ready`);
+const photosLost = (n) =>
+  `New photos aren't kept when the page reloads, so I removed ${n === 1 ? "one change" : `${n} changes`} that used them. Please add them again.`;
 
 const $ = (id) => document.getElementById(id);
 const ui = {
@@ -187,7 +196,10 @@ let signedIn = false;
 let site = null; // { schema, content, images } from the server
 let view = null; // site.content with the tray applied: what every screen shows
 let index = null; // search entries over `view`, built when first needed
-let tray = []; // { op, entryLabel, photoRef? }[]
+let tray = []; // { id, op, entryLabel, marks, photoRef? }[]
+let spots = []; // where each tray change is in `view` (currentSpots)
+let gen = 0; // goes up each time fresh content arrives; screens check their place again
+let liveDraft = null; // the Change screen's value as typed: { key, value }
 const photos = new Map(); // phone photos by ref: { base64, thumbUrl, bytes }
 const drafts = new Map(); // item forms in progress, by route key
 let flashText = ""; // a sentence shown at the top of the current screen
@@ -198,14 +210,14 @@ const traySig = () => JSON.stringify(trayOps());
 
 function refreshView() {
   view = site ? applyLocal(site.content, trayOps()) : null;
+  spots = site ? currentSpots(site.content, tray) : [];
   index = null;
 }
 const searchIndex = () => (index ||= buildIndex(site.schema, view));
 
 function saveTray() {
   try {
-    const keep = tray.filter((t) => !t.photoRef && !photoRefs(t.op.value).length);
-    if (keep.length) sessionStorage.setItem(TRAY_KEY, JSON.stringify(keep.map(({ op, entryLabel }) => ({ op, entryLabel }))));
+    if (tray.length) sessionStorage.setItem(TRAY_KEY, JSON.stringify(toStorage(tray)));
     else sessionStorage.removeItem(TRAY_KEY);
   } catch {
     /* private browsing: the tray just isn't kept across a reload */
@@ -218,34 +230,48 @@ function restoreTray() {
   let saved = [];
   try {
     sessionStorage.removeItem("editor-draft"); // left by the old page
-    const parsed = JSON.parse(sessionStorage.getItem(TRAY_KEY) || "[]");
-    if (Array.isArray(parsed)) {
-      saved = parsed.filter((t) => t && t.op && typeof t.op === "object" && typeof t.entryLabel === "string");
-    }
+    saved = JSON.parse(sessionStorage.getItem(TRAY_KEY) || "[]");
   } catch {
     saved = [];
   }
-  let lost = false;
-  for (let i = saved.length - 1; i >= 0; i--) {
-    if (i < saved.length && photoRefs(saved[i].op.value).length) {
-      saved = dropChange(saved, i).tray;
-      lost = true;
-    }
-  }
-  tray = saved;
-  if (lost) flashText = SAY.photosLost;
+  const restored = fromStorage(saved);
+  tray = restored.tray;
+  if (restored.lost) flashText = photosLost(restored.lost);
 }
 
 function setTray(next) {
-  tray = next;
+  tray = site ? remark(site.content, next) : next;
   saveTray();
   refreshView();
   forgetUnusedPhotos();
   updateTrayBar();
 }
 
-// Adds a change. Returns "added", "same" (nothing would change) or "full".
+// While a reviewed set of changes is on its way (from the summary card until it
+// is live, cancelled or has failed), the tray stays as it was reviewed.
+const SETTLED = new Set(["live", "cancelled", "failed", "undone", "stopped"]);
+const locked = () => !!review.card && !SETTLED.has(review.card.state);
+const lockLine = () => (locked() ? el("p", { className: "flash", role: "status", text: SAY.locked }) : null);
+let wasLocked = false;
+// A card changed state: when that unlocks (or locks) the tray, the open screen is redrawn.
+function lockMaybeChanged() {
+  const now = locked();
+  if (now === wasLocked) return;
+  wasLocked = now;
+  if (signedIn && site && route.name !== "review") render({ scroll: ui.scroller.scrollTop });
+}
+
+// After a tap that redraws a list, the next control can land under the same
+// finger: taps are ignored for a moment.
+let quietUntil = 0;
+const hush = () => {
+  quietUntil = Date.now() + QUIET_MS;
+};
+const hushed = () => Date.now() < quietUntil;
+
+// Adds a change. Returns "added", "same" (nothing would change), "full" or "locked".
 function addToTray(op, extra) {
+  if (locked()) return "locked";
   const result = addChange(site.schema, site.content, tray, op, extra);
   if (result.unchanged) return "same";
   if (result.tray.length > MAX_CHANGES) return "full";
@@ -257,6 +283,7 @@ function photoRefsInUse() {
   const refs = new Set();
   for (const t of tray) for (const r of photoRefs(t.op.value)) refs.add(r);
   for (const d of drafts.values()) for (const r of photoRefs(d)) refs.add(r);
+  if (liveDraft) for (const r of photoRefs(liveDraft.value)) refs.add(r);
   return refs;
 }
 function forgetUnusedPhotos() {
@@ -282,8 +309,13 @@ function updateTrayBar() {
   ui.trayBar.hidden = !show;
   if (tray.length) ui.trayCount.textContent = changesReady(tray.length);
 }
-ui.trayOpen.addEventListener("click", () => navigate({ name: "tray" }));
-ui.trayReview.addEventListener("click", () => navigate({ name: "review" }));
+const goOnce = (name) => () => {
+  if (hushed() || route.name === name) return;
+  hush();
+  navigate({ name });
+};
+ui.trayOpen.addEventListener("click", goOnce("tray"));
+ui.trayReview.addEventListener("click", goOnce("review"));
 
 // While she types on a phone, the bar makes way for the keyboard.
 ui.screen.addEventListener("focusin", (e) => {
@@ -306,6 +338,7 @@ function validRoute(r) {
 
 function navigate(next, { replace = false } = {}) {
   flashText = "";
+  liveDraft = null;
   if (next.name === "review") review.fresh = true;
   const state = { ...next, app: "editor", depth: replace ? route.depth : route.depth + 1 };
   if (!replace) history.replaceState({ ...route, app: "editor", scroll: ui.scroller.scrollTop }, "");
@@ -353,13 +386,57 @@ const SCREENS = {
   tray: trayScreen,
 };
 
-// Draws the current screen. `focus` is a node to focus instead of the heading.
+// The spot a screen shows, which is checked again when fresh content arrives.
+function routeSpot(r) {
+  if (!r.file || typeof r.path !== "string") return null;
+  if (r.name === "item" || (r.name === "photo" && r.draft)) return r.at >= 0 ? `${r.path}/${r.at}` : r.path;
+  return r.path;
+}
+
+// After fresh content: the screen follows its item to where it is now, or, when
+// it is gone, Find says so. Returns nothing; updates `route`.
+function followRoute() {
+  const spot = routeSpot(route);
+  if (!spot || route.gen === gen || !Array.isArray(route.marks)) return;
+  const now = relocate(view, route.file, spot, route.marks);
+  if (now === null) {
+    flashText = SAY.siteMovedScreen;
+    route = { name: "find", q: "", depth: route.depth, app: "editor" };
+    return;
+  }
+  if (now === spot) return;
+  const next = { ...route };
+  if (route.name === "item" || (route.name === "photo" && route.draft)) {
+    if (route.at >= 0) {
+      next.path = now.slice(0, now.lastIndexOf("/"));
+      next.at = Number(now.slice(now.lastIndexOf("/") + 1));
+    } else next.path = now;
+    const oldKey = itemKey(route.file, route.path, route.at);
+    const newKey = itemKey(next.file, next.path, next.at);
+    if (drafts.has(oldKey) && oldKey !== newKey) {
+      drafts.set(newKey, drafts.get(oldKey));
+      drafts.delete(oldKey);
+    }
+    if (route.draft) next.draft = newKey;
+  } else {
+    if (liveDraft && liveDraft.key === changeKey(route)) liveDraft = { ...liveDraft, key: changeKey({ ...route, path: now }) };
+    next.path = now;
+  }
+  route = next;
+}
+
+// Draws the current screen. `keepFocus` is a node to focus instead of the heading.
 function render({ scroll = 0, keepFocus = null } = {}) {
   if (!site) return;
+  followRoute();
   const draw = SCREENS[route.name] || findScreen;
   const parts = draw(route);
   ui.screen.replaceChildren(...parts);
   ui.screen.hidden = false;
+  // Remember what this screen shows, as of now, so it can be found again.
+  const spot = routeSpot(route);
+  route = { ...route, gen, marks: spot ? marksOf(view, route.file, spot) : undefined };
+  history.replaceState({ ...route, app: "editor" }, "");
   renderedSig = JSON.stringify(route);
   updateTrayBar();
   requestAnimationFrame(() => {
@@ -369,8 +446,7 @@ function render({ scroll = 0, keepFocus = null } = {}) {
   if (target) target.focus({ preventScroll: true });
 }
 
-// Screens where she may be part-way through typing: never redrawn under her.
-const typingScreen = () => ["change", "item", "photo"].includes(route.name);
+const changeKey = (r) => `${r.file}:${r.path}`;
 
 // The top of every screen: a back control, where it is, and its title.
 function head(title, { eyebrow = "", backLabel = "Back", noBack = false } = {}) {
@@ -428,8 +504,10 @@ function valueView(entry) {
   return el("span", { className: "row-value", text: describe(entry) });
 }
 
-// Is anything at or under this spot waiting in the tray?
-const pendingAt = (file, path) => tray.some((t) => t.op.file === file && (t.op.path === path || t.op.path.startsWith(`${path}/`)));
+// Is anything at or under this spot waiting in the tray? Spots follow each
+// change through the later ones, so the tag stays on the right row.
+const pendingAt = (file, path) =>
+  tray.some((t, i) => t.op.file === file && spots[i] && (spots[i] === path || spots[i].startsWith(`${path}/`)));
 
 function openEntry(entry) {
   const kind = controlFor(entry);
@@ -464,7 +542,8 @@ function findScreen(r) {
       status.textContent = "";
       return;
     }
-    const found = search(searchIndex(), q);
+    const all = search(searchIndex(), q, SHOW_MATCHES + 1);
+    const found = all.slice(0, SHOW_MATCHES);
     if (!found.length) {
       results.replaceChildren(el("p", { className: "lead no-match", text: SAY.noMatch }));
     } else {
@@ -475,11 +554,13 @@ function findScreen(r) {
           value: valueView(e),
           pending: pendingAt(e.file, e.path),
           onClick: () => openEntry(e),
-        }))));
+        }))),
+        all.length > SHOW_MATCHES ? el("p", { className: "hint more-matches", text: SAY.moreMatches }) : null);
     }
     clearTimeout(timer);
     timer = setTimeout(() => {
-      status.textContent = found.length ? `${found.length} ${found.length === 1 ? "match" : "matches"}` : SAY.noMatch;
+      status.textContent = !found.length ? SAY.noMatch
+        : all.length > SHOW_MATCHES ? SAY.moreMatches : `${found.length} ${found.length === 1 ? "match" : "matches"}`;
     }, 500);
   };
   input.addEventListener("input", show);
@@ -766,8 +847,11 @@ function counterFor(entry, id) {
 // ---- Change (one thing) ------------------------------------------------------
 
 function changeScreen(r) {
-  const entry = locate(site.schema, view, r.file, r.path);
-  if (!entry || entry.item || controlFor(entry) === null) return goneScreen("Change");
+  const found = locate(site.schema, view, r.file, r.path);
+  if (!found || found.item || controlFor(found) === null) return goneScreen("Change");
+  // A redraw (fresh content, signing in again) keeps what she has typed.
+  const key = changeKey(r);
+  const entry = liveDraft && liveDraft.key === key ? { ...found, value: liveDraft.value } : found;
   const title = entry.field.label;
   const id = newId("field");
   const titleId = newId("title");
@@ -779,6 +863,7 @@ function changeScreen(r) {
   const ctl = control({
     entry, id, labelId: titleId, describedBy,
     onEdit: (v) => {
+      liveDraft = { key, value: v };
       if (counter) counter.set(v);
       if (error.textContent) {
         error.textContent = "";
@@ -804,15 +889,16 @@ function changeScreen(r) {
       error.textContent = SAY.gone;
       return;
     }
-    if (outcome === "full") {
-      error.textContent = SAY.tooMany;
+    if (outcome === "full" || outcome === "locked") {
+      error.textContent = outcome === "full" ? SAY.tooMany : SAY.locked;
       return;
     }
     saving = true;
     save.disabled = true;
+    liveDraft = null;
     announce(outcome === "same" ? SAY.same : SAY.added);
     back();
-  });
+  }, { disabled: locked() });
   ctl.node.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && e.target.tagName === "INPUT" && !e.isComposing) {
       e.preventDefault();
@@ -826,9 +912,13 @@ function changeScreen(r) {
   }
   return [
     ...headParts,
+    lockLine(),
     el("div", { className: "field" }, ctl.node, counter && counter.node, hints, error),
-    el("div", { className: "actions" }, save, button("Cancel", "line", back)),
-  ];
+    el("div", { className: "actions" }, save, button("Cancel", "line", () => {
+      liveDraft = null;
+      back();
+    })),
+  ].filter(Boolean);
 }
 
 // ---- List ---------------------------------------------------------------------
@@ -842,7 +932,10 @@ function listScreen(r) {
   const atMin = f.min !== undefined && items.length <= f.min;
   const addable = canAdd(f);
   const photoField = (f.fields || []).find((x) => x.type === "image");
+  const frozen = locked();
   const parts = head(f.label, { eyebrow: trailText(list.trail.slice(0, -1)) });
+  const lockNote = lockLine();
+  if (lockNote) parts.push(lockNote);
 
   const say = el("p", { className: "flash", role: "status", hidden: true });
   const tell = (text) => {
@@ -861,23 +954,25 @@ function listScreen(r) {
           drafts.delete(key);
           navigate({ name: "item", file: r.file, path: r.path, at: i });
         }, { "aria-label": `Edit ${name}` }),
-        button("Move up", "text", () => move(i, i - 1, "up"), { "aria-label": `Move ${name} up`, disabled: i === 0, "data-act": "up" }),
-        button("Move down", "text", () => move(i, i + 1, "down"), { "aria-label": `Move ${name} down`, disabled: i === items.length - 1, "data-act": "down" }),
+        button("Move up", "text", () => move(i, i - 1, "up"), { "aria-label": `Move ${name} up`, disabled: frozen || i === 0, "data-act": "up" }),
+        button("Move down", "text", () => move(i, i + 1, "down"), { "aria-label": `Move ${name} down`, disabled: frozen || i === items.length - 1, "data-act": "down" }),
       ];
-      if (!atMin) btns.push(button("Remove", "text", () => confirmRemove(), { "aria-label": `Remove ${name}` }));
+      if (!atMin) btns.push(button("Remove", "text", () => !hushed() && confirmRemove(), { "aria-label": `Remove ${name}`, disabled: frozen }));
       actions.replaceChildren(...btns);
     };
     const confirmRemove = () => {
       const yes = button("Yes, remove", "dark", () => {
+        if (hushed()) return;
         yes.disabled = true;
         const outcome = addToTray(opFor(list, { type: "remove", at: i }));
-        if (outcome === "full") {
-          tell(SAY.tooMany);
+        if (outcome === "full" || outcome === "locked") {
+          tell(outcome === "full" ? SAY.tooMany : SAY.locked);
           showActions();
           return;
         }
+        hush();
         announce(`Removed ${name}. You can undo it from your changes.`);
-        render({ scroll: ui.scroller.scrollTop });
+        render({ scroll: ui.scroller.scrollTop }); // focus goes to the list's heading
       });
       const keep = button("Keep it", "line", () => {
         showActions();
@@ -894,9 +989,10 @@ function listScreen(r) {
   });
 
   const move = (from, to, dir) => {
+    if (hushed()) return;
     const outcome = addToTray(opFor(list, { type: "move", at: from, to }));
-    if (outcome === "full") {
-      tell(SAY.tooMany);
+    if (outcome === "full" || outcome === "locked") {
+      tell(outcome === "full" ? SAY.tooMany : SAY.locked);
       return;
     }
     announce(`Moved ${dir}. It is now number ${to + 1}.`);
@@ -922,7 +1018,7 @@ function listScreen(r) {
     parts.push(el("div", { className: "actions" }, button("Add one", "dark", () => {
       drafts.delete(itemKey(r.file, r.path, -1));
       navigate({ name: "item", file: r.file, path: r.path, at: -1 });
-    })));
+    }, { disabled: frozen })));
   }
   for (const n of notes) parts.push(el("p", { className: "hint list-note", text: n }));
   return parts;
@@ -940,7 +1036,9 @@ function itemScreen(r) {
   const isNew = r.at === -1;
   if (!isNew && !(r.at >= 0 && r.at < items.length)) return goneScreen("Item");
   const key = itemKey(r.file, r.path, r.at);
-  if (!drafts.has(key)) drafts.set(key, isNew ? emptyItem(f, items) : structuredClone(items[r.at]));
+  // A new guest's number is not one already on the site, even if that guest is removed in the tray.
+  const onSite = locate(site.schema, site.content, r.file, r.path);
+  if (!drafts.has(key)) drafts.set(key, isNew ? emptyItem(f, items, Array.isArray(onSite?.value) ? onSite.value : []) : structuredClone(items[r.at]));
   const draft = drafts.get(key);
   const current = isNew ? null : items[r.at];
   const itemPath = isNew ? null : `${r.path}/${r.at}`;
@@ -982,7 +1080,7 @@ function itemScreen(r) {
           ctl.invalid(false);
         }
       },
-      onPhoto: () => navigate({ name: "photo", file: r.file, path: r.path, draft: key, field: sub.name, label: sub.label, required: !!sub.required }),
+      onPhoto: () => navigate({ name: "photo", file: r.file, path: r.path, at: r.at, draft: key, field: sub.name, label: sub.label, required: !!sub.required }),
     });
     const labelNode = ["choice", "order", "switch", "photo"].includes(controlFor(entry))
       ? el("p", { className: "field-label", id: labelId, text: sub.label })
@@ -994,6 +1092,7 @@ function itemScreen(r) {
   let saving = false;
   const save = button(isNew ? "Add it" : "Save changes", "publish", () => {
     if (saving) return;
+    if (locked()) return flash(SAY.locked);
     let firstBad = null;
     for (const c of controls) {
       const problem = checkLocal(c.sub, c.ctl.get());
@@ -1034,7 +1133,7 @@ function itemScreen(r) {
     setTray(next);
     announce(changed ? SAY.added : SAY.same);
     back();
-  });
+  }, { disabled: locked() });
   const cancel = button("Cancel", "line", () => {
     drafts.delete(key);
     forgetUnusedPhotos();
@@ -1043,9 +1142,10 @@ function itemScreen(r) {
 
   return [
     ...head(title, { eyebrow: trailText(list.trail) }),
+    lockLine(),
     ...fields,
     el("div", { className: "actions" }, save, cancel),
-  ];
+  ].filter(Boolean);
 }
 
 // ---- Photo --------------------------------------------------------------------
@@ -1080,6 +1180,7 @@ function photoScreen(r) {
 
   const use = (value) => {
     if (busy) return;
+    if (locked() && !r.draft) return tell(SAY.locked);
     if (r.draft) {
       const d = drafts.get(r.draft);
       if (d) d[r.field] = value;
@@ -1090,7 +1191,7 @@ function photoScreen(r) {
     const entry = locate(site.schema, view, r.file, r.path);
     if (!entry) return tell(SAY.gone);
     const outcome = addToTray(opFor(entry, { type: "set", value }), isPhonePhoto(value) ? { photoRef: value.slice(7) } : {});
-    if (outcome === "full") return tell(SAY.tooMany);
+    if (outcome === "full" || outcome === "locked") return tell(outcome === "full" ? SAY.tooMany : SAY.locked);
     busy = true;
     announce(outcome === "same" ? SAY.same : SAY.added);
     back();
@@ -1146,14 +1247,18 @@ function photoScreen(r) {
 
   const parts = [
     ...head(label || "Photo", { eyebrow }),
+    r.draft ? null : lockLine(),
     status,
     el("div", { className: "actions photo-actions" }, fromPhone,
       !required && current ? button("No photo", "line", () => use("")) : null),
     fileInput,
   ];
+  const frozen = locked() && !r.draft;
+  if (frozen) for (const b of [...mine, ...onSite].map((li) => li.firstChild)) b.disabled = true;
+  if (frozen) fromPhone.disabled = true;
   if (mine.length) parts.push(el("h3", { className: "group-title", text: "Your new photos" }), el("ul", { className: "tiles" }, mine));
   parts.push(el("h3", { className: "group-title", text: "Photos already on the site" }), el("ul", { className: "tiles" }, onSite));
-  return parts;
+  return parts.filter(Boolean);
 }
 
 // Upright, long side at most 2000px, JPEG. Smaller and softer if still too big
@@ -1226,16 +1331,20 @@ function trayScreen() {
     parts.push(el("p", { className: "lead", text: "No changes yet. Find something to change and save it, and it shows up here." }));
     return parts;
   }
+  const frozen = locked();
+  const note = lockLine();
+  if (note) parts.push(note);
   const rows = tray.map((t, i) => {
     const li = el("li", { className: "change" });
     const words = el("p", { className: "change-words", text: t.entryLabel });
     const actions = el("div", { className: "item-actions" });
-    const offer = () => actions.replaceChildren(button("Undo this one", "text", () => ask(), { "aria-label": `Undo this one: ${t.entryLabel}` }));
+    const offer = () => actions.replaceChildren(button("Undo this one", "text", () => ask(), { "aria-label": `Undo this one: ${t.entryLabel}`, disabled: frozen }));
     const ask = () => {
+      if (hushed() || locked()) return;
       const plan = dropChange(tray, i);
       const others = plan.dropped.length - 1;
       if (!others) return drop(plan.tray);
-      const yes = button("Yes, undo them", "dark", () => drop(plan.tray));
+      const yes = button("Yes, undo them", "dark", () => !hushed() && drop(plan.tray));
       const keep = button("Keep them", "line", () => {
         offer();
         actions.querySelector("button")?.focus();
@@ -1251,9 +1360,11 @@ function trayScreen() {
     return li;
   });
   const drop = (next) => {
+    if (locked()) return;
+    hush(); // the next row's control is now under her finger
     setTray(next);
     announce("Undone. That change is out of the tray.");
-    render({ scroll: ui.scroller.scrollTop });
+    render({ scroll: ui.scroller.scrollTop }); // focus goes to the list's heading
   };
   parts.push(el("ol", { className: "changes" }, rows));
   parts.push(el("div", { className: "actions" }, button("Review", "publish", () => navigate({ name: "review" }, { replace: false }))));
@@ -1279,6 +1390,10 @@ function reviewScreen() {
   if (card && (card.sig === sig || card.published)) {
     if (review.notice) body.append(el("p", { className: "notice", text: review.notice }));
     body.append(card.node);
+  } else if (review.outcome && review.outcome.sticky && !fresh) {
+    // The site changed under her: she checks her changes before asking again.
+    body.append(...outcomeNodes(review.outcome));
+    if (!tray.length) body.append(el("p", { className: "lead", text: SAY.noChanges }));
   } else if (!tray.length) {
     body.append(el("p", { className: "lead", text: SAY.noChanges }));
   } else if (review.pending) {
@@ -1304,6 +1419,14 @@ function outcomeNodes(o) {
   if (o.kind === "problems") out.push(el("p", { className: "lead", text: SAY.fixFirst }), problemList(o.problems));
   else if (o.kind === "unreachable") out.push(el("p", { className: "card-said", text: SAY.cantReach }), el("div", { className: "actions" }, button("Try again", "line", () => render())));
   else out.push(el("p", { className: "card-said", text: o.text }));
+  if (o.sticky && tray.length) {
+    out.push(el("div", { className: "actions" },
+      button("See my changes", "line", () => navigate({ name: "tray" })),
+      button("Review again", "text", () => {
+        review.fresh = true;
+        render();
+      })));
+  }
   return out;
 }
 
@@ -1314,9 +1437,18 @@ async function propose() {
   review.outcome = null;
   review.notice = "";
   const sig = traySig();
+  const ids = tray.map((t) => t.id); // exactly what this review covers
   const { ops, refs } = numberPhotos(trayOps());
   const request = { ops };
   if (refs.length) request.photos = refs.map((ref) => photos.get(ref)?.base64 || "");
+  if (typeof site.version === "string") request.base = site.version;
+  if (JSON.stringify(request).length > MAX_REQUEST_CHARS) {
+    review.pending = false;
+    review.sig = sig;
+    review.outcome = { kind: "text", text: SAY.photosTooBig };
+    if (route.name === "review") render();
+    return;
+  }
   let data = null;
   let failure = null;
   try {
@@ -1335,9 +1467,17 @@ async function propose() {
   }
   if (data && typeof data.notice === "string") review.notice = data.notice;
   if (failure || !data) review.outcome = { kind: "unreachable" };
-  else if (data.kind === "proposal" && typeof data.id === "string") review.card = new ProposalCard(data, sig);
+  else if (data.reload === true) {
+    // The site changed since she opened it: load it again (which checks every
+    // change in the tray against it) and stay here with the sentence.
+    review.outcome = { kind: "text", text: data.text || SAY.wentWrong, sticky: true };
+    await loadSite({ quiet: true });
+    if (route.name === "review" && signedIn) render(); // even if a load was already under way
+    return;
+  } else if (data.kind === "proposal" && typeof data.id === "string") review.card = new ProposalCard(data, sig, ids);
   else if (Array.isArray(data.problems) && data.problems.length) review.outcome = { kind: "problems", problems: data.problems };
   else review.outcome = { kind: "text", text: data.error || data.text || SAY.wentWrong };
+  lockMaybeChanged();
   if (route.name !== "review" || !signedIn) return;
   render({ scroll: 0 });
   const result = ui.screen.querySelector(".card, .problems, .card-said");
@@ -1359,49 +1499,40 @@ function problemList(problems) {
   }));
 }
 
-// Which tray change a problem is about, and how to open it again.
+// Which tray change a problem is about, and how to open it again. The server
+// checks the content the whole tray makes, so each change is matched where it
+// is now (its spot), not where it was when it was made.
 function fixFor(label) {
-  const ops = trayOps();
-  for (let i = ops.length - 1; i >= 0; i--) {
-    const op = ops[i];
-    let spot = op.path;
-    let itemAt = null;
-    if (op.op === "insert") {
-      const before = applyLocal(site.content, ops.slice(0, i));
-      const list = locate(site.schema, before, op.file, op.path);
-      itemAt = op.index === -1 || op.index === undefined ? (list?.value?.length ?? 0) : op.index;
-      spot = `${op.path}/${itemAt}`;
-    } else if (op.op !== "set") {
-      spot = op.path.slice(0, op.path.lastIndexOf("/"));
-    }
+  for (let i = tray.length - 1; i >= 0; i--) {
+    const op = tray[i].op;
+    const spot = spots[i];
+    if (!spot) continue;
     const mine = checkLabel(site.schema, op.file, spot);
     if (label !== mine && !label.startsWith(`${mine} → `)) continue;
+    const parent = spot.slice(0, spot.lastIndexOf("/"));
     if (op.op === "insert") {
+      const at = Number(spot.slice(spot.lastIndexOf("/") + 1));
       return () => {
-        drafts.delete(itemKey(op.file, op.path, itemAt));
-        navigate({ name: "item", file: op.file, path: op.path, at: itemAt });
+        drafts.delete(itemKey(op.file, parent, at));
+        navigate({ name: "item", file: op.file, path: parent, at });
       };
     }
-    if (op.op !== "set") return () => navigate({ name: "list", file: op.file, path: spot });
-    const entry = locate(site.schema, view, op.file, op.path);
+    if (op.op === "remove") return () => navigate({ name: "list", file: op.file, path: spot });
+    if (op.op === "move") return () => navigate({ name: "list", file: op.file, path: parent });
+    const entry = locate(site.schema, view, op.file, spot);
     if (!entry) return null;
-    if (entry.item) {
-      const listPath = op.path.slice(0, op.path.lastIndexOf("/"));
-      return () => navigate({ name: "list", file: op.file, path: listPath });
-    }
+    if (entry.item) return () => navigate({ name: "list", file: op.file, path: parent });
     return () => openEntry(entry);
   }
   return null;
 }
 
-// After a publish went through: the changes it carried leave the tray.
+// After a publish went through: exactly the changes it carried leave the tray
+// (the tray was locked meanwhile, so they are all still there).
 function onPublished(card) {
   if (card.published) return;
   card.published = true;
-  const mine = JSON.parse(card.sig);
-  const ops = trayOps();
-  const prefix = mine.length <= ops.length && mine.every((op, i) => JSON.stringify(op) === JSON.stringify(ops[i]));
-  if (prefix) setTray(tray.slice(mine.length));
+  setTray(removeEntries(tray, card.ids));
   loadSite({ quiet: true });
 }
 
@@ -1418,9 +1549,10 @@ function resumeAllPolling() {
 }
 
 class ProposalCard {
-  constructor(p, sig) {
+  constructor(p, sig, ids) {
     this.id = p.id;
     this.sig = sig; // the tray this card was made from
+    this.ids = ids; // the tray changes it carries
     this.summary = Array.isArray(p.summary) ? p.summary.filter((s) => typeof s === "string") : [];
     this.sha = ""; // the published edit, which "Undo this" puts back
     this.busy = false;
@@ -1453,8 +1585,13 @@ class ProposalCard {
       // A preview or publish with no answer may still have reached the site,
       // so it is never simply offered again: the caller asks where it got to.
       if (err instanceof TimedOut && (route === "preview" || route === "publish")) return { timedOut: true };
-      if (err instanceof SignedOut) showSignIn();
-      else this.said = SAY.cantReach;
+      if (err instanceof SignedOut) {
+        // Drawn again with its buttons back before the sign-in shows, so the
+        // card is ready when she returns.
+        this.busy = false;
+        this.render();
+        showSignIn();
+      } else this.said = SAY.cantReach;
       return null;
     } finally {
       this.busy = false;
@@ -1472,7 +1609,11 @@ class ProposalCard {
       data = await api(`status?id=${encodeURIComponent(this.id)}`, "GET");
     } catch (err) {
       if (err instanceof SignedOut) {
+        // Still unknown: "Check again" is offered once she has signed in.
         this.busy = false;
+        this.lost = { stage, was };
+        this.state = "unreachable";
+        this.render();
         showSignIn();
         return;
       }
@@ -1558,7 +1699,8 @@ class ProposalCard {
     let data = null;
     try {
       data = await api(`status?id=${encodeURIComponent(this.id)}`, "GET");
-    } catch {
+    } catch (err) {
+      if (err instanceof SignedOut) showSignIn();
       return;
     }
     if (!data || data.stage !== "publish" || data.state === "failed") return;
@@ -1641,7 +1783,7 @@ class ProposalCard {
       data = await api(`status?id=${encodeURIComponent(this.id)}`, "GET");
     } catch (err) {
       if (err instanceof SignedOut) {
-        showSignIn();
+        showSignIn(); // polling picks up again after signing in
         return;
       }
       data = null; // a blip: try again on the next round
@@ -1801,6 +1943,7 @@ class ProposalCard {
     if (hadFocus) this.node.focus({ preventScroll: true });
     if (moved && this.node.isConnected) reveal(this.node);
     if (moved) announce(this.node.querySelector(".card-status, .card-done, .card-said")?.textContent || "");
+    if (this === review.card) lockMaybeChanged();
   }
 }
 
@@ -1836,17 +1979,26 @@ async function loadSite({ quiet = false } = {}) {
   try {
     const data = await api("content", "GET");
     if (!data || data.error || !data.schema || !data.content) throw new Error(data && data.error ? data.error : "no content");
-    site = { schema: data.schema, content: data.content, images: Array.isArray(data.images) ? data.images : [] };
+    site = {
+      schema: data.schema, content: data.content, images: Array.isArray(data.images) ? data.images : [],
+      version: typeof data.version === "string" ? data.version : undefined,
+    };
+    // Every change is checked against the fresh content: followed to where its
+    // item is now, or dropped when it no longer fits.
     const pruned = pruneTray(site.content, tray);
-    if (pruned.dropped) flashText = siteChanged(pruned.dropped);
-    tray = pruned.tray;
+    tray = remark(site.content, pruned.tray);
     saveTray();
     refreshView();
     forgetUnusedPhotos();
+    gen++; // every screen checks its place again
     ui.loading.hidden = true;
     if (!signedIn) return;
-    if (!quiet || renderedSig === "" || !typingScreen()) render({ scroll: quiet ? ui.scroller.scrollTop : route.scroll || 0, keepFocus: quiet ? document.activeElement : null });
-    if (pruned.dropped) announce(flashText);
+    render({ scroll: quiet ? ui.scroller.scrollTop : route.scroll || 0 });
+    if (pruned.dropped) {
+      const words = flashText === SAY.siteMovedScreen ? `${siteChanged(pruned.dropped)} ${SAY.siteMovedScreen}` : siteChanged(pruned.dropped);
+      flash(words);
+      announce(words);
+    }
   } catch (err) {
     if (err instanceof SignedOut) {
       showSignIn();
@@ -1901,6 +2053,7 @@ function showEditor() {
   if (!site) {
     loadSite();
   } else if (renderedSig === JSON.stringify(route)) {
+    if (review.card) review.card.render(); // its buttons, as they are now
     ui.screen.hidden = false; // as she left it
     updateTrayBar();
     ui.screen.querySelector(".screen-title")?.focus({ preventScroll: true });
@@ -1913,7 +2066,9 @@ async function start() {
   restoreTray();
   if (validRoute(history.state)) route = history.state;
   // A photo being picked for an unsaved item can't survive a reload: go back to its list.
-  if (route.name === "photo" && route.draft) route = { ...route, name: "list", draft: undefined, field: undefined };
+  if (route.name === "photo" && route.draft) route = { ...route, name: "list", draft: undefined, field: undefined, at: undefined };
+  // A review doesn't survive a reload; with nothing in the tray there is nothing to review.
+  if (route.name === "review" && !tray.length) route = { name: "find", depth: route.depth, app: "editor" };
   history.replaceState({ ...route, app: "editor" }, "");
   try {
     const data = await api("session", "GET");
