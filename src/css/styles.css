@@ -3153,6 +3153,17 @@ main { overflow-x: clip; }
   .site-nav  { display: flex; }
   .hamburger { display: none; }
   .mobile-nav { display: none !important; }
+  /* Header sits on the same left and right lines as page content */
+  .header-inner { max-width: var(--container-max-width); }
+}
+
+/* Sparse text bands (Welcome, Save the Date, closing calls): a larger lead on a
+   wider measure so a short paragraph does not float in empty space */
+@media (min-width: 920px) {
+  .section > .container--narrow.text-center > .section-subtitle {
+    font-size: var(--fs-lg);
+    max-width: 34em;
+  }
 }
 
 /* =============================================================
