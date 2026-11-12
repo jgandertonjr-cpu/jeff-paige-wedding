@@ -651,7 +651,7 @@ main p a:not(.btn):hover,
   color: var(--color-text);
   min-height: 44px;
   padding: 0 1.3em;
-  border-radius: var(--radius-sm);
+  border-radius: 0;
   transition: box-shadow var(--transition-fast);
 }
 .site-nav__link--rsvp::after { display: none; }
@@ -892,6 +892,8 @@ main p a:not(.btn):hover,
   line-height: 1;
   color: var(--gold-text-hero-fallback);
   display: block;
+  margin: calc(-1 * var(--amp-room)) 0;
+  --amp-room: 0em;   /* extra vertical padding the clipped gradient needs; margins give it back */
 }
 
 .hero .section-ornament {
@@ -970,8 +972,6 @@ main p a:not(.btn):hover,
 /* Wide screens: the card opens out — photo on the left, wording on the right */
 @media (min-width: 920px) {
   .hero {
-    min-height: 100svh;
-    align-items: center;
     padding: calc(var(--safe-area-top) + var(--header-height) + var(--space-10)) var(--gutter) var(--section-padding-y);
   }
 
@@ -1006,7 +1006,7 @@ main p a:not(.btn):hover,
     align-items: center;
     gap: 0;
   }
-  .hero__and { font-size: 0.82em; margin: -0.02em 0 -0.12em; }
+  .hero__and { font-size: 0.82em; margin: calc(-0.02em - var(--amp-room)) 0 calc(-0.12em - var(--amp-room)); }
 
   .hero .section-ornament { margin: var(--space-6) auto var(--space-4); }
   .hero__date     { font-size: 1.9rem; }
@@ -1084,7 +1084,7 @@ main p a:not(.btn):hover,
     align-items: baseline;
     gap: 0.14em;
   }
-  .hero__and { font-size: 0.8em; margin: 0; }
+  .hero__and { font-size: 0.8em; margin: calc(-1 * var(--amp-room)) 0; }
   .hero .section-ornament { height: 24px; margin: var(--space-2) auto; }
   .hero__date { font-size: 1.35rem; }
   .hero__location { font-size: 1.05rem; margin-top: 0; }
@@ -1220,7 +1220,7 @@ main p a:not(.btn):hover,
 .page-hero > * { animation: fadeIn var(--duration-max) ease both; }
 
 /* =============================================================
-   COUNTDOWN — days only, on a slim Dusty Sage band
+   COUNTDOWN — days only, on a Dusty Sage band
    ============================================================= */
 .countdown-band .section-title { margin-bottom: var(--space-2); }
 
@@ -1233,7 +1233,7 @@ main p a:not(.btn):hover,
 
 .countdown__number {
   font-family: var(--font-display);
-  font-size: clamp(3.75rem, 15vw, 6rem);
+  font-size: clamp(3rem, 9vw, 4.5rem);
   font-weight: var(--fw-light);
   line-height: 1;
   color: var(--color-dark);
@@ -1308,8 +1308,8 @@ main .form-success .section-ornament { display: block; }
   }
   .amp { background-image: var(--gold-text); }
   .hero__and { background-image: var(--gold-text-hero); }
-  .amp { padding: 0.1em 0.18em; margin: -0.1em -0.14em; }
-  .hero__and { padding: 0.08em 0.2em; }
+  .amp { padding: 0.3em 0.18em; margin: -0.3em -0.14em; }
+  .hero__and { --amp-room: 0.24em; padding: calc(0.08em + var(--amp-room)) 0.2em; }
   .footer__monogram .amp { background-image: var(--gold-text-on-sage); }
 }
 
@@ -2373,7 +2373,6 @@ main .form-success .section-ornament { display: block; }
   /* Middle card keeps its arch on mobile too */
   .photo-strip__item:nth-child(2) .photo-strip__frame {
     border-radius: var(--radius-arch);
-    aspect-ratio: 4 / 5.4;
   }
 }
 
@@ -2390,12 +2389,10 @@ main .form-success .section-ornament { display: block; }
   background: var(--color-sage-mist);
 }
 
-/* Middle photo gets the arch + lift */
+/* Middle photo gets the arch; all three share one aspect ratio so the row is level */
 @media (min-width: 700px) {
-  .photo-strip__item:nth-child(2) { transform: translateY(calc(-1 * var(--space-8))); }
   .photo-strip__item:nth-child(2) .photo-strip__frame {
     border-radius: var(--radius-arch);
-    aspect-ratio: 4 / 5.4;
   }
 }
 
@@ -3157,7 +3154,7 @@ main { overflow-x: clip; }
   .header-inner { max-width: var(--container-max-width); }
 }
 
-/* Sparse text bands (Welcome, Save the Date, closing calls): a larger lead on a
+/* Sparse text bands (the Welcome and Save the Date paragraphs): a larger lead on a
    wider measure so a short paragraph does not float in empty space */
 @media (min-width: 920px) {
   .section > .container--narrow.text-center > .section-subtitle {
