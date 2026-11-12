@@ -120,6 +120,26 @@ test("propose: coarse body shape is checked, then the service answer is passed t
   assert.deepEqual(await r2.json(), { ok: false, text: "That change can't be made." });
 });
 
+test("propose passes the version she opened through, and refuses one that isn't a version", async () => {
+  const { handle, calls } = setup();
+  const cookie = await login(handle);
+  const op = { op: "set", file: "travel", path: "/a", value: "x" };
+  for (const base of ["abc1234", "a".repeat(40), "local-base"]) {
+    const res = await handle(post("propose", { ops: [op], base }, { cookie }), ctx());
+    assert.equal(res.status, 200, base);
+  }
+  assert.deepEqual(calls.map((c) => c[1]), ["abc1234", "a".repeat(40), "local-base"].map((base) => ({ ops: [op], base })));
+  for (const base of [1, "", "ABC1234", "abc", "a".repeat(65), "local-base2", null]) {
+    const res = await handle(post("propose", { ops: [op], base }, { cookie }), ctx());
+    assert.equal(res.status, 400, String(base));
+  }
+  assert.equal(calls.length, 3);
+  const { handle: h2 } = setup({ service: { propose: async () => ({ ok: false, text: "The site changed.", reload: true }) } });
+  const c2 = await login(h2);
+  const r2 = await h2(post("propose", { ops: [op], base: "abc1234" }, { cookie: c2 }), ctx());
+  assert.deepEqual(await r2.json(), { ok: false, text: "The site changed.", reload: true });
+});
+
 test("propose needs the exact origin and JSON type; ask is gone", async () => {
   const { handle } = setup();
   const cookie = await login(handle);

@@ -71,6 +71,8 @@ function pick(value, pattern) {
 }
 const ID = /^[a-f0-9]{16}$/;
 const SHA = /^[a-f0-9]{7,64}$/;
+// The site version the page loaded (propose's `base`): a sha, or the local test copy's first version.
+const VERSION = /^(?:[a-f0-9]{7,64}|local-base)$/;
 
 export function createHandler(deps) {
   const { service: svc, sessionApi: sess, store, serviceDeps, env, now, allowedOrigins, secureCookie, canWrite, log } = deps;
@@ -109,11 +111,15 @@ export function createHandler(deps) {
 
     const body = await readJson(req);
     if (name === "propose") {
-      const { ops, photos } = body;
+      const { ops, photos, base } = body;
       const plain = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
       if (!Array.isArray(ops) || ops.length < 1 || ops.length > 50 || !ops.every(plain)) throw badRequest();
       if (photos !== undefined && (!Array.isArray(photos) || photos.length > 3 || !photos.every((p) => typeof p === "string"))) throw badRequest();
-      return json(200, await svc.propose(serviceDeps, photos === undefined ? { ops } : { ops, photos }));
+      if (base !== undefined) pick(base, VERSION);
+      const input = { ops };
+      if (photos !== undefined) input.photos = photos;
+      if (base !== undefined) input.base = base;
+      return json(200, await svc.propose(serviceDeps, input));
     }
     if (name === "undo") return json(200, await svc.undo(serviceDeps, pick(body.sha, SHA)));
     // preview, publish, cancel

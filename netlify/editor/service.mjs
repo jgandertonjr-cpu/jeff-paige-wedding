@@ -6,7 +6,9 @@
 // text is ever passed on (their errors are thrown for the HTTP layer).
 //
 // Result shapes, exactly as implemented:
-//   propose(deps, { ops, photos? })
+//   propose(deps, { ops, photos?, base? })
+//     base: the `version` the page loaded (optional). When the site has moved on
+//       since then and any file the ops touch is different now, nothing is stored.
 //     ops: 0–50 of { op: "set" | "insert" | "remove" | "move", file, path, value?, index?, to? },
 //       file one of the schema's files. A string anywhere in a value that is exactly
 //       "@photo:<n>" stands for the n-th photo (1-based).
@@ -18,10 +20,14 @@
 //     | { ok: false, text, notice? }
 //         ops or photos not in the shape above, a refused photo (the photo
 //         check's reason), no free photo name, or nothing would change.
+//     | { ok: false, text, reload: true, notice? }
+//         `base` was given and a file the ops touch has changed since: the page
+//         should load the site again and let her check her changes.
 //       notice: a sentence to show before the answer, when an earlier change failed
 //       on the live site and was put back just now (see settleUnconfirmed).
 //     Nothing is stored unless the answer is a proposal.
-//   loadContent(deps)   → { schema, content: { [file key]: parsed file }, images: "/images/<name>"[] sorted }
+//   loadContent(deps)   → { schema, content: { [file key]: parsed file }, images: "/images/<name>"[] sorted, version }
+//     version: the site version (head sha) the content was read at; propose takes it back as `base`.
 //   preview(deps, id)   → { ok: true } | { ok: false, text }
 //   status(deps, { id })
 //     → { stage: "preview" | "publish", state: "waiting" | "building" | "ready" | "failed", url?, text?, sha?, title? }
@@ -64,6 +70,7 @@ export const TEXT = {
   expired: "That change has expired. Please ask again.",
   busy: "That is already being published.",
   onSite: "That change is already on the site. Use Undo this to put it back.",
+  siteMoved: "The site changed since you opened it. I've loaded the latest; please check your changes and try again.",
   noFit: "The site changed since you asked, so that change no longer fits. Please ask again.",
   already: "That change is already on the site, so there is nothing to publish.",
   movedPublish: "The site changed while I was saving, so nothing was published. Please try again.",
@@ -119,7 +126,7 @@ export async function loadBase({ repo, schema }) {
 // and the photo addresses already on the site ("/images/<name>"), sorted.
 export async function loadContent(deps) {
   const base = await loadBase(deps);
-  return { schema: deps.schema, content: base.content, images: [...base.images].sort() };
+  return { schema: deps.schema, content: base.content, images: [...base.images].sort(), version: base.sha };
 }
 
 // Files to write for every content section that differs. The path always comes
@@ -362,10 +369,26 @@ function tooBig(value) {
   return typeof text === "string" && text.length > MAX_VALUE_CHARS;
 }
 
+// A site version as the page sends it back: a sha, or the local test copy's first version.
+export const VERSION = /^(?:[a-f0-9]{7,64}|local-base)$/;
+
+// Has any file these ops touch changed between the version she opened and now?
+// A version that can't be read counts as changed.
+async function touchedFilesMoved({ repo, schema }, from, to, ops) {
+  const paths = [...new Set(ops.map((op) => schema.files[op.file].path))];
+  try {
+    const [then, now] = await Promise.all([repo.readFiles(paths, from), repo.readFiles(paths, to)]);
+    return paths.some((p) => typeof then[p] !== "string" || then[p] !== now[p]);
+  } catch {
+    return true;
+  }
+}
+
 async function proposeChange(deps, input) {
   if (!isPlainObject(input)) return refuse(TEXT.cantMake);
-  const { ops, photos } = input;
+  const { ops, photos, base: openedAt } = input;
   const { schema } = deps;
+  if (openedAt !== undefined && (typeof openedAt !== "string" || !VERSION.test(openedAt))) return refuse(TEXT.cantMake);
   if (!Array.isArray(ops) || ops.length > MAX_OPS || !ops.every((op) => wellFormedOp(schema, op))) return refuse(TEXT.cantMake);
   if (photos !== undefined && photos !== null && (!Array.isArray(photos) || photos.length > MAX_PHOTOS)) return refuse(TEXT.cantMake);
   if (ops.some((op) => "value" in op && tooBig(op.value))) return refuse(TEXT.cantMake);
@@ -390,6 +413,9 @@ async function proposeChange(deps, input) {
   if (problems.length) return { ok: false, problems };
 
   const base = await loadBase(deps);
+  if (openedAt !== undefined && openedAt !== base.sha && (await touchedFilesMoved(deps, openedAt, base.sha, ops))) {
+    return { ok: false, text: TEXT.siteMoved, reload: true };
+  }
   // Name each photo a step uses; a new photo never replaces one already on the site.
   const pics = new Map();
   for (const n of [...used].sort((a, b) => a - b)) {

@@ -171,7 +171,8 @@ test("loadContent returns the schema, every content file by key, and sorted imag
   const t = await setup();
   try {
     const r = await loadContent(t.deps);
-    assert.deepEqual(Object.keys(r).sort(), ["content", "images", "schema"]);
+    assert.deepEqual(Object.keys(r).sort(), ["content", "images", "schema", "version"]);
+    assert.equal(r.version, "local-base");
     assert.equal(r.schema, schema);
     assert.deepEqual(Object.keys(r.content).sort(), Object.keys(schema.files).sort());
     assert.equal(r.content.travel.room_block.deadline, (await t.readData("src/_data/travel.json")).room_block.deadline);
@@ -220,6 +221,71 @@ test("a value nested too deeply or too long is refused before any recursive work
 });
 
 // ---- propose ----------------------------------------------------------------
+
+const SITE_MOVED = "The site changed since you opened it. I've loaded the latest; please check your changes and try again.";
+
+// Another change lands on the site after the page loaded: a new version.
+async function otherEdit(t, file, edit) {
+  const p = schema.files[file].path;
+  const data = await t.readData(p);
+  edit(data);
+  return t.local.write({ baseSha: await t.local.head(), message: "Website edit: other", files: { [p]: JSON.stringify(data, null, 2) + "\n" } });
+}
+
+test("loadContent's version moves on with the site", async () => {
+  const t = await setup();
+  try {
+    const sha = await otherEdit(t, "faq", (d) => { d.cta.title = "Other"; });
+    assert.equal((await loadContent(t.deps)).version, sha);
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("propose with the version she opened: refused with reload when a file it touches changed since, and nothing is stored", async () => {
+  const t = await setup();
+  try {
+    const opened = (await loadContent(t.deps)).version;
+    await otherEdit(t, "travel", (d) => { d.room_block.hotel_name = "Someone else"; });
+    const r = seen(await propose(t.deps, { ops: [DEADLINE], base: opened }));
+    assert.deepEqual(r, { ok: false, text: SITE_MOVED, reload: true });
+    assert.deepEqual(proposalKeys(t.store), []);
+    // Opened at the latest version: fine.
+    const now = (await loadContent(t.deps)).version;
+    assert.equal((await propose(t.deps, { ops: [DEADLINE], base: now })).kind, "proposal");
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("propose with an older version still works when only other files changed since", async () => {
+  const t = await setup();
+  try {
+    const opened = (await loadContent(t.deps)).version;
+    await otherEdit(t, "faq", (d) => { d.cta.title = "Other"; });
+    assert.equal((await propose(t.deps, { ops: [DEADLINE], base: opened })).kind, "proposal");
+    assert.equal((await propose(t.deps, { ops: [DEADLINE] })).kind, "proposal", "no version: as before");
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("propose: a version that isn't one, or can't be read, is never treated as current", async () => {
+  const unknown = "0".repeat(40);
+  // As GitHub does, reading at a version it doesn't have fails.
+  const t = await setup({
+    repoWrap: (local) => ({ ...local, readFiles: (paths, ref) => (ref === unknown ? Promise.reject(new Error("404")) : local.readFiles(paths, ref)) }),
+  });
+  try {
+    for (const base of [12, "", "not a version", "../x", "ABCDEF1"]) {
+      assert.deepEqual(await propose(t.deps, { ops: [DEADLINE], base }), { ok: false, text: CANT }, String(base));
+    }
+    await otherEdit(t, "faq", (d) => { d.cta.title = "Other"; });
+    assert.deepEqual(await propose(t.deps, { ops: [DEADLINE], base: unknown }), { ok: false, text: SITE_MOVED, reload: true });
+  } finally {
+    await t.cleanup();
+  }
+});
 
 test("valid ops return a summary and store a proposal; nothing is written to the site", async () => {
   const t = await setup();
