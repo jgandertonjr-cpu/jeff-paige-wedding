@@ -577,7 +577,8 @@ export default {
                     "center",
                     "high",
                     "left"
-                  ]
+                  ],
+                  "default": "center"
                 }
               ]
             }
@@ -823,7 +824,8 @@ export default {
                 "center",
                 "high",
                 "left"
-              ]
+              ],
+              "default": "center"
             }
           ]
         },
@@ -1441,7 +1443,8 @@ export default {
           "name": "rsvp_open",
           "label": "RSVPs are open",
           "type": "boolean",
-          "required": true
+          "required": true,
+          "default": false
         },
         {
           "name": "deadline",
@@ -1519,7 +1522,8 @@ export default {
               "name": "afterparty_show",
               "label": "Ask about the after party",
               "type": "boolean",
-              "required": true
+              "required": true,
+              "default": true
             },
             {
               "name": "afterparty_label",
@@ -1531,7 +1535,8 @@ export default {
               "name": "wedding_song_show",
               "label": "Ask married guests for their wedding song",
               "type": "boolean",
-              "required": true
+              "required": true,
+              "default": true
             },
             {
               "name": "wedding_song_heading",
@@ -1667,7 +1672,8 @@ export default {
             "center",
             "high",
             "left"
-          ]
+          ],
+          "default": "center"
         },
         {
           "name": "intro",
@@ -1705,7 +1711,8 @@ export default {
               "name": "enabled",
               "label": "Show \"coming soon\" instead of the registry",
               "type": "boolean",
-              "required": true
+              "required": true,
+              "default": true
             },
             {
               "name": "label",
@@ -1771,7 +1778,8 @@ export default {
               "name": "enabled",
               "label": "Show the cash fund card",
               "type": "boolean",
-              "required": true
+              "required": true,
+              "default": false
             },
             {
               "name": "title",
@@ -1831,7 +1839,8 @@ export default {
               "name": "enabled",
               "label": "Show the shipping note",
               "type": "boolean",
-              "required": true
+              "required": true,
+              "default": true
             },
             {
               "name": "text",
@@ -2143,7 +2152,8 @@ export default {
                     "billiard",
                     "people",
                     "star"
-                  ]
+                  ],
+                  "default": "star"
                 },
                 {
                   "name": "title",
@@ -2386,7 +2396,8 @@ export default {
                     "billiard",
                     "people",
                     "star"
-                  ]
+                  ],
+                  "default": "star"
                 },
                 {
                   "name": "title",

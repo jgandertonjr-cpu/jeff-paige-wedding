@@ -532,12 +532,20 @@ export function checkLocal(field, value) {
 
 // ---- new list items ---------------------------------------------------------
 
+// A field's default is used when it is one the field can hold.
 function emptyValue(f) {
+  const options = f.options || [];
   switch (f.type) {
-    case "boolean": return f.default ?? false;
+    case "boolean": return typeof f.default === "boolean" ? f.default : false;
     case "list": return [];
     case "object": return Object.fromEntries((f.fields || []).filter((x) => x.type !== "hidden").map((x) => [x.name, emptyValue(x)]));
-    case "select": return f.multiple ? [...(f.options || [])] : f.required ? f.options[0] : "";
+    case "select":
+      if (f.multiple) {
+        const ok = Array.isArray(f.default) && f.default.every((v) => options.includes(v));
+        return ok ? [...f.default] : [...options];
+      }
+      if (options.includes(f.default)) return f.default;
+      return f.required ? options[0] : "";
     default: return "";
   }
 }

@@ -366,7 +366,7 @@ test("a new list item has every field at a sensible empty value", () => {
   assert.equal(emptyItem(guests, pending, content.guests.guests).id, String(Number(top1.id) + 1));
   assert.deepEqual(emptyItem(field("faq", "/questions"), content.faq.questions), { question: "", answer: "" });
   const tip = emptyItem(field("travel", "/tips/list"), []);
-  assert.equal(tip.icon, "sun", "a required choice starts on its first option");
+  assert.equal(tip.icon, "star", "a choice starts on its default (CR9)");
   assert.equal(tip.title, "");
   const essentials = emptyItem(field("nav", "/essentials"), []);
   assert.ok(!("rsvp" in essentials), "optional hidden settings are left out");
@@ -680,4 +680,20 @@ test("photo room: what is left of the budget, never below zero", () => {
   assert.equal(photoRoom(1000), budget - 1000);
   assert.equal(photoRoom(budget), 0);
   assert.equal(photoRoom(budget + 5), 0);
+});
+
+// CR9: a new item starts on each choice's default when it has a usable one.
+test("a new item uses a select or yes/no default only when it is valid", () => {
+  const list = (fields) => ({ type: "list", fields });
+  const sel = (extra) => ({ name: "c", type: "select", required: true, options: ["a", "b"], ...extra });
+  assert.deepEqual(emptyItem(list([sel({ default: "b" })])), { c: "b" });
+  assert.deepEqual(emptyItem(list([sel({ default: "zz" })])), { c: "a" }, "a default that is not an option is ignored");
+  assert.deepEqual(emptyItem(list([sel({ required: false, default: "b" })])), { c: "b" });
+  assert.deepEqual(emptyItem(list([sel({ required: false })])), { c: "" });
+  assert.deepEqual(emptyItem(list([sel({ multiple: true, default: ["b"] })])), { c: ["b"] });
+  assert.deepEqual(emptyItem(list([sel({ multiple: true, default: ["b", "q"] })])), { c: ["a", "b"] });
+  assert.deepEqual(emptyItem(list([{ name: "y", type: "boolean", default: true }])), { y: true });
+  assert.deepEqual(emptyItem(list([{ name: "y", type: "boolean", default: "yes" }])), { y: false });
+  const photo = emptyItem(field("home", "/photos/items"), []);
+  assert.equal(photo.focus, "center");
 });

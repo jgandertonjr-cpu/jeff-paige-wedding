@@ -47,6 +47,8 @@ function convertField(raw, parent) {
     out.options = (raw.options ?? []).map((o) => (typeof o === "object" ? o.value : o));
     if (raw.multiple) out.multiple = true;
   }
+  // A new list item starts on a choice's or a yes/no field's default.
+  if ((type === "select" || type === "boolean") && raw.default !== undefined) out.default = raw.default;
   if (raw.min !== undefined) out.min = raw.min;
   if (raw.max !== undefined) out.max = raw.max;
   if (type === "object" || (type === "list" && raw.fields)) {

@@ -47,3 +47,28 @@ test("home.photos.items has min 3 max 3", () => {
   assert.equal(items.min, 3);
   assert.equal(items.max, 3);
 });
+
+// CR9: a select or yes/no field's default reaches the editor, so a new item starts on it.
+test("select and boolean defaults are carried; other fields carry none", () => {
+  const tips = field(field(schema.files.travel.fields, "tips").fields, "list");
+  assert.equal(field(tips.fields, "icon").default, "star");
+  const photos = field(field(schema.files.home.fields, "photos").fields, "items");
+  assert.equal(field(photos.fields, "focus").default, "center");
+  assert.equal(field(schema.files.rsvp.fields, "rsvp_open").default, false);
+  const yaml = `collections:
+  - name: c
+    files:
+      - name: f
+        file: f.json
+        label: F
+        fields:
+          - { name: s, widget: string, default: "x" }
+          - { name: b, widget: boolean, default: true }
+          - { name: p, widget: select, default: two, options: [one, two] }
+`;
+  const out = new Function(`${renderSchemaModule(yaml).replace("export default", "return")}`)();
+  const [s, b, p] = out.files.f.fields;
+  assert.ok(!("default" in s));
+  assert.equal(b.default, true);
+  assert.equal(p.default, "two");
+});
