@@ -5,6 +5,9 @@ backups/
 node_modules/
 _site/
 
+# Local end-to-end editor testing (npm run editor:dev)
+.editor-local/
+
 # Review screenshots and check scripts from the redesign passes
 design-review/
 

@@ -1,14 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="robots" content="noindex, nofollow">
-    <title>Edit the Website | Jeff &amp; Paige</title>
-  </head>
-  <body>
-    <!-- Sveltia CMS, pinned to an exact version. To upgrade, change the version
-         number and test at /admin before merging. -->
-    <script src="https://unpkg.com/@sveltia/cms@0.227.3/dist/sveltia-cms.js"></script>
-  </body>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <meta name="robots" content="noindex, nofollow">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' blob: data:; style-src 'self'; script-src 'self'; connect-src 'self'; font-src 'self'; base-uri 'none'; form-action 'self'">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#BCCAB3">
+  <title>Change the Website | Jeff &amp; Paige</title>
+  <link rel="icon" type="image/png" href="/images/favicon.png">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/admin/admin.css">
+  <script type="module" src="/admin/admin.js"></script>
+</head>
+<body class="editor">
+  <div class="app" id="app">
+    <div class="scroller" id="scroller">
+      <header class="band">
+        <div class="band-inner">
+          <p class="monogram">Jeff <span class="amp">&amp;</span> Paige</p>
+          <h1 class="subtitle">Change the website</h1>
+          <nav class="links" id="links" aria-label="Editor" hidden>
+            <button type="button" class="link" id="recent-toggle" aria-expanded="false" aria-controls="recent">Recent changes</button>
+            <a class="link" href="/admin/guide/">How this works</a>
+            <a class="link" href="/admin/rsvps/">RSVP responses</a>
+            <button type="button" class="link" id="sign-out">Sign out</button>
+          </nav>
+        </div>
+      </header>
+
+      <main class="column" id="main">
+        <p class="waiting" id="starting">One moment.</p>
+
+        <section class="signin" id="signin" aria-labelledby="signin-title" hidden>
+          <h2 class="section-title" id="signin-title">Sign in</h2>
+          <form id="signin-form" novalidate>
+            <label class="field-label" for="password">Password</label>
+            <div class="password-row">
+              <input class="input" id="password" name="password" type="password" autocomplete="current-password" autocapitalize="off" spellcheck="false" required aria-describedby="signin-error">
+              <button type="button" class="btn btn-line btn-show" id="password-show" aria-pressed="false" aria-controls="password">Show</button>
+            </div>
+            <p class="field-error" id="signin-error" role="alert"></p>
+            <button type="submit" class="btn btn-dark btn-wide" id="signin-button">Sign in</button>
+          </form>
+        </section>
+
+        <section class="recent" id="recent" aria-labelledby="recent-title" hidden>
+          <h2 class="section-title" id="recent-title">Recent changes</h2>
+          <p class="quiet" id="recent-status"></p>
+          <ol class="recent-list" id="recent-list"></ol>
+        </section>
+
+        <div class="loading" id="loading" hidden>
+          <p class="quiet" id="loading-text" role="status">Loading the site…</p>
+          <button type="button" class="btn btn-line" id="loading-retry" hidden>Try again</button>
+        </div>
+
+        <div class="screen" id="screen" hidden></div>
+      </main>
+    </div>
+
+    <div class="tray-bar" id="tray-bar" hidden>
+      <div class="tray-bar-inner">
+        <button type="button" class="tray-open" id="tray-open">
+          <span class="tray-count" id="tray-count">1 change ready</span>
+          <span class="tray-see">See the list</span>
+        </button>
+        <button type="button" class="btn btn-dark tray-review" id="tray-review">Review</button>
+      </div>
+    </div>
+    <p class="vh" id="announce" aria-live="polite"></p>
+  </div>
+</body>
 </html>

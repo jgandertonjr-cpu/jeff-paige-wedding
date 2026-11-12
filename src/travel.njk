@@ -6,18 +6,10 @@ headerDark: true
 ---
 {%- extends "layouts/base.njk" -%}
 {%- from "icons.njk" import icon -%}
-{%- block main %}
-{%- set v = site.venue -%}
+{%- macro room_block(alt) %}
 {%- set block = travel.room_block %}
-    <!-- ── PAGE HERO ── -->
-    <section class="page-hero" aria-label="Page header">
-      <span class="section-label">{{ travel.hero.label }}</span>
-      <h1 class="page-hero__title">{{ travel.hero.title }}</h1>
-      <p class="page-hero__subtitle">{{ travel.hero.subtitle }}</p>
-    </section>
-
     <!-- ── HOTEL BLOCK ── -->
-    <section class="section" aria-labelledby="hotel-block-heading">
+    <section class="section{% if alt %} section--alt{% endif %}" aria-labelledby="hotel-block-heading">
       <div class="container">
         <div class="section-header">
           <span class="section-label reveal">{{ block.label }}</span>
@@ -40,7 +32,7 @@ headerDark: true
             {%- endif %}
             <p class="hotel-card__meta">
               {{ icon("calendar", 16, true) }}
-              Block deadline: <strong>{{ (block.deadline | dateFormat('long')) if block.deadline else "To be announced" }}</strong>
+              {{ travel.labels.block_deadline }} <strong>{{ (block.deadline | dateFormat('long')) if block.deadline else travel.labels.to_be_announced }}</strong>
             </p>
             <p class="hotel-card__meta">
               {{ icon("house", 16, true) }}
@@ -49,18 +41,19 @@ headerDark: true
           </div>
           <div class="mt-6">
             {%- if block.booking_url %}
-            <a href="{{ block.booking_url }}" class="btn btn--primary" target="_blank" rel="noopener noreferrer">Book Your Room</a>
+            <a href="{{ block.booking_url }}" class="btn btn--primary" target="_blank" rel="noopener noreferrer">{{ travel.labels.book_your_room }}</a>
             {%- else %}
 {#- No booking link yet: say so in plain text rather than show a button that goes nowhere. #}
-            <p class="fine-print">Booking link coming soon</p>
+            <p class="fine-print">{{ travel.labels.booking_link_coming_soon }}</p>
             {%- endif %}
           </div>
         </div>
       </div>
     </section>
-
+{%- endmacro %}
+{%- macro nearby(alt) %}
     <!-- ── NEARBY HOTELS ── -->
-    <section class="section section--alt" aria-labelledby="nearby-hotels-heading">
+    <section class="section{% if alt %} section--alt{% endif %}" aria-labelledby="nearby-hotels-heading">
       <div class="container">
         <div class="section-header">
           <span class="section-label reveal">{{ travel.nearby.label }}</span>
@@ -88,7 +81,7 @@ headerDark: true
             </div>
             {%- if hotel.url %}
             <div class="mt-6">
-              <a href="{{ hotel.url }}" class="btn btn--outline" target="_blank" rel="noopener noreferrer">Visit Website</a>
+              <a href="{{ hotel.url }}" class="btn btn--outline" target="_blank" rel="noopener noreferrer">{{ travel.labels.visit_website }}</a>
             </div>
             {%- endif %}
           </div>
@@ -101,9 +94,11 @@ headerDark: true
         {%- endif %}
       </div>
     </section>
-
+{%- endmacro %}
+{%- macro airports(alt) %}
+{%- set v = site.venue %}
     <!-- ── AIRPORT INFO ── -->
-    <section class="section" aria-labelledby="airport-heading">
+    <section class="section{% if alt %} section--alt{% endif %}" aria-labelledby="airport-heading">
       <div class="container container--narrow">
         <div class="section-header">
           <span class="section-label reveal">{{ travel.airports.label }}</span>
@@ -120,13 +115,14 @@ headerDark: true
             </p>
             {%- endfor %}
           </div>
-          <p class="fine-print mt-6">{{ travel.airports.footnote }} <a href="{{ (v.name + ', ' + v.street + ', ' + v.city + ', ' + v.state + ' ' + v.zip) | mapsSearchUrl }}" target="_blank" rel="noopener">Get directions</a></p>
+          <p class="fine-print mt-6">{{ travel.airports.footnote }} <a href="{{ (v.name + ', ' + v.street + ', ' + v.city + ', ' + v.state + ' ' + v.zip) | mapsSearchUrl }}" target="_blank" rel="noopener">{{ site.labels.get_directions }}</a></p>
         </div>
       </div>
     </section>
-
+{%- endmacro %}
+{%- macro tips(alt) %}
     <!-- ── LOCAL TIPS ── -->
-    <section class="section section--alt" aria-labelledby="tips-heading">
+    <section class="section{% if alt %} section--alt{% endif %}" aria-labelledby="tips-heading">
       <div class="container container--narrow">
         <div class="section-header">
           <span class="section-label reveal">{{ travel.tips.label }}</span>
@@ -148,4 +144,24 @@ headerDark: true
         </div>
       </div>
     </section>
+{%- endmacro %}
+{%- block main %}
+    <!-- ── PAGE HERO ── -->
+    <section class="page-hero" aria-label="Page header">
+      <span class="section-label">{{ travel.hero.label }}</span>
+      <h1 class="page-hero__title">{{ travel.hero.title }}</h1>
+      <p class="page-hero__subtitle">{{ travel.hero.subtitle }}</p>
+    </section>
+
+    {%- for s in travel.section_order | sectionOrder(["room_block", "nearby", "airports", "tips"], "travel") %}
+    {%- if s.name == "room_block" %}
+    {{ room_block(s.alt) }}
+    {%- elif s.name == "nearby" %}
+    {{ nearby(s.alt) }}
+    {%- elif s.name == "airports" %}
+    {{ airports(s.alt) }}
+    {%- elif s.name == "tips" %}
+    {{ tips(s.alt) }}
+    {%- endif %}
+    {%- endfor %}
 {% endblock %}

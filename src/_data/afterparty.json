@@ -5,6 +5,11 @@
     "social_title": "",
     "social_description": "The night doesn't have to end. Join us for the after party — all wedding guests welcome."
   },
+  "section_order": [
+    "details",
+    "expect",
+    "cta"
+  ],
   "hero": {
     "label": "Keep the Celebration Going",
     "title": "After Party",
@@ -51,5 +56,12 @@
   "cta": {
     "title": "See You There",
     "text": "No need to go anywhere — when the reception wraps up, just follow the crowd to the Stone Barn."
+  },
+  "labels": {
+    "address": "Address",
+    "time": "Time",
+    "dress_code": "Dress Code",
+    "open_to": "Open To",
+    "wedding_details": "Wedding Details"
   }
 }

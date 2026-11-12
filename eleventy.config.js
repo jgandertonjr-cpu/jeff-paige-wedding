@@ -166,6 +166,38 @@ export default function (eleventyConfig) {
   eleventyConfig.addFilter("mapsEmbedUrl", (query) =>
     "https://maps.google.com/maps?q=" + String(query).replace(/ /g, "+") + "&output=embed");
 
+  // The order a page's sections appear in, from `section_order` in its data
+  // file. Every section must be named exactly once. Returns each name with
+  // `alt`: whether it takes the sage-mist background. Sections alternate plain
+  // and alt down the page; `banded` sections (the home countdown) have their
+  // own look and do not count in that rhythm.
+  //   {% for s in home.section_order | sectionOrder(["welcome", …], "home", ["countdown"]) %}
+  // Nunjucks hides the message of an error thrown inside a filter, so it is
+  // printed before it is thrown.
+  const badOrder = (message) => {
+    console.error(`[sections] ${message}`);
+    return new Error(message);
+  };
+  eleventyConfig.addFilter("sectionOrder", (order, allowed, pageName, banded = []) => {
+    if (!Array.isArray(order)) {
+      throw badOrder(`Page "${pageName}": section_order must be a list of section names (${allowed.join(", ")}).`);
+    }
+    const seen = new Set();
+    for (const name of order) {
+      if (!allowed.includes(name)) {
+        throw badOrder(`Page "${pageName}": section_order has an unknown section "${name}". Allowed: ${allowed.join(", ")}.`);
+      }
+      if (seen.has(name)) throw badOrder(`Page "${pageName}": section_order lists "${name}" more than once.`);
+      seen.add(name);
+    }
+    const missing = allowed.filter((name) => !seen.has(name));
+    if (missing.length) {
+      throw badOrder(`Page "${pageName}": section_order is missing ${missing.map((n) => `"${n}"`).join(", ")}.`);
+    }
+    let position = 0;
+    return order.map((name) => ({ name, alt: banded.includes(name) ? false : position++ % 2 === 1 }));
+  });
+
   eleventyConfig.addFilter("pad2", (n) => String(n).padStart(2, "0"));
 
   // JSON that is safe to embed inside a <script> element.
@@ -177,6 +209,13 @@ export default function (eleventyConfig) {
   // can keep serving an old copy.
   eleventyConfig.addFilter("fingerprint", (...values) =>
     crypto.createHash("sha256").update(JSON.stringify(values)).digest("hex").slice(0, 10));
+
+  // "#C9A04A" → "201, 160, 74", for rgba(var(--color-gold-rgb), 0.4) style tints.
+  eleventyConfig.addFilter("rgbChannels", (hex) => {
+    const m = String(hex || "").match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+    if (!m) throw new Error(`Expected a colour like #C9A04A, got "${hex}"`);
+    return m.slice(1).map((h) => parseInt(h, 16)).join(", ");
+  });
 
   // Largest number of extra people on any one invitation (at least 1). The
   // RSVP form renders this many guest blocks so Netlify Forms knows every

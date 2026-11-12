@@ -93,6 +93,66 @@ collections:
               - { name: description, label: Note in the event, widget: text, hint: "The website link is added automatically." }
           - { name: email, label: Contact email, widget: string, pattern: ['^[^\s@]+@[^\s@]+\.[^\s@]+$', "Enter an email address like name@example.com"], hint: "Every \"Email us\" link on the site uses this address." }
           - { name: footer_text, label: Footer text, widget: string, hint: "The small line at the bottom of every page." }
+          - name: labels
+            label: Button & label wording
+            widget: object
+            collapsed: true
+            hint: "The words on the Get directions links, Show map buttons and the Add to Calendar menu, which appear on several pages."
+            fields:
+              - { name: get_directions, label: "Link: Get directions", widget: string }
+              - { name: show_map, label: "Map button: Show map", widget: string }
+              - { name: opens_in_new_tab, label: "Hidden note for screen readers on links that open a new tab", widget: string }
+              - { name: add_to_calendar, label: "Button: Add to Calendar", widget: string }
+              - { name: apple_calendar, label: "Calendar choice: Apple", widget: string }
+              - { name: apple_calendar_hint, label: "Calendar choice: Apple, small text", widget: string }
+              - { name: google_calendar, label: "Calendar choice: Google", widget: string }
+              - { name: google_calendar_hint, label: "Calendar choice: Google, small text", widget: string }
+              - { name: outlook, label: "Calendar choice: Outlook", widget: string }
+              - { name: outlook_hint, label: "Calendar choice: Outlook, small text", widget: string }
+              - { name: other_calendar, label: "Calendar choice: Other", widget: string }
+              - { name: other_calendar_hint, label: "Calendar choice: Other, small text", widget: string }
+      - name: theme
+        label: Colours
+        file: src/_data/theme.json
+        fields:
+          - { name: dusty_sage, label: Banner green, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "Page banners, feature bands and the footer. Keep it readable against what sits behind it." }
+          - { name: rosette, label: RSVP pink, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "The RSVP button only. Keep it readable against what sits behind it." }
+          - { name: gold, label: Gold, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "Gold borders and rings. Keep it readable against what sits behind it." }
+          - { name: ivory, label: Page background, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "The main background of every page. Keep it readable against what sits behind it." }
+          - { name: sage_mist, label: Alternate section background, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "Every other section, so the page has gentle stripes. Keep it readable against what sits behind it." }
+          - { name: white, label: Card white, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "Cards and boxes. Keep it readable against what sits behind it." }
+          - { name: hairline, label: Thin lines, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "The fine lines around cards and between sections. Keep it readable against what sits behind it." }
+          - { name: blush, label: Soft pink, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "Small touches such as highlighted text. Keep it readable against what sits behind it." }
+          - { name: evergreen, label: Main text, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "Body text, headings and dark buttons. Keep it readable against what sits behind it." }
+          - { name: sage_gray, label: Quiet text, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "Captions and secondary text. Keep it readable against what sits behind it." }
+          - { name: deep_gold, label: Gold text, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "Small gold labels, links and icons. Keep it readable against what sits behind it." }
+          - { name: deep_evergreen, label: Text on banners, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "Text that sits on the banner green. Keep it readable against what sits behind it." }
+          - { name: muted_on_sage, label: Quiet text on banners, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "Secondary text that sits on the banner green. Keep it readable against what sits behind it." }
+          - { name: gold_on_sage, label: Gold text on banners, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "Gold text that sits on the banner green. Keep it readable against what sits behind it." }
+      - name: nav
+        label: Menu
+        file: src/_data/nav.json
+        fields:
+          - name: essentials
+            label: Main menu links
+            label_singular: link
+            widget: list
+            hint: The links in the header and under the names on the home page. Change the wording only; the pages they go to stay the same.
+            allow_add: false
+            fields:
+              - { name: label, label: Link wording, widget: string }
+              - { name: url, label: Goes to, widget: hidden }
+              - { name: rsvp, label: RSVP style, widget: hidden, required: false }
+          - name: more
+            label: More links
+            label_singular: link
+            widget: list
+            hint: The extra links in the menu. Change the wording only; the pages they go to stay the same.
+            allow_add: false
+            fields:
+              - { name: label, label: Link wording, widget: string }
+              - { name: url, label: Goes to, widget: hidden }
+              - { name: rsvp, label: RSVP style, widget: hidden, required: false }
 
   # ── Pages ────────────────────────────────────────────────────────────────
   - name: pages
@@ -119,6 +179,15 @@ collections:
               - { name: description, label: Google description, widget: text, maxlength: 160, hint: "One or two sentences shown under the link in Google results. Google cuts off anything past about 160 characters." }
               - { name: social_title, label: Link preview title, widget: string, required: false, hint: "Leave empty to use the browser tab title." }
               - { name: social_description, label: Link preview description, widget: text, required: false, maxlength: 200, hint: "Shown when the link is shared in a text or on social media. Leave empty to use the Google description." }
+          - name: section_order
+            label: Order of sections
+            widget: select
+            multiple: true
+            dropdown_threshold: 0
+            min: 5
+            max: 5
+            hint: "The order the sections appear on the page, top to bottom. Keep every section in the list; drag to change the order. The colours alternate down the page by themselves. The countdown keeps its green band wherever it goes."
+            options: [{ label: Welcome, value: welcome }, { label: Countdown, value: countdown }, { label: Photos, value: photos }, { label: "Explore links", value: quick_links }, { label: "Save the date", value: save_the_date }]
           - name: hero
             label: Top of page
             widget: object
@@ -189,6 +258,20 @@ collections:
             fields:
               - { name: label, label: Small text, widget: string }
               - { name: text, label: Message, widget: text }
+          - name: labels
+            label: Button & label wording
+            widget: object
+            collapsed: true
+            hint: "The words on this page's buttons and small labels. Rarely needs changing."
+            fields:
+              - { name: plan_your_trip, label: "Button: Plan your trip", widget: string }
+              - { name: our_story, label: "Button: Our story", widget: string }
+              - { name: days, label: "Countdown word: Days", widget: string }
+              - { name: view_the_gallery, label: "Button: View the gallery", widget: string }
+              - { name: card_our_story, label: "Explore list: Our Story title", widget: string }
+              - { name: card_details, label: "Explore list: Details title", widget: string }
+              - { name: card_rsvp, label: "Explore list: RSVP title", widget: string }
+              - { name: card_wedding_party, label: "Explore list: Wedding Party title", widget: string }
 
       # Our Story -------------------------------------------------------------
       - name: story
@@ -239,6 +322,13 @@ collections:
               - { name: label, label: Small text, widget: string }
               - { name: title, label: Heading, widget: string }
               - { name: text, label: Message, widget: text }
+          - name: labels
+            label: Button & label wording
+            widget: object
+            collapsed: true
+            hint: "The words on this page's buttons and small labels. Rarely needs changing."
+            fields:
+              - { name: view_details, label: "Button: View details", widget: string }
 
       # Details ---------------------------------------------------------------
       - name: details
@@ -248,6 +338,15 @@ collections:
         fields:
           - *seo
           - *hero
+          - name: section_order
+            label: Order of sections
+            widget: select
+            multiple: true
+            dropdown_threshold: 0
+            min: 4
+            max: 4
+            hint: "The order the sections appear on the page, top to bottom. Keep every section in the list; drag to change the order. The colours alternate down the page by themselves."
+            options: [{ label: Ceremony, value: ceremony }, { label: Reception, value: reception }, { label: Schedule, value: schedule }, { label: "Closing message", value: cta }]
           - name: ceremony
             label: Ceremony
             widget: object
@@ -306,6 +405,15 @@ collections:
             fields:
               - { name: title, label: Heading, widget: string }
               - { name: text, label: Message, widget: text }
+          - name: labels
+            label: Button & label wording
+            widget: object
+            collapsed: true
+            hint: "The words on this page's buttons and small labels. Rarely needs changing."
+            fields:
+              - { name: venue, label: "Label: Venue", widget: string }
+              - { name: address, label: "Label: Address", widget: string }
+              - { name: plan_your_trip, label: "Button: Plan your trip", widget: string }
 
       # Wedding Party ---------------------------------------------------------
       - name: party
@@ -315,6 +423,15 @@ collections:
         fields:
           - *seo
           - *hero
+          - name: section_order
+            label: Order of sections
+            widget: select
+            multiple: true
+            dropdown_threshold: 0
+            min: 3
+            max: 3
+            hint: "The order the sections appear on the page, top to bottom. Keep every section in the list; drag to change the order. The colours alternate down the page by themselves."
+            options: [{ label: "Paige's side", value: bridesmaids }, { label: "Jeff's side", value: groomsmen }, { label: "Closing message", value: cta }]
           - name: bridesmaids
             label: "Paige's side"
             widget: object
@@ -347,6 +464,13 @@ collections:
             fields:
               - { name: title, label: Heading, widget: string }
               - { name: text, label: Message, widget: text }
+          - name: labels
+            label: Button & label wording
+            widget: object
+            collapsed: true
+            hint: "The words on this page's buttons and small labels. Rarely needs changing."
+            fields:
+              - { name: see_the_details, label: "Button: See the details", widget: string }
 
       # RSVP ------------------------------------------------------------------
       - name: rsvp
@@ -482,6 +606,15 @@ collections:
         fields:
           - *seo
           - *hero
+          - name: section_order
+            label: Order of sections
+            widget: select
+            multiple: true
+            dropdown_threshold: 0
+            min: 4
+            max: 4
+            hint: "The order the sections appear on the page, top to bottom. Keep every section in the list; drag to change the order. The colours alternate down the page by themselves."
+            options: [{ label: "Room block", value: room_block }, { label: "Nearby hotels", value: nearby }, { label: Airports, value: airports }, { label: "Local tips", value: tips }]
           - name: room_block
             label: Room block
             widget: object
@@ -565,6 +698,17 @@ collections:
                       - { label: "⭐ Star", value: star }
                   - { name: title, label: Title, widget: string }
                   - { name: text, label: Tip, widget: text }
+          - name: labels
+            label: Button & label wording
+            widget: object
+            collapsed: true
+            hint: "The words on this page's buttons and small labels. Rarely needs changing."
+            fields:
+              - { name: block_deadline, label: "Label: Block deadline", widget: string }
+              - { name: to_be_announced, label: "Text when there is no deadline yet", widget: string }
+              - { name: book_your_room, label: "Button: Book your room", widget: string }
+              - { name: booking_link_coming_soon, label: "Text when there is no booking link yet", widget: string }
+              - { name: visit_website, label: "Button: Visit website", widget: string }
 
       # After Party -----------------------------------------------------------
       - name: afterparty
@@ -574,6 +718,15 @@ collections:
         fields:
           - *seo
           - *hero
+          - name: section_order
+            label: Order of sections
+            widget: select
+            multiple: true
+            dropdown_threshold: 0
+            min: 3
+            max: 3
+            hint: "The order the sections appear on the page, top to bottom. Keep every section in the list; drag to change the order. The colours alternate down the page by themselves."
+            options: [{ label: "Where and when", value: details }, { label: "What to expect", value: expect }, { label: "Closing message", value: cta }]
           - name: details
             label: Where & when
             widget: object
@@ -611,6 +764,17 @@ collections:
             fields:
               - { name: title, label: Heading, widget: string }
               - { name: text, label: Message, widget: text }
+          - name: labels
+            label: Button & label wording
+            widget: object
+            collapsed: true
+            hint: "The words on this page's buttons and small labels. Rarely needs changing."
+            fields:
+              - { name: address, label: "Label: Address", widget: string }
+              - { name: time, label: "Label: Time", widget: string }
+              - { name: dress_code, label: "Label: Dress code", widget: string }
+              - { name: open_to, label: "Label: Open to", widget: string }
+              - { name: wedding_details, label: "Button: Wedding details", widget: string }
 
       # FAQ -------------------------------------------------------------------
       - name: faq
@@ -656,6 +820,14 @@ collections:
             fields:
               - { name: title, label: Heading, widget: string }
               - { name: text, label: Message, widget: text }
+          - name: labels
+            label: Button & label wording
+            widget: object
+            collapsed: true
+            hint: "The words on this page's buttons and small labels. Rarely needs changing."
+            fields:
+              - { name: email_us, label: "Button: Email us", widget: string }
+              - { name: see_the_details, label: "Button: See the details", widget: string }
 
       # Gallery ---------------------------------------------------------------
       - name: gallery
@@ -690,6 +862,13 @@ collections:
               - { name: label, label: Small text, widget: string }
               - { name: title, label: Heading, widget: string }
               - { name: text, label: Message, widget: text }
+          - name: labels
+            label: Button & label wording
+            widget: object
+            collapsed: true
+            hint: "The words on this page's buttons and small labels. Rarely needs changing."
+            fields:
+              - { name: see_the_details, label: "Button: See the details", widget: string }
 
       # 404 -------------------------------------------------------------------
       - name: notfound
@@ -705,6 +884,14 @@ collections:
               - { name: description, label: Description, widget: text }
           - { name: title, label: Heading, widget: string }
           - { name: text, label: Message, widget: text }
+          - name: labels
+            label: Button & label wording
+            widget: object
+            collapsed: true
+            hint: "The words on this page's buttons and small labels. Rarely needs changing."
+            fields:
+              - { name: back_to_home, label: "Button: Back to home", widget: string }
+              - { name: rsvp, label: "Button: RSVP", widget: string }
 
   # ── Guest list ───────────────────────────────────────────────────────────
   - name: guest_list

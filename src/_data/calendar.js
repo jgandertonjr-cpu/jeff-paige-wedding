@@ -139,5 +139,7 @@ export default function () {
     icsPath: "wedding.ics",
     googleUrl: google,
     outlookUrl: outlook,
+    // Wording for the Add to Calendar menu (add-to-calendar.njk can't see site data from inside its macro).
+    labels: site.labels || {},
   };
 }

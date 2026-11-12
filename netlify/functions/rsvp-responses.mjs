@@ -1,23 +1,18 @@
 // RSVP responses for the admin dashboard (/admin/rsvps/).
 //
 // GET /api/rsvp-responses
-//   Authorization: Bearer <GitHub token>   (the same sign-in as the editor)
+//   Cookie: jp_admin=...   (set by the editor's sign-in at /admin/)
 //
-// Only people who can edit the website's GitHub repo get an answer. The
+// Only someone signed in to the editor gets an answer. The
 // submissions themselves are read from Netlify Forms with a Netlify personal
 // access token kept in the NETLIFY_RSVP_TOKEN environment variable, so it never
 // reaches the browser. See ADMIN-SETUP.md → "RSVP dashboard".
+import * as sessionApi from "../editor/session.mjs";
+import { siteIdFrom } from "../editor/site.mjs";
 
-const REPO = process.env.RSVP_DASHBOARD_REPO || "jgandertonjr-cpu/jeff-paige-wedding";
-const SITE_ID = process.env.SITE_ID || "00e11b72-2ff3-4cd7-8c17-2b328a543ef9";
+const SITE_ID = siteIdFrom(process.env);
 const FORM_NAME = "rsvp";
 const NETLIFY_API = "https://api.netlify.com/api/v1";
-
-// Remember tokens that already passed the GitHub check for a few minutes, so a
-// refresh doesn't call GitHub every time. Lives only as long as the function
-// instance stays warm.
-const verified = new Map(); // token → { login, until }
-const VERIFY_TTL_MS = 5 * 60 * 1000;
 
 function json(status, body) {
   return new Response(JSON.stringify(body), {
@@ -28,36 +23,6 @@ function json(status, body) {
       "X-Robots-Tag": "noindex, nofollow",
     },
   });
-}
-
-async function checkGitHubAccess(token) {
-  const hit = verified.get(token);
-  if (hit && hit.until > Date.now()) return { ok: true, login: hit.login };
-
-  const res = await fetch(`https://api.github.com/repos/${REPO}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/vnd.github+json",
-      "User-Agent": "jeffandpaige-rsvp-dashboard",
-    },
-  });
-  if (res.status === 401) return { ok: false, status: 401, error: "Your GitHub sign-in has expired. Sign in again." };
-  // 404 is what GitHub returns for a private repo the account can't see.
-  if (res.status === 403 || res.status === 404) return { ok: false, status: 403, error: "This GitHub account doesn't have access to the website." };
-  if (!res.ok) return { ok: false, status: 502, error: `GitHub check failed (${res.status}). Try again in a minute.` };
-
-  const repo = await res.json();
-  const p = repo.permissions || {};
-  if (!(p.push || p.maintain || p.admin)) {
-    return { ok: false, status: 403, error: "This GitHub account can view the repo but can't edit the website." };
-  }
-
-  const userRes = await fetch("https://api.github.com/user", {
-    headers: { Authorization: `Bearer ${token}`, "User-Agent": "jeffandpaige-rsvp-dashboard" },
-  });
-  const login = userRes.ok ? (await userRes.json()).login : "";
-  verified.set(token, { login, until: Date.now() + VERIFY_TTL_MS });
-  return { ok: true, login };
 }
 
 async function netlify(path, token) {
@@ -96,43 +61,43 @@ async function fetchSubmissions(netlifyToken) {
   };
 }
 
-export default async (req) => {
-  if (req.method !== "GET") return json(405, { error: "Method not allowed" });
-
-  const auth = req.headers.get("authorization") || "";
-  const token = auth.startsWith("Bearer ") ? auth.slice(7).trim() : "";
-  if (!token) return json(401, { error: "Sign in with GitHub to see RSVP responses." });
-
-  let access;
-  try {
-    access = await checkGitHubAccess(token);
-  } catch {
-    return json(502, { error: "Couldn't reach GitHub to check your sign-in. Try again in a minute." });
-  }
-  if (!access.ok) return json(access.status, { error: access.error });
-
-  const netlifyToken = process.env.NETLIFY_RSVP_TOKEN;
-  if (!netlifyToken) {
-    return json(500, {
-      error: "The dashboard isn't connected to Netlify yet: add the NETLIFY_RSVP_TOKEN environment variable (see ADMIN-SETUP.md → RSVP dashboard).",
-      setup: true,
-    });
-  }
-
-  try {
-    const { submissions, formId } = await fetchSubmissions(netlifyToken);
-    return json(200, {
-      viewer: access.login,
-      formId,
-      fetchedAt: new Date().toISOString(),
-      submissions,
-    });
-  } catch (err) {
-    const hint = err.status === 401
-      ? "The Netlify access token in NETLIFY_RSVP_TOKEN is invalid or expired. Create a new one (see ADMIN-SETUP.md)."
-      : "Couldn't load responses from Netlify. Try again in a minute.";
-    return json(502, { error: hint, setup: err.status === 401 });
-  }
+const SAID = {
+  notConnected: "The RSVP list isn't connected yet. Jeff can fix this — see the setup guide.",
+  cantLoad: "I can't load the responses right now. Try again in a minute.",
 };
+
+// `log(event, fields)` records the cause by name only, never a message or a value.
+export function createRsvpHandler({ sessionApi, env, now, fetchSubmissions: load, log = () => {} }) {
+  return async (req) => {
+    if (req.method !== "GET") return json(405, { error: "Method not allowed" });
+
+    if (!sessionApi.hasSession(req.headers.get("cookie"), env, now())) {
+      return json(401, { error: "Sign in to see RSVP responses.", signin: true });
+    }
+
+    const netlifyToken = env.NETLIFY_RSVP_TOKEN;
+    if (!netlifyToken) {
+      log("rsvp_setup", { missing: ["NETLIFY_RSVP_TOKEN"] });
+      return json(500, { error: SAID.notConnected, setup: true });
+    }
+
+    try {
+      const { submissions, formId } = await load(netlifyToken);
+      return json(200, { formId, fetchedAt: new Date(now()).toISOString(), submissions });
+    } catch (err) {
+      // 401: the access key is wrong or has expired; 403: it cannot see this site.
+      // Neither is fixed by trying again, so both get the setup answer.
+      const rejected = Boolean(err && (err.status === 401 || err.status === 403));
+      log("rsvp_error", { name: (err && err.name) || "Error", ...(Number.isInteger(err && err.status) ? { status: err.status } : {}) });
+      return json(502, { error: rejected ? SAID.notConnected : SAID.cantLoad, setup: rejected });
+    }
+  };
+}
+
+export default async (req) =>
+  createRsvpHandler({
+    sessionApi, env: process.env, now: () => Date.now(), fetchSubmissions,
+    log: (event, fields) => console.error(JSON.stringify({ event, ...fields })),
+  })(req);
 
 export const config = { path: "/api/rsvp-responses" };

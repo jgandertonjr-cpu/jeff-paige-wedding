@@ -6,6 +6,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["@11ty/eleventy", "--serve", "--port=8080"],
       "port": 8080
+    },
+    {
+      "name": "editor-dev",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/editor-dev.mjs"],
+      "port": 8081
     }
   ]
 }

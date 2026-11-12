@@ -38,13 +38,27 @@
   X-Robots-Tag: noindex, nofollow
   Cache-Control: no-cache
 
+# Private exam-prep and practice apps: keep out of search results
+/blue-line-prep
+  X-Robots-Tag: noindex, nofollow
+/blue-line-prep.html
+  X-Robots-Tag: noindex, nofollow
+/oral-board-prep
+  X-Robots-Tag: noindex, nofollow
+/oral-board-prep.html
+  X-Robots-Tag: noindex, nofollow
+/nelson-denny-practice
+  X-Robots-Tag: noindex, nofollow
+/nelson-denny-practice.html
+  X-Robots-Tag: noindex, nofollow
+
 # Private police department application tracker: keep out of search results,
 # and always check for a newer version (its service worker handles offline use)
 /pd-tracker/*
   X-Robots-Tag: noindex, nofollow, noarchive
   Cache-Control: no-cache
 
-# Content editor (Sveltia CMS at /admin): keep out of search results
+# Website editor (/admin, with the fallback form editor at /admin/forms): keep out of search results
 /admin/*
   X-Robots-Tag: noindex, nofollow
   Cache-Control: no-cache

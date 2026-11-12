@@ -5,6 +5,12 @@
     "social_title": "",
     "social_description": "Ceremony and reception details, schedule, dress code, and venue information."
   },
+  "section_order": [
+    "ceremony",
+    "reception",
+    "schedule",
+    "cta"
+  ],
   "hero": {
     "label": "Plan Your Visit",
     "title": "The Details",
@@ -94,5 +100,10 @@
   "cta": {
     "title": "Ready to Celebrate?",
     "text": "Invitations and RSVPs will go out closer to the day. In the meantime, start planning your trip."
+  },
+  "labels": {
+    "venue": "Venue",
+    "address": "Address",
+    "plan_your_trip": "Plan Your Trip"
   }
 }

@@ -4,16 +4,27 @@
   "description": "Jeff & Paige wedding website (jeffandpaige.net)",
   "type": "module",
   "scripts": {
-    "build": "eleventy",
-    "start": "eleventy --serve"
+    "build": "eleventy && node scripts/check-site.mjs",
+    "start": "eleventy --serve",
+    "test": "node --test \"test/**/*.test.mjs\"",
+    "parity:record": "node scripts/parity.mjs --record",
+    "parity": "node scripts/parity.mjs",
+    "schema": "node scripts/build-editor-schema.mjs",
+    "protect:record": "eleventy && node scripts/check-site.mjs --record",
+    "editor:dev": "node scripts/editor-dev.mjs"
   },
   "engines": {
-    "node": ">=20.9"
+    "node": ">=22.12"
+  },
+  "dependencies": {
+    "@netlify/blobs": "11.1.9",
+    "image-size": "2.0.4",
+    "markdown-it": "14.3.2"
   },
   "devDependencies": {
     "@11ty/eleventy": "3.1.6",
-    "image-size": "2.0.4",
-    "markdown-it": "14.3.2",
-    "sharp": "0.35.5"
+    "parse5": "7.3.0",
+    "sharp": "0.35.5",
+    "yaml": "2.9.1"
   }
 }

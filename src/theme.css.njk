@@ -1,0 +1,18 @@
+---
+permalink: css/theme.css
+eleventyExcludeFromCollections: true
+---
+/* Generated from src/_data/theme.json. Loaded after styles.css, so these
+   values replace the defaults at the top of that file. */
+:root {
+{%- for key, value in theme %}
+  --color-{{ key | replace("_", "-") }}: {{ value }};
+{%- endfor %}
+  --color-champagne: rgba({{ theme.gold | rgbChannels }}, 0.14);
+  --color-gold-rgb: {{ theme.gold | rgbChannels }};
+  --color-evergreen-rgb: {{ theme.evergreen | rgbChannels }};
+  --color-dark-rgb: {{ theme.deep_evergreen | rgbChannels }};
+  --color-dusty-sage-rgb: {{ theme.dusty_sage | rgbChannels }};
+  --color-ivory-rgb: {{ theme.ivory | rgbChannels }};
+  --color-deep-gold-rgb: {{ theme.deep_gold | rgbChannels }};
+}

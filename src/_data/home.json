@@ -5,6 +5,13 @@
     "social_title": "Jeff and Paige's Wedding",
     "social_description": "Jeff Ganderton and Paige Mullen are getting married on August 5, 2028 at HollyHedge Estate in New Hope, PA."
   },
+  "section_order": [
+    "welcome",
+    "countdown",
+    "photos",
+    "quick_links",
+    "save_the_date"
+  ],
   "hero": {
     "eyebrow": "We're Getting Married",
     "photo": "/images/119812256_unknown.webp",
@@ -54,5 +61,15 @@
   "save_the_date": {
     "label": "Save the Date",
     "text": "Nothing about this day works without the people we love in the room. Invitations and RSVPs will follow — for now, mark your calendar."
+  },
+  "labels": {
+    "plan_your_trip": "Plan Your Trip",
+    "our_story": "Our Story",
+    "days": "Days",
+    "view_the_gallery": "View the Gallery",
+    "card_our_story": "Our Story",
+    "card_details": "Details",
+    "card_rsvp": "RSVP",
+    "card_wedding_party": "Wedding Party"
   }
 }

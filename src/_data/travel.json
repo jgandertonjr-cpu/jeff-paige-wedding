@@ -5,6 +5,12 @@
     "social_title": "",
     "social_description": "Everything you need to plan your trip for the wedding weekend in New Hope, PA."
   },
+  "section_order": [
+    "room_block",
+    "nearby",
+    "airports",
+    "tips"
+  ],
   "hero": {
     "label": "Plan Your Trip",
     "title": "Travel & Stay",
@@ -72,5 +78,12 @@
         "text": "Once our room block is announced, we recommend booking your accommodations as soon as possible to guarantee availability and the best rates."
       }
     ]
+  },
+  "labels": {
+    "block_deadline": "Block deadline:",
+    "to_be_announced": "To be announced",
+    "book_your_room": "Book Your Room",
+    "booking_link_coming_soon": "Booking link coming soon",
+    "visit_website": "Visit Website"
   }
 }

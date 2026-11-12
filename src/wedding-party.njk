@@ -26,16 +26,9 @@ headerDark: true
           {%- endfor %}
         </div>
 {%- endmacro -%}
-{%- block main %}
-    <!-- ── PAGE HERO ── -->
-    <section class="page-hero" aria-label="Page header">
-      <span class="section-label">{{ party.hero.label }}</span>
-      <h1 class="page-hero__title">{{ party.hero.title }}</h1>
-      <p class="page-hero__subtitle">{{ party.hero.subtitle }}</p>
-    </section>
-
+{%- macro bridesmaids(alt) %}
     <!-- ── BRIDESMAIDS ── -->
-    <section class="section" aria-labelledby="bridesmaids-heading">
+    <section class="section{% if alt %} section--alt{% endif %}" aria-labelledby="bridesmaids-heading">
       <div class="container">
         <div class="section-header">
           <span class="section-label reveal">{{ party.bridesmaids.label }}</span>
@@ -45,9 +38,10 @@ headerDark: true
 {{ partyGrid(party.bridesmaids.members) }}
       </div>
     </section>
-
+{%- endmacro %}
+{%- macro groomsmen(alt) %}
     <!-- ── GROOMSMEN ── -->
-    <section class="section section--alt" aria-labelledby="groomsmen-heading">
+    <section class="section{% if alt %} section--alt{% endif %}" aria-labelledby="groomsmen-heading">
       <div class="container">
         <div class="section-header">
           <span class="section-label reveal">{{ party.groomsmen.label }}</span>
@@ -57,16 +51,35 @@ headerDark: true
 {{ partyGrid(party.groomsmen.members) }}
       </div>
     </section>
-
+{%- endmacro %}
+{%- macro cta(alt) %}
     <!-- ── CTA ── -->
-    <section class="section text-center" aria-label="RSVP prompt">
+    <section class="section{% if alt %} section--alt{% endif %} text-center" aria-label="RSVP prompt">
       <div class="container container--narrow">
         <h2 class="section-title reveal">{{ party.cta.title }}</h2>
         <p class="section-subtitle mb-8 reveal reveal--delay-1">{{ party.cta.text }}</p>
         <div class="flex flex--center reveal reveal--delay-2">
-          <a href="details.html" class="btn btn--primary">See the Details</a>
+          <a href="details.html" class="btn btn--primary">{{ party.labels.see_the_details }}</a>
           {{ addToCalendar(calendar) }}
         </div>
       </div>
     </section>
+{%- endmacro %}
+{%- block main %}
+    <!-- ── PAGE HERO ── -->
+    <section class="page-hero" aria-label="Page header">
+      <span class="section-label">{{ party.hero.label }}</span>
+      <h1 class="page-hero__title">{{ party.hero.title }}</h1>
+      <p class="page-hero__subtitle">{{ party.hero.subtitle }}</p>
+    </section>
+
+    {%- for s in party.section_order | sectionOrder(["bridesmaids", "groomsmen", "cta"], "party") %}
+    {%- if s.name == "bridesmaids" %}
+    {{ bridesmaids(s.alt) }}
+    {%- elif s.name == "groomsmen" %}
+    {{ groomsmen(s.alt) }}
+    {%- elif s.name == "cta" %}
+    {{ cta(s.alt) }}
+    {%- endif %}
+    {%- endfor %}
 {% endblock %}

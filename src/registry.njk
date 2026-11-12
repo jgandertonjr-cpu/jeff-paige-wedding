@@ -51,7 +51,7 @@ headerDark: true
               <h3 class="registry-option__title">{{ amazon.title }}</h3>
               <p class="registry-option__text">{{ amazon.text }}</p>
               <a href="{{ amazon.url }}" class="btn btn--primary registry-option__cta" target="_blank" rel="noopener noreferrer">
-                {{ amazon.button_text }}<span class="sr-only"> (opens in a new tab)</span>
+                {{ amazon.button_text }}<span class="sr-only"> {{ site.labels.opens_in_new_tab }}</span>
               </a>
             </div>
 
@@ -71,7 +71,7 @@ headerDark: true
               {%- endif %}
               {%- if fund.url %}
               <a href="{{ fund.url }}" class="btn btn--outline registry-option__cta" target="_blank" rel="noopener noreferrer">
-                {{ fund.button_text }}<span class="sr-only"> (opens in a new tab)</span>
+                {{ fund.button_text }}<span class="sr-only"> {{ site.labels.opens_in_new_tab }}</span>
               </a>
               {%- endif %}
             </div>

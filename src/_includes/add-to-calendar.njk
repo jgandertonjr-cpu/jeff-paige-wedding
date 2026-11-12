@@ -5,12 +5,12 @@
            {{ addToCalendar(calendar) }} -#}
 {%- macro addToCalendar(calendar, extraClass="") -%}
 <details class="add-cal {{ extraClass }}" data-add-cal>
-  <summary class="btn btn--outline add-cal__toggle">Add to Calendar</summary>
+  <summary class="btn btn--outline add-cal__toggle">{{ calendar.labels.add_to_calendar }}</summary>
   <ul class="add-cal__menu" aria-label="Choose your calendar">
-    <li data-cal="apple"><a href="/{{ calendar.icsPath }}">Apple Calendar<span>iPhone, iPad and Mac</span></a></li>
-    <li data-cal="google"><a href="{{ calendar.googleUrl }}" target="_blank" rel="noopener">Google Calendar<span>Android and Gmail</span></a></li>
-    <li data-cal="outlook"><a href="{{ calendar.outlookUrl }}" target="_blank" rel="noopener">Outlook<span>Outlook.com and Hotmail</span></a></li>
-    <li data-cal="other"><a href="/{{ calendar.icsPath }}" download="jeff-and-paige-wedding.ics">Other calendar<span>Download the event file</span></a></li>
+    <li data-cal="apple"><a href="/{{ calendar.icsPath }}">{{ calendar.labels.apple_calendar }}<span>{{ calendar.labels.apple_calendar_hint }}</span></a></li>
+    <li data-cal="google"><a href="{{ calendar.googleUrl }}" target="_blank" rel="noopener">{{ calendar.labels.google_calendar }}<span>{{ calendar.labels.google_calendar_hint }}</span></a></li>
+    <li data-cal="outlook"><a href="{{ calendar.outlookUrl }}" target="_blank" rel="noopener">{{ calendar.labels.outlook }}<span>{{ calendar.labels.outlook_hint }}</span></a></li>
+    <li data-cal="other"><a href="/{{ calendar.icsPath }}" download="jeff-and-paige-wedding.ics">{{ calendar.labels.other_calendar }}<span>{{ calendar.labels.other_calendar_hint }}</span></a></li>
   </ul>
 </details>
 {%- endmacro -%}
