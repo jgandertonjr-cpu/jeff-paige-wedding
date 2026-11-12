@@ -4,12 +4,14 @@
   "description": "Jeff & Paige wedding website (jeffandpaige.net)",
   "type": "module",
   "scripts": {
-    "build": "eleventy",
+    "build": "eleventy && node scripts/check-site.mjs",
     "start": "eleventy --serve",
     "test": "node --test",
     "parity:record": "node scripts/parity.mjs --record",
     "parity": "node scripts/parity.mjs",
-    "schema": "node scripts/build-editor-schema.mjs"
+    "schema": "node scripts/build-editor-schema.mjs",
+    "protect:record": "eleventy && node scripts/check-site.mjs --record",
+    "editor:dev": "node scripts/editor-dev.mjs"
   },
   "engines": {
     "node": ">=20.9"
