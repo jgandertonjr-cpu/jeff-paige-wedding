@@ -175,10 +175,9 @@ eleventyExcludeFromCollections: true
   <main class="wrap">
     <div class="notice" id="signin" hidden>
       <h2>Sign in to see responses</h2>
-      <p>Use the same GitHub account you use for the website editor. Only people who can edit the website can see RSVPs.</p>
+      <p>Sign in on the editor page to see the responses.</p>
       <div class="actions">
-        <button class="btn" id="signin-btn" type="button">Sign in with GitHub</button>
-        <a class="btn btn--ghost" href="/admin/">Open the editor</a>
+        <a class="btn" href="/admin/">Sign in</a>
       </div>
     </div>
 
@@ -187,7 +186,7 @@ eleventyExcludeFromCollections: true
       <p id="error-text"></p>
       <div class="actions">
         <button class="btn" id="retry" type="button">Try again</button>
-        <button class="btn btn--ghost" id="signout" type="button">Sign in with a different account</button>
+        <a class="btn btn--ghost" href="/admin/">Sign in</a>
       </div>
     </div>
 
@@ -304,7 +303,6 @@ eleventyExcludeFromCollections: true
     var GUESTS = DATA.guests || [];
     var MEALS = DATA.meals || [];
     var API = '/api/rsvp-responses';
-    var DASH_TOKEN_KEY = 'rsvp-dashboard.github-token';
     var STATUS = {
       attending: { label: 'Attending', color: 'var(--series-1)' },
       declined: { label: 'Declined', color: 'var(--series-2)' },
@@ -385,52 +383,18 @@ eleventyExcludeFromCollections: true
       return norm(s).replace(/[“”"'’.,!?()[\]]/g, '').split(/\s+[-–—]\s+/)[0].replace(/^the /, '').replace(/\s+/g, ' ').trim();
     }
 
-    /* ── Sign-in (reuses the editor's GitHub sign-in) ───────────────── */
-    function getToken() {
-      try {
-        var u = JSON.parse(localStorage.getItem('sveltia-cms.user') || 'null');
-        if (u && u.token && (!u.backendName || u.backendName === 'github')) return u.token;
-      } catch (e) { /* ignore */ }
-      try { return sessionStorage.getItem(DASH_TOKEN_KEY) || ''; } catch (e) { return ''; }
-    }
-    function signIn() {
-      var popup = window.open('https://api.netlify.com/auth?provider=github&site_id=' + encodeURIComponent(location.hostname) + '&scope=repo',
-        'rsvp-dashboard-signin', 'width=960,height=640');
-      if (!popup) { showError('Allow pop-ups', 'Your browser blocked the sign-in window. Allow pop-ups for this site and try again.'); return; }
-      function onMessage(e) {
-        if (e.origin !== 'https://api.netlify.com' || typeof e.data !== 'string') return;
-        if (e.data === 'authorizing:github') { popup.postMessage(e.data, e.origin); return; }
-        var m = /^authorization:github:(success|error):(.*)$/.exec(e.data);
-        if (!m) return;
-        window.removeEventListener('message', onMessage);
-        try { popup.close(); } catch (err) { /* ignore */ }
-        var info = {};
-        try { info = JSON.parse(m[2]); } catch (err) { /* ignore */ }
-        if (m[1] === 'success' && info.token) {
-          try { sessionStorage.setItem(DASH_TOKEN_KEY, info.token); } catch (err) { /* ignore */ }
-          load();
-        } else {
-          showError('Sign-in failed', (info && info.message) || 'GitHub sign-in did not complete. Please try again.');
-        }
-      }
-      window.addEventListener('message', onMessage);
-    }
     function show(which) { ['signin', 'error', 'dashboard'].forEach(function (id) { $(id).hidden = id !== which; }); }
     function showError(title, text) { $('error-title').textContent = title; $('error-text').textContent = text; $('meta').textContent = ''; show('error'); }
 
     function load() {
-      var token = getToken();
-      if (!token) { $('meta').textContent = ''; show('signin'); return; }
       $('refresh').disabled = true;
       document.body.classList.add('is-loading');
       if (!model) $('meta').textContent = 'Loading…';
-      fetch(API, { headers: { Authorization: 'Bearer ' + token }, cache: 'no-store' })
+      fetch(API, { cache: 'no-store' })
         .then(function (res) { return res.json().catch(function () { return {}; }).then(function (body) { return { res: res, body: body }; }); })
         .then(function (r) {
           if (r.res.status === 401) {
-            try { sessionStorage.removeItem(DASH_TOKEN_KEY); } catch (e) { /* ignore */ }
             $('meta').textContent = '';
-            $('signin').querySelector('p').textContent = r.body.error || 'Your sign-in has expired. Sign in again.';
             show('signin');
             return;
           }
@@ -577,7 +541,7 @@ eleventyExcludeFromCollections: true
       $('active-filters').textContent = filtered ? 'Showing ' + plural(s.people.length, 'person', 'people') + ' matching: ' + parts.join(' · ') : '';
 
       var subs = (payload.submissions || []).length;
-      $('meta').textContent = plural(subs, 'submission', 'submissions') + ' · updated ' + fmtDate(payload.fetchedAt) + (payload.viewer ? ' · signed in as ' + payload.viewer : '');
+      $('meta').textContent = plural(subs, 'submission', 'submissions') + ' · updated ' + fmtDate(payload.fetchedAt);
       $('xlsx').disabled = $('csv').disabled = !s.people.length;
     }
 
@@ -1042,8 +1006,6 @@ eleventyExcludeFromCollections: true
 
     $('refresh').addEventListener('click', load);
     $('retry').addEventListener('click', load);
-    $('signin-btn').addEventListener('click', signIn);
-    $('signout').addEventListener('click', function () { try { sessionStorage.removeItem(DASH_TOKEN_KEY); } catch (e) { /* ignore */ } show('signin'); });
     $('xlsx').addEventListener('click', downloadXlsx);
     $('csv').addEventListener('click', downloadCsv);
 
