@@ -360,6 +360,7 @@ body.editor { overflow: hidden; overscroll-behavior: none; }
   border-bottom: 1px solid var(--hairline);
 }
 .recent .quiet:not(:empty) { margin-top: 12px; }
+.recent-result:not(:empty) { margin-top: 12px; }
 .recent-list { list-style: none; padding: 0; margin-top: 8px; }
 .recent-row {
   padding: 14px 0;

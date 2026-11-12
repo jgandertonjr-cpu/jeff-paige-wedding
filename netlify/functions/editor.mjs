@@ -107,9 +107,9 @@ export function createHandler(deps) {
       if (body.history !== undefined && !Array.isArray(body.history)) throw badRequest();
       const input = { message: body.message, history: cleanHistory(body.history) };
       if (typeof body.photo === "string") input.photo = body.photo;
-      const { error, ...answer } = await svc.ask(serviceDeps, input);
+      const { error, failed, ...answer } = await svc.ask(serviceDeps, input);
       if (error) log("ask_failed", { code: error });
-      return json(200, answer);
+      return json(200, failed ? { ...answer, retry: true } : answer);
     }
     if (name === "undo") return json(200, await svc.undo(serviceDeps, pick(body.sha, SHA)));
     // preview, publish, cancel

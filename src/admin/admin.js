@@ -16,6 +16,7 @@
 
   const SAY = {
     cantReach: "I can't reach the site right now. Try again in a minute.",
+    wentWrong: "Something went wrong. Nothing changed. Try again in a minute.",
     working: "Working on that. This can take up to a minute.",
     previewing: "Getting a preview ready. This takes about a minute.",
     bigger: "It changes how a page looks, so I'm getting a preview ready first.",
@@ -161,10 +162,10 @@
     restoreDraft();
     try {
       const data = await api("session", "GET");
-      if (data.signedIn) showEditor();
-      else showSignIn();
-    } catch {
-      showSignIn(SAY.cantReach);
+      if (data.signedIn === true) showEditor();
+      else showSignIn(); // signed out: the form, with no message
+    } catch (err) {
+      showSignIn(err instanceof SignedOut ? "" : SAY.cantReach);
     }
   }
 
@@ -339,8 +340,14 @@
     ui.message.value = "";
     updateComposer();
 
+    // Nothing happened, so offer the request again: the "you" bubble goes, and the
+    // text and photo return to the box, unless she has typed something new meanwhile.
     const putBack = () => {
       mine.remove();
+      if (ui.message.value.trim()) {
+        clearPhoto(sentPhoto);
+        return;
+      }
       ui.message.value = text;
       if (sentPhoto) setPhoto(sentPhoto);
       saveDraft(text);
@@ -351,9 +358,9 @@
       if (sentPhoto) body.photo = sentPhoto.base64;
       const data = await api("ask", "POST", body);
       working.remove();
-      if (data.error) {
+      if (data.error || data.retry) {
         putBack();
-        note(data.error);
+        note(data.error || (typeof data.text === "string" ? data.text : SAY.cantReach));
       } else {
         said.push({ role: "user", text });
         clearPhoto(sentPhoto);
@@ -567,28 +574,25 @@
     }
 
     async publish() {
-      const before = this.state;
       const data = await this.call("publish", { id: this.id });
       if (data && data.ok) {
         this.title = data.title || "";
         this.state = "publishing";
         this.poll("publish");
-      } else {
-        this.state = before;
-        if (data) this.said = data.text || "";
+      } else if (data) {
+        // Keep whatever state the card is in now: a status check may have moved it on.
+        this.said = data.text || "";
       }
       this.render(true);
     }
 
     async cancel() {
-      const before = this.state;
       const data = await this.call("cancel", { id: this.id });
       if (data && data.ok) {
         this.stopPolling();
         this.state = "cancelled";
-      } else {
-        this.state = before;
-        if (data) this.said = data.text || "";
+      } else if (data) {
+        this.said = data.text || "";
       }
       this.render(true);
     }
@@ -691,7 +695,7 @@
       }
       if (data && data.state === "failed") {
         this.stopPolling();
-        this.said = data.text || "";
+        this.said = data.text || SAY.wentWrong;
         this.state = "failed";
         this.render(true);
         return;
@@ -861,12 +865,16 @@
   // ---- recent changes -------------------------------------------------------
 
   let loadingRecent = false;
+  // The outcome of the last undo made from this list; it stays while the list reloads.
+  const recentResult = el("div", { className: "recent-result" });
+  ui.recentList.before(recentResult);
 
   ui.recentToggle.addEventListener("click", () => {
     const open = ui.recentToggle.getAttribute("aria-expanded") !== "true";
     ui.recentToggle.setAttribute("aria-expanded", String(open));
     ui.recent.hidden = !open;
     if (open) {
+      recentResult.replaceChildren();
       loadRecent();
       reveal(ui.recent);
     }
@@ -897,7 +905,7 @@
   function shortDate(iso) {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return "";
-    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   }
 
   function recentRow(edit) {
@@ -939,7 +947,8 @@
           offerUndo();
         } else if (result.ok) {
           setActions();
-          for (const part of undoResult(result)) row.append(part);
+          recentResult.replaceChildren(...undoResult(result));
+          loadRecent(); // the undo is itself a new change at the top of the list
         } else {
           say(result.text || "");
           offerUndo();

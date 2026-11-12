@@ -21,7 +21,7 @@ function setup(over = {}) {
   const logs = [];
   const rec = (name, result) => async (...a) => { calls.push([name, ...a.slice(1)]); return typeof result === "function" ? result(...a) : result; };
   const service = {
-    ask: rec("ask", { kind: "message", text: "Hi", error: "timeout" }),
+    ask: rec("ask", { kind: "message", text: "Hi", error: "timeout", failed: true }),
     preview: rec("preview", { ok: true }),
     status: rec("status", { stage: "preview", state: "building" }),
     publish: rec("publish", { ok: false, text: "Nope" }),
@@ -155,13 +155,13 @@ test("unknown route is 404, wrong method is 405, both JSON", async () => {
   assert.equal(res.status, 405);
 });
 
-test("ask passes validated input, strips the error code and logs it", async () => {
+test("ask passes validated input, strips the error code and logs it, and marks a failure for retry", async () => {
   const { handle, calls, logs } = setup();
   const cookie = await login(handle);
   const history = [{ role: "user", text: "a" }, { role: "robot", text: "b" }, { role: "assistant", text: 5 }, { role: "assistant", text: "c" }];
   const res = await handle(post("ask", { message: "Hello", history, photo: "AAAA" }, { cookie }), ctx());
   assert.equal(res.status, 200);
-  assert.deepEqual(await res.json(), { kind: "message", text: "Hi" });
+  assert.deepEqual(await res.json(), { kind: "message", text: "Hi", retry: true });
   assert.deepEqual(calls[0], ["ask", { message: "Hello", history: [{ role: "user", text: "a" }, { role: "assistant", text: "c" }], photo: "AAAA" }]);
   assert.deepEqual(logs.find((l) => l.event === "ask_failed"), { event: "ask_failed", code: "timeout" });
 });
@@ -296,4 +296,11 @@ test("rsvp: 401 without a session, 200 with one, no viewer field", async () => {
   assert.deepEqual(calls, [ENV.NETLIFY_RSVP_TOKEN]);
   res = await rsvp(new Request(`${ORIGIN}/api/rsvp-responses`, { method: "POST", headers: { cookie } }));
   assert.equal(res.status, 405);
+});
+
+test("ask sends a genuine reply without retry, and never sends the failed flag itself", async () => {
+  const { handle } = setup({ service: { ask: async () => ({ kind: "message", text: "Which page?" }) } });
+  const cookie = await login(handle);
+  const res = await handle(post("ask", { message: "Hello" }, { cookie }), ctx());
+  assert.deepEqual(await res.json(), { kind: "message", text: "Which page?" });
 });

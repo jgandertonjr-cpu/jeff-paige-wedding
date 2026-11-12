@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { resolveStatic, createLocalNetlify } from "../scripts/editor-dev.mjs";
+import { resolveStatic, createLocalNetlify, parseLocalEnv } from "../scripts/editor-dev.mjs";
 import { createLocalRepo } from "../netlify/editor/localrepo.mjs";
 
 let tmp;
@@ -110,4 +110,13 @@ test("the server listens on this computer only", async () => {
 test("a change this server never built is reported as waiting, not built", async () => {
   const { netlify } = await setup("unknown");
   assert.deepEqual(await netlify.deployFor("f".repeat(40)), { state: "waiting" });
+});
+
+test("parseLocalEnv takes only ANTHROPIC_API_KEY, trimmed, skipping comments and blank lines", () => {
+  const text = "# my local settings\r\n\n  ANTHROPIC_API_KEY =  sk-test-value  \nGITHUB_TOKEN=nope\nnot a setting\n";
+  assert.deepEqual(parseLocalEnv(text), { ANTHROPIC_API_KEY: "sk-test-value" });
+  assert.deepEqual(parseLocalEnv("# ANTHROPIC_API_KEY=commented\nANTHROPIC_API_KEY=\n"), {});
+  assert.deepEqual(parseLocalEnv("ANTHROPIC_API_KEY=a=b"), { ANTHROPIC_API_KEY: "a=b" });
+  assert.deepEqual(parseLocalEnv(""), {});
+  assert.deepEqual(parseLocalEnv(undefined), {});
 });

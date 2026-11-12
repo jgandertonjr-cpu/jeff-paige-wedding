@@ -9,7 +9,11 @@
 //   ask(deps, { message, history?, photo? })
 //     photo: a base64 string (a "data:image/...;base64," prefix is fine) or { base64 }
 //     → { kind: "proposal", id, summary: string[], note, needsPreview: boolean }
-//     | { kind: "message", text, error? }   (error: askClaude's failure code, when it gives one)
+//     | { kind: "message", text, error?, failed? }
+//       error: askClaude's failure code, when it gives one. failed: true when the
+//       message reports a failure (empty or too long, refused photo, daily limit,
+//       the model call failed, couldn't make it safely, nothing would change), so
+//       the request can be tried again; a genuine reply from the model has no flag.
 //   preview(deps, id)   → { ok: true } | { ok: false, text }
 //   status(deps, { id })
 //     → { stage: "preview" | "publish", state: "waiting" | "building" | "ready" | "failed", url?, text? }
@@ -66,6 +70,8 @@ export const TEXT = {
 };
 
 const message = (text) => ({ kind: "message", text });
+// A message that reports a failure: nothing was proposed, so the request can be tried again.
+const failure = (text) => ({ kind: "message", text, failed: true });
 export const refuse = (text) => ({ ok: false, text });
 const key = (id) => `proposal:${id}`;
 
@@ -262,15 +268,15 @@ async function takeDailyAllowance({ store, now }) {
 // ---- the flow -----------------------------------------------------------------
 
 export async function ask(deps, { message: text, history = [], photo } = {}) {
-  if (typeof text !== "string" || text.trim() === "") return message(TEXT.empty);
-  if (text.length > MAX_MESSAGE_CHARS) return message(TEXT.tooLong);
+  if (typeof text !== "string" || text.trim() === "") return failure(TEXT.empty);
+  if (text.length > MAX_MESSAGE_CHARS) return failure(TEXT.tooLong);
 
   let checked = null;
   if (photo !== undefined && photo !== null) {
     checked = checkPhoto(typeof photo === "string" ? photo : photo?.base64);
-    if (!checked.ok) return message(checked.reason);
+    if (!checked.ok) return failure(checked.reason);
   }
-  if (!(await takeDailyAllowance(deps))) return message(TEXT.limit);
+  if (!(await takeDailyAllowance(deps))) return failure(TEXT.limit);
 
   const base = await loadBase(deps);
   let pic = null;
@@ -282,7 +288,7 @@ export async function ask(deps, { message: text, history = [], photo } = {}) {
         pic = { name, value: `/images/${name}`, mediaType: checked.mediaType, base64: checked.bytes.toString("base64") };
       }
     }
-    if (!pic) return message(TEXT.unsafe);
+    if (!pic) return failure(TEXT.unsafe);
   }
   const readFile = async (p) =>
     READABLE_LAYOUT_FILES.includes(p) ? ((await deps.repo.readFiles([p], base.sha))[p] ?? null) : null;
@@ -294,14 +300,14 @@ export async function ask(deps, { message: text, history = [], photo } = {}) {
       now: deps.now,
       photo: pic ? { mediaType: pic.mediaType, base64: pic.base64, willBeSavedAs: pic.value } : undefined,
     });
-    if (reply.kind !== "proposal") return reply.error ? { kind: "message", text: reply.text, error: reply.error } : message(reply.text);
+    if (reply.kind !== "proposal") return reply.error ? { kind: "message", text: reply.text, error: reply.error, failed: true } : message(reply.text);
 
     const tried = await tryProposal(deps, base, reply, pic?.value);
     if (tried.problems.length) {
       feedback = tried.problems.join(" ");
       continue;
     }
-    if (!tried.changes.length && !Object.keys(tried.layout).length) return message(TEXT.noChange);
+    if (!tried.changes.length && !Object.keys(tried.layout).length) return failure(TEXT.noChange);
 
     const id = deps.random(8);
     const summary = [
@@ -318,7 +324,7 @@ export async function ask(deps, { message: text, history = [], photo } = {}) {
     await deps.store.set(key(id), record);
     return { kind: "proposal", id, summary, note: reply.note, needsPreview: record.needsPreview };
   }
-  return message(TEXT.unsafe);
+  return failure(TEXT.unsafe);
 }
 
 export async function preview(deps, id) {

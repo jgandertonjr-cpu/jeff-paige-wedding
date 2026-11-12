@@ -211,7 +211,7 @@ test("invalid ops: Claude is asked once more with the problems; a second failure
       propose([set("travel", "/room_block/deadline", "2028-13-45")]),
     );
     const r = seen(await ask(t.deps, { message: "change the deadline" }));
-    assert.deepEqual(r, { kind: "message", text: SAFE_FAIL });
+    assert.deepEqual(r, { kind: "message", text: SAFE_FAIL, failed: true });
     assert.equal(t.client.calls.length, 2);
     const last = t.client.calls[1].messages.at(-1).content.at(-1).text;
     assert.match(last, /Your previous proposal could not be used: Step 1 points at something that is not on the site\./);
@@ -247,7 +247,7 @@ test("file edits to a refused path, a content file, or with forbidden text are i
     try {
       t.client.queue(propose([], edits), propose([], edits));
       const r = seen(await ask(t.deps, { message: "change the layout" }));
-      assert.deepEqual(r, { kind: "message", text: SAFE_FAIL }, edits[0].path);
+      assert.deepEqual(r, { kind: "message", text: SAFE_FAIL, failed: true }, edits[0].path);
       assert.equal(t.client.calls.length, 2);
       assert.deepEqual(proposalKeys(t.store), []);
     } finally {
@@ -263,6 +263,7 @@ test("a proposal that would change nothing is not stored", async () => {
     const r = seen(await ask(t.deps, { message: "clear the deadline" }));
     assert.equal(r.kind, "message");
     assert.match(r.text, /nothing/i);
+    assert.equal(r.failed, true);
     assert.deepEqual(proposalKeys(t.store), []);
   } finally {
     await t.cleanup();
@@ -278,6 +279,7 @@ test("a message from Claude, and a failure code, are passed through", async () =
     const r = await ask(t.deps, { message: "something" });
     assert.equal(r.kind, "message");
     assert.equal(r.error, "refused");
+    assert.equal(r.failed, true); // a failure: the browser offers the request again
     assert.deepEqual(proposalKeys(t.store), []);
   } finally {
     await t.cleanup();
@@ -291,7 +293,7 @@ test("the daily limit: the 151st request is refused before any model call", asyn
     t.client.queue(say("ok"));
     assert.equal((await ask(t.deps, { message: "hello" })).text, "ok");
     const r = seen(await ask(t.deps, { message: "hello again" }));
-    assert.deepEqual(r, { kind: "message", text: LIMIT });
+    assert.deepEqual(r, { kind: "message", text: LIMIT, failed: true });
     assert.equal(t.client.calls.length, 1);
     // A new UTC day starts a new count.
     t.advance(DAY);
@@ -322,6 +324,7 @@ test("a 2,001-character message is refused without a model call and is not count
     const r = seen(await ask(t.deps, { message: "x".repeat(2001) }));
     assert.equal(r.kind, "message");
     assert.match(r.text, /2,000/);
+    assert.equal(r.failed, true);
     assert.equal(t.client.calls.length, 0);
     assert.equal(await t.store.get("usage:2026-11-12"), null);
     t.client.queue(say("ok"));
@@ -335,7 +338,7 @@ test("a bad photo returns the photo check's reason and stores nothing", async ()
   const t = await setup();
   try {
     const r = seen(await ask(t.deps, { message: "use this photo", photo: Buffer.from("hello").toString("base64") }));
-    assert.deepEqual(r, { kind: "message", text: "That file isn't a photo I can use." });
+    assert.deepEqual(r, { kind: "message", text: "That file isn't a photo I can use.", failed: true });
     assert.equal(t.client.calls.length, 0);
     assert.deepEqual([...t.store.written], []);
   } finally {
@@ -950,7 +953,7 @@ test("when no free photo name is found, nothing is asked or stored", async () =>
   try {
     for (let i = 1; i <= 5; i++) await fs.writeFile(path.join(t.root, `src/images/photo-20261112-00000${i}.png`), "");
     const r = seen(await ask(t.deps, { message: "photo", photo: PHOTO }));
-    assert.deepEqual(r, { kind: "message", text: SAFE_FAIL });
+    assert.deepEqual(r, { kind: "message", text: SAFE_FAIL, failed: true });
     assert.equal(t.client.calls.length, 0);
     assert.deepEqual(proposalKeys(t.store), []);
   } finally {
@@ -999,5 +1002,18 @@ test("no sentence shown to Paige uses a banned word or names a collaborator erro
   for (const s of allTexts) {
     assert.ok(!BANNED.test(s), s);
     assert.ok(!/Error|undefined|null|\{|\}/.test(s), s);
+  }
+});
+
+test("an empty message is a failure; a reply from the model is not", async () => {
+  const t = await setup();
+  try {
+    assert.equal((await ask(t.deps, { message: "  " })).failed, true);
+    t.client.queue(say("Which page do you mean?"));
+    const r = await ask(t.deps, { message: "change the photo" });
+    assert.deepEqual(r, { kind: "message", text: "Which page do you mean?" });
+    assert.equal("failed" in r, false);
+  } finally {
+    await t.cleanup();
   }
 });

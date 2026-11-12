@@ -9,7 +9,8 @@
 //                          served site when the check passes
 //   a staged preview    -> builds a second copy with the staged files applied into
 //                          .editor-local/previews-built/<id>/, served at /__preview/<id>/
-// Sign in with the password "local-test-password". Set ANTHROPIC_API_KEY to talk to
+// Sign in with the password "local-test-password". Set ANTHROPIC_API_KEY (or put
+// ANTHROPIC_API_KEY=... in .editor-local/env, which is never committed) to talk to
 // the real model; without it every question gets the ordinary "can't reach" reply.
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
@@ -243,6 +244,31 @@ async function sendFile(res, method, found) {
   res.end(method === "HEAD" ? undefined : body);
 }
 
+// Reads the optional .editor-local/env file: KEY=value lines, "#" comments, values
+// trimmed and taken as written. Only ANTHROPIC_API_KEY is honoured; anything else is
+// ignored. Returns {} when there is nothing usable.
+export function parseLocalEnv(text) {
+  const out = {};
+  for (const raw of String(text ?? "").split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    const eq = line.indexOf("=");
+    if (eq < 0) continue;
+    const name = line.slice(0, eq).trim();
+    const value = line.slice(eq + 1).trim();
+    if (name === "ANTHROPIC_API_KEY" && value) out.ANTHROPIC_API_KEY = value;
+  }
+  return out;
+}
+
+async function readLocalEnv(localDir) {
+  try {
+    return parseLocalEnv(await fs.readFile(path.join(localDir, "env"), "utf8"));
+  } catch {
+    return {};
+  }
+}
+
 async function main() {
   const localDir = path.join(ROOT, ".editor-local");
   const workDir = path.join(localDir, "work");
@@ -277,12 +303,12 @@ async function main() {
     check: (dir) => checkSite(dir, { protectedFile: path.join(ROOT, "scripts/protected-files.json") }),
   });
 
-  const key = process.env.ANTHROPIC_API_KEY || "";
+  const key = process.env.ANTHROPIC_API_KEY || (await readLocalEnv(localDir)).ANTHROPIC_API_KEY || ""; // never printed
   let client;
   if (key) {
     client = new Anthropic({ apiKey: key });
   } else {
-    console.log("editor-dev: ANTHROPIC_API_KEY is not set, so the editor will answer \"can't reach\" to every question.");
+    console.log("editor-dev: ANTHROPIC_API_KEY is not set, so the editor will answer \"can't reach\" to every question. Put ANTHROPIC_API_KEY=… in .editor-local/env to use the real model.");
     client = { beta: { messages: { create: async () => { throw new Anthropic.APIConnectionError({ message: "no key" }); } } } };
   }
 
