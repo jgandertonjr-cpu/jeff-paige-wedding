@@ -71,12 +71,28 @@ Never put any of these in the repo, an email or a chat.
 
 **Project configuration** → **Build & deploy** → **Continuous deployment** → **Deploy Previews** should be set to "Any pull request against your production branch / branch deploy branches". The editor's **See it first** and look-and-layout changes depend on it.
 
-### f. Merge and go live
+### f. Test it on a preview copy, then merge
 
-1. On GitHub, open a pull request for the `plain-english-editor` branch into `main` and merge it.
-2. In Netlify, open **Deploys** and wait for **Published**. (The new variables are only picked up by a deploy made after you added them, so if you added them late, use **Trigger deploy → Deploy project**.)
+Test the real thing before it can touch the live site.
 
-### g. First test
+1. On GitHub, open a pull request for the `plain-english-editor` branch into `main`. **Don't merge it yet.**
+2. Netlify builds a **Deploy Preview** for the pull request and posts its address on the pull request (it looks like `deploy-preview-12--….netlify.app`). The variables from step d must reach Deploy Previews too: on each one, leave the deploy contexts at **All**, or include **Deploy Previews**. If you added a variable after the preview was built, push any small change or use **Retry deploy** on that preview.
+3. On that preview address, open `/admin/` and sign in.
+4. Send one request, for example *add the word TEST to the end of the FAQ's last answer*, and read the summary it shows.
+5. Tap **Publish**. It must answer **"This is a preview copy of the site, so publishing is turned off here."** That proves sign-in, the model and reading the site's files all work, and that a preview copy can never change the live site.
+
+What a failure at this stage means (the function log is under **Logs → Functions** for the preview):
+
+| What you see | What it means |
+|---|---|
+| Can't sign in: "That password didn't work.", or sent back to sign in straight after | `ADMIN_PASSWORD` or `SESSION_SECRET` is wrong or not available to Deploy Previews. |
+| "That request can't be accepted." | The address check: open the preview at exactly the address Netlify gave, not another alias of it. |
+| "The editor isn't set up yet." | A variable is missing or too short. The log line with event `setup` names the missing ones. |
+| "I can't reach the site right now. Try again in a minute." | The Anthropic key or its credit. The log line with event `ask_failed` gives a short code (see Troubleshooting). |
+
+6. Only when step 5 gives the preview sentence: merge the pull request. In Netlify, open **Deploys** and wait for **Published**. (The new variables are only picked up by a deploy made after you added them, so if you added them late, use **Trigger deploy → Deploy project**.)
+
+### g. First test on the live site
 
 1. Open `https://jeffandpaige.net/admin/` and sign in.
 2. Ask: *add the word TEST to the end of the FAQ's last answer*.

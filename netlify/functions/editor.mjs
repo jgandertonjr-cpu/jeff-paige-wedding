@@ -7,6 +7,7 @@ import * as sessionApi from "../editor/session.mjs";
 import { blobStore } from "../editor/store.mjs";
 import { createGitHub } from "../editor/github.mjs";
 import { createNetlify } from "../editor/netlify.mjs";
+import { siteIdFrom } from "../editor/site.mjs";
 import schema from "../editor/schema.gen.mjs";
 
 const MAX_BODY = 6_000_000;
@@ -140,15 +141,13 @@ export function createHandler(deps) {
 
 // ---- real wiring (built on the first request, so importing needs no env) ----
 
-let real;
-async function realHandler(context) {
-  if (real) return real;
-  const env = process.env;
+// The service's real collaborators, from the environment. Exported for tests,
+// which pass their own fetch and store.
+export async function realServiceDeps(env, { fetch: fetchImpl = fetch, store }) {
   const { default: Anthropic } = await import("@anthropic-ai/sdk");
-  const store = blobStore("editor");
-  const serviceDeps = {
-    repo: createGitHub({ token: env.GITHUB_TOKEN, repo: env.EDITOR_REPO || "jgandertonjr-cpu/jeff-paige-wedding", fetch }),
-    netlify: createNetlify({ token: env.NETLIFY_RSVP_TOKEN, siteId: env.SITE_ID, fetch }),
+  return {
+    repo: createGitHub({ token: env.GITHUB_TOKEN, repo: env.EDITOR_REPO || "jgandertonjr-cpu/jeff-paige-wedding", fetch: fetchImpl }),
+    netlify: createNetlify({ token: env.NETLIFY_RSVP_TOKEN, siteId: siteIdFrom(env), fetch: fetchImpl }),
     store,
     client: new Anthropic({ apiKey: env.ANTHROPIC_API_KEY || "missing" }),
     schema,
@@ -156,6 +155,14 @@ async function realHandler(context) {
     random: (n) => crypto.randomBytes(n).toString("hex"),
     env,
   };
+}
+
+let real;
+async function realHandler(context) {
+  if (real) return real;
+  const env = process.env;
+  const store = blobStore("editor");
+  const serviceDeps = await realServiceDeps(env, { store });
   const deployContext = context && context.deploy && context.deploy.context;
   real = createHandler({
     service, sessionApi, store, serviceDeps, env,

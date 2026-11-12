@@ -8,8 +8,9 @@
 // access token kept in the NETLIFY_RSVP_TOKEN environment variable, so it never
 // reaches the browser. See ADMIN-SETUP.md → "RSVP dashboard".
 import * as sessionApi from "../editor/session.mjs";
+import { siteIdFrom } from "../editor/site.mjs";
 
-const SITE_ID = process.env.SITE_ID || "00e11b72-2ff3-4cd7-8c17-2b328a543ef9";
+const SITE_ID = siteIdFrom(process.env);
 const FORM_NAME = "rsvp";
 const NETLIFY_API = "https://api.netlify.com/api/v1";
 

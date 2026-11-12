@@ -380,3 +380,32 @@ test("rsvp: setup and loading problems are told in plain words, with the cause l
   assert.deepEqual(logs.pop(), { event: "rsvp_error", name: "TypeError" });
   assert.ok(!JSON.stringify(logs).includes("secret"));
 });
+
+// ---- final review, item 4: the real wiring works without SITE_ID ----
+
+test("the real wiring asks Netlify about this site even when SITE_ID is not set", async () => {
+  const { realServiceDeps } = await import("../netlify/functions/editor.mjs");
+  const { DEFAULT_SITE_ID } = await import("../netlify/editor/site.mjs");
+  const urls = [];
+  const fakeFetch = async (url) => {
+    urls.push(String(url));
+    return new Response("[]", { status: 200, headers: { "content-type": "application/json" } });
+  };
+  for (const [env, id] of [[{ ...ENV }, DEFAULT_SITE_ID], [{ ...ENV, SITE_ID: "my-site" }, "my-site"]]) {
+    urls.length = 0;
+    const deps = await realServiceDeps(env, { fetch: fakeFetch, store: memoryStore() });
+    await deps.netlify.deployFor("abc1234");
+    assert.ok(urls.length > 0 && urls.every((u) => u.includes(`/sites/${id}/`)), urls.join(" "));
+  }
+});
+
+test("the site's fallback id is written in one shared place", async () => {
+  const fs = await import("node:fs");
+  const { DEFAULT_SITE_ID } = await import("../netlify/editor/site.mjs");
+  assert.match(DEFAULT_SITE_ID, /^[0-9a-f-]{36}$/);
+  for (const f of ["netlify/functions/editor.mjs", "netlify/functions/rsvp-responses.mjs"]) {
+    const src = fs.readFileSync(new URL(`../${f}`, import.meta.url), "utf8");
+    assert.ok(!src.includes(DEFAULT_SITE_ID), f);
+    assert.match(src, /from "\.\.\/editor\/site\.mjs"/, f);
+  }
+});
