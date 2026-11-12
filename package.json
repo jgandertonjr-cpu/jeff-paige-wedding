@@ -15,6 +15,7 @@
     "node": ">=20.9"
   },
   "dependencies": {
+    "@netlify/blobs": "11.1.9",
     "markdown-it": "14.3.2"
   },
   "devDependencies": {
