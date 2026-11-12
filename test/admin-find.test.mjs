@@ -12,7 +12,7 @@ import {
   PAGE_ORDER, fileOrder, buildIndex, search, opFor, applyLocal, checkLocal, describe, formatDate, formatTime,
   emptyItem, itemName, locate, controlFor, optionLabels, addChange, dropChange, pruneTray, numberPhotos,
   photoRefs, checkLabel, describeOp, isShown, canAdd, remark, removeEntries, toStorage, fromStorage, currentSpots,
-  marksOf, relocate, trayLocked,
+  marksOf, relocate, trayLocked, MAX_REQUEST_CHARS, photosBudget, photoRoom,
 } from "../src/admin/find.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -658,4 +658,26 @@ test("trayLocked: while a review is on its way, and while a card is not settled"
     assert.equal(trayLocked({ pending: false, card: { state } }), false, state);
     assert.equal(trayLocked({ pending: true, card: { state } }), true, state);
   }
+});
+
+// CR8: the photo budget comes from the request cap, so photos accepted on the
+// Photo screen are never refused at Review for size.
+test("photo budget: three photos exactly at the budget, with a full set of changes, fit under the request cap", () => {
+  const budget = photosBudget();
+  assert.ok(budget > 3 * 1024 * 1024, "room for three ordinary phone photos");
+  const each = Math.floor(budget / 3);
+  const photos = [0, 1, 2].map((i) => Buffer.alloc(each + (i < budget % 3 ? 1 : 0), i + 1).toString("base64"));
+  assert.equal(photos.reduce((n, p) => n + Buffer.from(p, "base64").length, 0), budget);
+  // Fifty changes, each a long answer: the most the tray holds.
+  const ops = Array.from({ length: 50 }, (_, i) => ({ op: "set", file: "faq", path: `/questions/${i}/answer`, value: "x".repeat(4000) }));
+  const request = { ops, photos, base: "a".repeat(40) };
+  assert.ok(JSON.stringify(request).length <= MAX_REQUEST_CHARS, `${JSON.stringify(request).length} > ${MAX_REQUEST_CHARS}`);
+});
+
+test("photo room: what is left of the budget, never below zero", () => {
+  const budget = photosBudget();
+  assert.equal(photoRoom(0), budget);
+  assert.equal(photoRoom(1000), budget - 1000);
+  assert.equal(photoRoom(budget), 0);
+  assert.equal(photoRoom(budget + 5), 0);
 });

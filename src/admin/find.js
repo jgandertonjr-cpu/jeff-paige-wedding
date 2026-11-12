@@ -975,3 +975,16 @@ const SETTLED = new Set(["live", "cancelled", "failed", "undone", "stopped", "mo
 // The tray stays as it was reviewed from the moment Review is tapped (while the
 // answer is on its way) until the card is live, cancelled or has failed.
 export const trayLocked = (review) => !!review.pending || (!!review.card && !SETTLED.has(review.card.state));
+
+// ---- the size of one Review request ---------------------------------------------
+
+// Everything Review sends goes in one request; the server takes 6 MB, so keep clear of it.
+export const MAX_REQUEST_CHARS = 5_500_000;
+// Room kept for the changes themselves; the rest is for new photos.
+const CHANGES_RESERVE_CHARS = 300_000;
+
+// How many bytes of new photos one request can carry: base64 turns every 3 bytes into 4 characters.
+export const photosBudget = () => Math.floor(((MAX_REQUEST_CHARS - CHANGES_RESERVE_CHARS) * 3) / 4);
+
+// What is left of that budget once `usedBytes` of photos are in the tray.
+export const photoRoom = (usedBytes) => Math.max(0, photosBudget() - usedBytes);

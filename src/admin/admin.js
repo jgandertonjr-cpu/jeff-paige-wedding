@@ -8,6 +8,7 @@ import {
   fileOrder, buildIndex, search, locate, controlFor, describe, isShown, canAdd, itemName, isPhonePhoto, optionLabels,
   opFor, applyLocal, checkLocal, emptyItem, addChange, dropChange, pruneTray, numberPhotos, photoRefs, checkLabel,
   remark, removeEntries, toStorage, fromStorage, currentSpots, marksOf, relocate, trayLocked,
+  MAX_REQUEST_CHARS, photoRoom,
 } from "./find.js";
 
 const API = "/api/editor/";
@@ -17,11 +18,9 @@ const STALE_MS = 5 * 60 * 1000; // hidden this long: fetch the site again when s
 const MAX_CHANGES = 50;
 const MAX_PHONE_PHOTOS = 3;
 const PHOTO_MAX_BYTES = 2.8 * 1024 * 1024;
-const PHOTOS_TOTAL_BYTES = 4.2 * 1024 * 1024; // three photos and the changes must fit in one request
 const TRAY_KEY = "editor-tray";
 const MORE_GROUPS = new Set(["seo", "labels"]);
 const SHOW_MATCHES = 20;
-const MAX_REQUEST_CHARS = 5_500_000; // the server takes 6 MB; keep clear of it
 const QUIET_MS = 400; // after a tap that redraws a list, taps are ignored this long
 
 const SAY = {
@@ -37,7 +36,7 @@ const SAY = {
   skipped: "These had been changed again since, so I left them:",
   noUndo: "I can't find that change in the recent list, so I can't undo it.",
   badPhoto: "I couldn't read that photo. Try a different one.",
-  photoTooBig: "That photo is too big to add with the others. Publish these first.",
+  photoTooBig: "That photo is too big to add with the others. Publish these first, then add it.",
   readyingPhoto: "Getting the photo ready.",
   noRecent: "Nothing has been changed here yet.",
   loadingRecent: "Getting the list.",
@@ -1239,13 +1238,19 @@ function photoScreen(r) {
     const file = fileInput.files && fileInput.files[0];
     fileInput.value = "";
     if (!file || busy) return;
+    // New photos all go in one request with the changes: this one gets what is left.
+    let used = 0;
+    for (const [ref, p] of photos) if (photoRefsInUse().has(ref) && `@photo:${ref}` !== current) used += p.bytes;
+    const room = Math.min(PHOTO_MAX_BYTES, photoRoom(used));
+    if (room <= 0) {
+      tell(SAY.photoTooBig);
+      return;
+    }
     busy = true;
     fromPhone.disabled = true;
     tell(SAY.readyingPhoto);
     try {
-      let used = 0;
-      for (const [ref, p] of photos) if (photoRefsInUse().has(ref) && `@photo:${ref}` !== current) used += p.bytes;
-      const blob = await shrinkPhoto(file, Math.min(PHOTO_MAX_BYTES, PHOTOS_TOTAL_BYTES - used));
+      const blob = await shrinkPhoto(file, room);
       const ref = `p${Date.now().toString(36)}${(++uid).toString(36)}`;
       photos.set(ref, { base64: await toBase64(blob), thumbUrl: URL.createObjectURL(blob), bytes: blob.size });
       busy = false;
