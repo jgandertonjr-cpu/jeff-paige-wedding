@@ -110,3 +110,46 @@ test("applyFileEdits throws unless find occurs exactly once", () => {
   }
   assert.throws(() => applyFileEdits(files, [{ path: "missing.html", find: "one", replace: "x" }]), OpError);
 });
+
+test("unset removes an existing key and refuses list items or missing parents", () => {
+  const out = applyOps(base(), [{ op: "unset", file: "travel", path: "/room_block/deadline" }]);
+  assert.equal(Object.hasOwn(out.travel.room_block, "deadline"), false);
+  throwsOp(base(), [{ op: "unset", file: "travel", path: "/tips/0" }]);
+  throwsOp(base(), [{ op: "unset", file: "travel", path: "/nope/x" }]);
+  throwsOp(base(), [{ op: "unset", file: "travel", path: "/room_block/missing" }]);
+});
+
+test("values are copied in, not shared with the op", () => {
+  const value = { question: "Q", answer: "A" };
+  const out = applyOps(base(), [{ op: "insert", file: "faq", path: "/questions", index: 0, value }, { op: "set", file: "travel", path: "/room_block/extra", value }]);
+  value.question = "changed";
+  assert.equal(out.faq.questions[0].question, "Q");
+  assert.equal(out.travel.room_block.extra.question, "Q");
+});
+
+test("error messages say which step failed and never echo the op's own text", () => {
+  const evil = "zzz-evil-json-text";
+  const ops = [
+    { op: "set", file: "travel", path: "/room_block/title", value: "ok" },
+    { op: "set", file: evil, path: "/a", value: 1 },
+  ];
+  for (const bad of [
+    ops,
+    [{ op: "set", file: "travel", path: `/${evil}/x`, value: 1 }],
+    [{ op: "insert", file: "travel", path: "/tips", index: 99, value: 1 }],
+    [{ op: "set", file: "travel", path: "/tips/" + evil, value: 1 }],
+    [{ op: "move", file: "travel", path: "/tips/0", to: 77 }],
+  ]) {
+    try { applyOps(base(), bad); assert.fail("should throw"); } catch (e) {
+      assert.ok(e instanceof OpError);
+      assert.match(e.message, /^Step \d/);
+      assert.doesNotMatch(e.message, new RegExp(`${evil}|99|77`));
+    }
+  }
+  assert.throws(() => applyOps(base(), ops), /^OpError: Step 2 /);
+  assert.throws(() => applyFileEdits({ [evil]: "x" }, [{ path: evil, find: "q", replace: "" }]), (e) => !e.message.includes(evil));
+});
+
+test("applyFileEdits refuses overlapping matches", () => {
+  assert.throws(() => applyFileEdits({ "a.html": "aaa" }, [{ path: "a.html", find: "aa", replace: "x" }]), OpError);
+});

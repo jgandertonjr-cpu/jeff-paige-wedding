@@ -156,3 +156,68 @@ test("invert: a missing parent is skipped, never thrown", () => {
   assert.equal(inv.ops.length, 0);
   assert.equal(inv.skipped.length, 1);
 });
+
+// fix round 1
+
+const L = (s) => s.split("");
+const listContent = (letters) => ({ travel: { section_order: L(letters) } });
+const undo = (before, edited, current = edited) => {
+  const parent = listContent(before), e = listContent(edited), cur = listContent(current);
+  const inv = invertChanges(diffContent(parent, e), cur);
+  return { inv, out: applyOps(cur, inv.ops).travel.section_order.join("") };
+};
+
+test("invert: exact order after mixed adds, removes and reorders", () => {
+  for (const [b, e] of [["ABCD", "XBD"], ["ABCD", "DCXA"], ["ABCD", "BADC"], ["ABCD", "XYZ"], ["ABCD", ""], ["", "AB"], ["ABAB", "BA"]]) {
+    const { inv, out } = undo(b, e);
+    assert.equal(out, b, `${b} -> ${e}`);
+    assert.deepEqual(inv.skipped, []);
+  }
+});
+
+test("invert: undoing a removal twice does not duplicate the item", () => {
+  const parent = listContent("ABCD"), e = listContent("ACD");
+  const changes = diffContent(parent, e);
+  const first = applyOps(e, invertChanges(changes, e).ops);
+  assert.equal(first.travel.section_order.join(""), "ABCD");
+  const second = invertChanges(changes, first);
+  assert.equal(second.ops.length, 0);
+  assert.equal(second.skipped.length, 1);
+});
+
+test("invert: later additions by someone else are kept", () => {
+  const { inv, out } = undo("ABC", "ABCX", "YABCX");
+  assert.equal(out, "YABC");
+  assert.deepEqual(inv.skipped, []);
+});
+
+test("invert: removal undone once while a later reorder is kept", () => {
+  const { out } = undo("ABCD", "ACD", "DCA");
+  assert.equal(out.split("").sort().join(""), "ABCD");
+  assert.equal(out.replace("B", ""), "DCA");
+});
+
+test("invert: a moved-only change is skipped once the list changed again", () => {
+  const { inv, out } = undo("ABC", "CBA", "CBAD");
+  assert.equal(inv.skipped.length, 1);
+  assert.equal(out, "CBAD");
+});
+
+test("summary names the parent item for nested list changes", () => {
+  const before = { guests: { guests: [{ id: "2", name: "Avery Mullen", party: [{ name: "Colton Ellis" }] }] } };
+  const after = structuredClone(before);
+  after.guests.guests[0].party.push({ name: "Plus One" });
+  const [line] = summarize(diffContent(before, after), schema);
+  assert.match(line, /Avery Mullen/);
+  assert.match(line, /added “Plus One”/);
+});
+
+test("invert: a field the edit added is removed, restoring absence", () => {
+  const before = { gallery: { items: [{ image: "/images/a.jpg" }] } };
+  const after = structuredClone(before);
+  after.gallery.items[0].caption = "Hi";
+  const changes = diffContent(before, after);
+  const inv = invertChanges(changes, after);
+  assert.equal(inv.ops[0].op, "unset");
+  assert.deepEqual(applyOps(after, inv.ops), before);
+});

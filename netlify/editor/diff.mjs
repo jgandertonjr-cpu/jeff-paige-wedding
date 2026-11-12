@@ -46,7 +46,7 @@ function diffList(file, segs, names, before, after, out) {
 
   // Same items, different order.
   if (before.length === after.length && [...before.map(canon)].sort().join("\n") === [...after.map(canon)].sort().join("\n")) {
-    out.push({ file, path, kind: "moved", before, after });
+    out.push({ file, path, kind: "moved", before, after, names, listBefore: before, listAfter: after });
     return;
   }
 
@@ -58,8 +58,8 @@ function diffList(file, segs, names, before, after, out) {
     if (hit) hit.used = true;
     else removed.push({ b, i });
   });
-  for (const { b, i } of removed) out.push({ file, path, kind: "removed", before: b, after: undefined, index: i });
-  for (const u of unmatched) if (!u.used) out.push({ file, path, kind: "added", before: undefined, after: u.a, index: u.i });
+  for (const { b, i } of removed) out.push({ file, path, kind: "removed", before: b, after: undefined, index: i, names, listBefore: before, listAfter: after });
+  for (const u of unmatched) if (!u.used) out.push({ file, path, kind: "added", before: undefined, after: u.a, index: u.i, names, listBefore: before, listAfter: after });
 }
 
 function diffValue(file, segs, names, before, after, out) {
@@ -155,6 +155,28 @@ function valueAt(content, file, path) {
   return node;
 }
 
+const countOf = (list, item) => list.filter((x) => same(x, item)).length;
+
+// Ops that turn `list` into `target` exactly (order included).
+function reorderOps(file, path, list, target) {
+  const ops = [];
+  const w = structuredClone(list);
+  const want = new Map();
+  for (const t of target) want.set(canon(t), (want.get(canon(t)) || 0) + 1);
+  for (let i = w.length - 1; i >= 0; i--) {
+    const k = canon(w[i]);
+    if (want.get(k) > 0) want.set(k, want.get(k) - 1);
+    else { ops.push({ op: "remove", file, path: `${path}/${i}` }); w.splice(i, 1); }
+  }
+  target.forEach((t, i) => {
+    if (i < w.length && same(w[i], t)) return;
+    const from = w.findIndex((x, j) => j > i && same(x, t));
+    if (from > i) { ops.push({ op: "move", file, path: `${path}/${from}`, to: i }); w.splice(i, 0, ...w.splice(from, 1)); }
+    else { ops.push({ op: "insert", file, path, index: i, value: t }); w.splice(i, 0, structuredClone(t)); }
+  });
+  return ops;
+}
+
 // Ops that put back each piece of an earlier edit that still has the value that
 // edit gave it. Each step is tried against a running copy, so the returned ops
 // always apply cleanly in order; anything that cannot be put back is skipped.
@@ -162,40 +184,49 @@ export function invertChanges(changes, current) {
   const ops = [];
   const skipped = [];
   let working = structuredClone(current);
+  const tryOps = (attempt) => {
+    try { working = applyOps(working, attempt); ops.push(...attempt); return true; } catch { return false; }
+  };
+  const done = new Set();
 
   for (const c of changes) {
-    const list = c.kind === "changed" ? null : valueAt(working, c.file, c.path);
-    let attempt = [];
-
     if (c.kind === "changed") {
       const now = valueAt(working, c.file, c.path);
+      let attempt = [];
       if (same(now, c.after)) {
-        const value = c.before !== undefined ? c.before : typeof c.after === "string" ? "" : undefined;
-        if (value !== undefined) attempt = [{ op: "set", file: c.file, path: c.path, value }];
+        if (c.before === undefined) attempt = [{ op: "unset", file: c.file, path: c.path }];
+        else attempt = [{ op: "set", file: c.file, path: c.path, value: c.before }];
       }
-    } else if (Array.isArray(list) && c.kind === "added") {
-      let at = c.index !== undefined && same(list[c.index], c.after) ? c.index : list.findIndex((x) => same(x, c.after));
-      if (at >= 0) attempt = [{ op: "remove", file: c.file, path: `${c.path}/${at}` }];
-    } else if (Array.isArray(list) && c.kind === "removed") {
-      attempt = [{ op: "insert", file: c.file, path: c.path, index: Math.min(c.index ?? list.length, list.length), value: c.before }];
-    } else if (Array.isArray(list) && c.kind === "moved" && same(list, c.after)) {
-      const order = structuredClone(list);
-      c.before.forEach((item, i) => {
-        const from = order.findIndex((x, j) => j >= i && same(x, item));
-        if (from > i) {
-          attempt.push({ op: "move", file: c.file, path: `${c.path}/${from}`, to: i });
-          order.splice(i, 0, ...order.splice(from, 1));
-        }
-      });
+      if (!attempt.length || !tryOps(attempt)) skipped.push(c);
+      continue;
     }
 
-    try {
-      if (attempt.length === 0 && !(c.kind === "moved" && Array.isArray(list) && same(list, c.after))) throw new Error("skip");
-      working = applyOps(working, attempt);
-      ops.push(...attempt);
-    } catch {
-      skipped.push(c);
+    const key = `${c.file}\u0000${c.path}`;
+    if (done.has(key)) continue;
+    done.add(key);
+    const group = changes.filter((x) => x.kind !== "changed" && x.file === c.file && x.path === c.path);
+    const list = valueAt(working, c.file, c.path);
+    if (!Array.isArray(list)) { skipped.push(...group); continue; }
+
+    // Nothing has touched this list since the edit: put it back exactly.
+    if (same(list, c.listAfter)) {
+      if (tryOps(reorderOps(c.file, c.path, list, c.listBefore))) continue;
+      skipped.push(...group);
+      continue;
     }
+
+    // The list changed again: undo only the pieces that are still plainly there.
+    for (const a of group.filter((x) => x.kind === "added")) {
+      const cur = valueAt(working, a.file, a.path);
+      const at = Array.isArray(cur) ? cur.findIndex((x) => same(x, a.after)) : -1;
+      if (at < 0 || !tryOps([{ op: "remove", file: a.file, path: `${a.path}/${at}` }])) skipped.push(a);
+    }
+    for (const r of group.filter((x) => x.kind === "removed").sort((x, y) => x.index - y.index)) {
+      const cur = valueAt(working, r.file, r.path);
+      if (!Array.isArray(cur) || countOf(cur, r.before) >= countOf(r.listBefore, r.before)
+        || !tryOps([{ op: "insert", file: r.file, path: r.path, index: Math.min(r.index, cur.length), value: r.before }])) skipped.push(r);
+    }
+    skipped.push(...group.filter((x) => x.kind === "moved"));
   }
   return { ops, skipped };
 }
