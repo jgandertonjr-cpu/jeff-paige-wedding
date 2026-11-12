@@ -11,7 +11,6 @@ import { StaleError } from "../netlify/editor/github.mjs";
 import { loadContent, propose, preview, status, publish, cancel, history, undo, settleUnconfirmed } from "../netlify/editor/service.mjs";
 
 const SAFE_FAIL = "I couldn't make that change safely. Nothing changed.";
-const NO_FIT = "The site changed since you asked, so that change no longer fits. Please ask again.";
 const EXPIRED = "That change has expired. Please ask again.";
 const CANT = "That change can't be made.";
 const NO_CHANGE = "That wouldn't change anything on the site, so there is nothing to publish.";
@@ -595,19 +594,62 @@ test("two StaleErrors in a row publish nothing and free the change to try again"
   }
 });
 
-test("publish refuses a change that no longer fits the site and releases it", async () => {
+const REVIEWED_MOVED = "The site changed since you reviewed this. I've loaded the latest; please review your changes again.";
+
+test("publish refuses with reload when a file it touches changed since review, writes nothing, and releases it", async () => {
   const t = await setup();
   try {
     const a = await propose(t.deps, { ops: [{ op: "remove", file: "faq", path: "/questions/0" }] });
-    // The list empties meanwhile, so removing item 1 no longer applies.
+    // Someone else removes the first question meanwhile: "item 1" is now a different question.
     const faq = await t.readData("src/_data/faq.json");
-    faq.questions = [];
+    faq.questions.splice(0, 1);
     await t.repo.write({ branch: "main", baseSha: "local-base", message: "x", files: { "src/_data/faq.json": JSON.stringify(faq, null, 2) + "\n" } });
+    const head = await t.repo.head();
     const p = seen(await publish(t.deps, a.id));
-    assert.deepEqual(p, { ok: false, text: NO_FIT });
+    assert.deepEqual(p, { ok: false, text: REVIEWED_MOVED, reload: true });
+    assert.equal(await t.repo.head(), head, "nothing written");
+    assert.deepEqual(await t.readData("src/_data/faq.json"), faq);
     const stored = await t.store.get(`proposal:${a.id}`);
-    assert.equal(stored.publishing, undefined);
+    assert.equal(stored.publishing, undefined, "claim released");
     assert.equal(stored.published, undefined);
+    // Publishing again is not told it is already under way.
+    assert.deepEqual(await publish(t.deps, a.id), { ok: false, text: REVIEWED_MOVED, reload: true });
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("publish after a change to a different file goes ahead and keeps both", async () => {
+  const t = await setup();
+  try {
+    const a = await propose(t.deps, { ops: [DEADLINE] });
+    const faq = await t.readData("src/_data/faq.json");
+    faq.cta.title = "Someone else's heading";
+    await t.repo.write({ branch: "main", baseSha: "local-base", message: "x", files: { "src/_data/faq.json": JSON.stringify(faq, null, 2) + "\n" } });
+    const p = await publish(t.deps, a.id);
+    assert.equal(p.ok, true);
+    assert.equal((await t.readData("src/_data/travel.json")).room_block.deadline, "2028-06-01");
+    assert.equal((await t.readData("src/_data/faq.json")).cta.title, "Someone else's heading");
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("preview refuses with reload when a file it touches changed since review, and can be asked again", async () => {
+  const t = await setup();
+  try {
+    const a = await propose(t.deps, { ops: [DEADLINE] });
+    const travel = await t.readData("src/_data/travel.json");
+    travel.room_block.hotel_name = "Someone else";
+    await t.repo.write({ branch: "main", baseSha: "local-base", message: "x", files: { "src/_data/travel.json": JSON.stringify(travel, null, 2) + "\n" } });
+    assert.deepEqual(seen(await preview(t.deps, a.id)), { ok: false, text: REVIEWED_MOVED, reload: true });
+    const stored = await t.store.get(`proposal:${a.id}`);
+    assert.equal(stored.previewing, undefined);
+    assert.equal(stored.preview, undefined);
+    assert.deepEqual(await preview(t.deps, a.id), { ok: false, text: REVIEWED_MOVED, reload: true });
+    // A different file changing doesn't stop a preview.
+    const b = await propose(t.deps, { ops: [set("faq", "/cta/title", "New")] });
+    assert.deepEqual(await preview(t.deps, b.id), { ok: true });
   } finally {
     await t.cleanup();
   }

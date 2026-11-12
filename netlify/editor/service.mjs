@@ -28,13 +28,17 @@
 //     Nothing is stored unless the answer is a proposal.
 //   loadContent(deps)   → { schema, content: { [file key]: parsed file }, images: "/images/<name>"[] sorted, version }
 //     version: the site version (head sha) the content was read at; propose takes it back as `base`.
-//   preview(deps, id)   → { ok: true } | { ok: false, text }
+//   preview(deps, id)   → { ok: true } | { ok: false, text } | { ok: false, text, reload: true }
+//     reload: a file the change touches has changed since it was reviewed (its
+//     steps name list items by position, so they may no longer fit); nothing is
+//     built and the page should load the site again and review again.
 //   status(deps, { id })
 //     → { stage: "preview" | "publish", state: "waiting" | "building" | "ready" | "failed", url?, text?, sha?, title? }
 //       url only when state is "ready"; text with "failed" (thrown away, expired, put back or not).
 //       sha and title (the published edit's) on a published change that has not failed.
 //       While another poll is putting the site back: { stage: "publish", state: "building" }.
-//   publish(deps, id)   → { ok: true, title, sha } | { ok: false, text }
+//   publish(deps, id)   → { ok: true, title, sha } | { ok: false, text } | { ok: false, text, reload: true }
+//     reload: as for preview; nothing is written and the publishing claim is released.
 //     sha is the edit it wrote, the one undo takes; title is one line.
 //   cancel(deps, id)    → { ok: true } | { ok: false, text }
 //     refused while it is being published, and once it is on the site (a stale
@@ -71,6 +75,7 @@ export const TEXT = {
   busy: "That is already being published.",
   onSite: "That change is already on the site. Use Undo this to put it back.",
   siteMoved: "The site changed since you opened it. I've loaded the latest; please check your changes and try again.",
+  reviewedMoved: "The site changed since you reviewed this. I've loaded the latest; please review your changes again.",
   noFit: "The site changed since you asked, so that change no longer fits. Please ask again.",
   already: "That change is already on the site, so there is nothing to publish.",
   movedPublish: "The site changed while I was saving, so nothing was published. Please try again.",
@@ -192,9 +197,15 @@ async function designUpdate({ repo }, base, next) {
 }
 
 // Everything publish would write, worked out against the latest site.
-// Returns { sha, files } or { problem }.
+// Returns { sha, files } or { problem, reload? }. The stored steps name list
+// items by position, so when a file they touch has changed since she reviewed
+// them (baseSha), nothing is built: { problem, reload: true }. Changes to other
+// files are kept, since the steps are applied to the latest site.
 async function buildFiles(deps, p) {
   const base = await loadBase(deps);
+  if (p.baseSha && base.sha !== p.baseSha && (await touchedFilesMoved(deps, p.baseSha, base.sha, p.contentOps))) {
+    return { problem: TEXT.reviewedMoved, reload: true };
+  }
   const photos = Array.isArray(p.photos) ? p.photos : [];
   const tried = tryProposal(deps, base, p.contentOps, photos.map((pic) => pic.value));
   if (tried.problems.length) return { problem: TEXT.noFit };
@@ -464,7 +475,7 @@ export async function preview(deps, id) {
     const built = await buildFiles(deps, p);
     if (built.problem) {
       await clearField(deps, id, "previewing");
-      return refuse(built.problem);
+      return built.reload ? { ok: false, text: built.problem, reload: true } : refuse(built.problem);
     }
     const opened = await deps.repo.openPreview({ id, baseSha: built.sha, message: titleOf(p.summary), files: built.files });
     let kept = false;
@@ -599,6 +610,7 @@ export async function publish(deps, id) {
   }
   if (!result.sha) {
     await clearField(deps, id, "publishing");
+    if (result.reload) return { ok: false, text: result.problem, reload: true };
     return refuse(result.stale ? TEXT.movedPublish : result.problem);
   }
 
