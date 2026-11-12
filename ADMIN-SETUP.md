@@ -104,10 +104,11 @@ Why: while the repo is public, the guest list file and every edit Paige makes (e
 ## 4. Day to day
 
 - **Change the password:** edit `ADMIN_PASSWORD` under **Environment variables**, then **Deploys → Trigger deploy → Deploy project**. This signs everyone out.
+- **Sign out** clears the sign-in on that device only. To end every sign-in everywhere (a lost phone, say), change the password.
 - **Running cost:** none. The editor uses only your existing GitHub and Netlify accounts.
 - **Where edits show up:** in the GitHub commit history, as **Website edit: …**. Undo is an edit too.
 - **Unpublished changes expire:** a change Paige has reviewed but not published is forgotten after 24 hours ("That change has expired. Please review your changes again."). Her changes stay in the tray, so she can tap **Review** again.
-- **Lockout:** 5 wrong passwords from one address locks that address for 15 minutes. 60 wrong passwords across everyone in an hour locks sign-in for 15 minutes.
+- **Lockout:** 5 wrong passwords from one address locks that address for 15 minutes (an IPv6 address counts by its first half, the /64 network one home or phone gets). 60 wrong passwords across everyone in an hour locks sign-in for 15 minutes.
 
 ---
 
