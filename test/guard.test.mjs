@@ -36,7 +36,7 @@ test("refused paths classify as null", () => {
     "src/images/../../netlify.toml", "src/primed/index.html", "src/images/evil.svg",
     "src/images/x.html", "SRC/_data/faq.json", "src/_data/sub/faq.json", "src/_data/Faq.json",
     "src/_data/faq2.json", "src/_data/.json", "src/images/sub/a.jpg", "src/images/.jpg",
-    "src/images/-a.jpg", "src/images/a b.jpg", "src/_includes/sub/x.njk", "src/_includes/x.html",
+    "src/images/-a.jpg", "src/images/a b.jpg", "src/_includes/sub/x.njk", "src/_includes/ .njk", "src/_includes/é.njk", "src/_includes/a..njk", "src/_includes/A.njk", "src/_includes/x.html",
     "src/css/other.css", "src/unknown.njk", "src//index.njk", "./src/index.njk", "src/./index.njk",
     "src\\index.njk", "src/index.njk\0", "src/index.njk\n", "src/index.njk/", "", "design.md",
     "DESIGN.md/", "src/_data/faq.json ", "..", "src/..",
@@ -110,4 +110,80 @@ test("removing forbidden text is allowed; bad input does not throw", () => {
   assert.deepEqual(checkLayoutEdit({ path: "src/index.njk", before: b, after: before }), []);
   assert.ok(checkLayoutEdit({ path: "src/index.njk", before: 5, after: null }).length > 0);
   assert.ok(checkLayoutEdit({}).length > 0);
+});
+
+// Fix round 1: template syntax, entities and escapes must not hide forbidden text.
+const NJK = "src/index.njk";
+const CSS = "src/css/styles.css";
+const addLines = (...lines) => `${before}\n${lines.join("\n")}\n`;
+const flagged = (path, ...lines) => {
+  const problems = checkLayoutEdit({ path, before, after: addLines(...lines) });
+  for (const p of problems) {
+    assert.equal(typeof p, "string");
+    assert.doesNotMatch(p, BANNED, p);
+    assert.doesNotMatch(p, /\n/);
+  }
+  return problems.length > 0;
+};
+
+test("bypasses built from template syntax, entities and escapes are flagged", () => {
+  const cases = [
+    [NJK, "<scr{# x #}ipt>"],
+    [NJK, "java{# #}script:x"],
+    [NJK, "<scr{# multi", "line #}ipt>"],
+    [NJK, "{% autoescape false %}"],
+    [NJK, "{%- autoescape false -%}"],
+    [NJK, "{%\nautoescape false %}"],
+    [NJK, "{% filter safe %}x{% endfilter %}"],
+    [NJK, "<a onclick", '="x()">'],
+    [NJK, "{{ x |", "safe }}"],
+    [NJK, '<a href="java', 'script:x">'],
+    [NJK, '<a href="&#106;avascript:x">'],
+    [NJK, '<a href="&#x6a;avascript&colon;x">'],
+    [NJK, "&lt;script&gt;"],
+    [NJK, "{{ x | safe }}"],
+    [NJK, "{{ x|dump }}"],
+    [NJK, "{% raw %}x{% endraw %}"],
+    [NJK, "{% verbatim %}x{% endverbatim %}"],
+    [NJK, '{% include "x.njk" %}'],
+    [NJK, '{% import "x.njk" as y %}'],
+    [NJK, '{% from "x.njk" import y %}'],
+    [NJK, '{% extends "x.njk" %}'],
+    [NJK, "{% block a %}x{% endblock %}"],
+    [CSS, "\\75rl(https://evil.example/x.png)"],
+    [CSS, "background: url(\\68ttps://evil.example/x.png)"],
+    [CSS, "@\\69mport 'a.css';"],
+    [CSS, "@\\000069mport 'a.css';"],
+    [CSS, 'background: image-set("https://evil.example/x.png" 1x)'],
+    [CSS, "background: image-set('/images/x.png' 1x)"],
+    [CSS, '@font-face { src: "https://evil.example/f.woff2"; }'],
+    [CSS, "@font-face { src: //evil.example/f.woff2; }"],
+    [CSS, "width: expression(alert(1))"],
+    [CSS, "behavior: url(x.htc)"],
+    [CSS, "-moz-binding: url(x)"],
+    [CSS, "@im", "port 'a.css';"],
+  ];
+  for (const [p, ...lines] of cases) assert.ok(flagged(p, ...lines), `${p} ${JSON.stringify(lines)}`);
+});
+
+test("ordinary edits still pass after the stricter rules", () => {
+  const ok = [
+    [CSS, "color: #445566;"],
+    [CSS, "border-radius: 3px;"],
+    [CSS, "background: url(/images/x.jpg);"],
+    [CSS, "font-size: 17px; line-height: 1.5;"],
+    [NJK, '<div class="renamed-card">'],
+    [NJK, "{% if travel.show %}", "<p>Hello</p>", "{% endif %}"],
+    [NJK, "{{ travel.labels.plan_your_trip }}"],
+    [NJK, '<a href="https://example.com/a">Link</a>'],
+    [NJK, "{% for item in items %}{{ item.name }}{% endfor %}"],
+  ];
+  for (const [p, ...lines] of ok) assert.ok(!flagged(p, ...lines), `${p} ${JSON.stringify(lines)}`);
+});
+
+test("rules follow the file type", () => {
+  assert.ok(!flagged(NJK, '<a href="https://example.com/a">x</a>'));
+  assert.ok(flagged(CSS, 'a::after { content: "https://example.com/a"; }'));
+  assert.ok(flagged(NJK, '{% include "x.njk" %}'));
+  assert.ok(!flagged(CSS, "/* note: include this {% later %} */".replace("{% later %}", "later")));
 });
