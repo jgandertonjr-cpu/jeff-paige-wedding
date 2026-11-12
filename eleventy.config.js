@@ -178,6 +178,13 @@ export default function (eleventyConfig) {
   eleventyConfig.addFilter("fingerprint", (...values) =>
     crypto.createHash("sha256").update(JSON.stringify(values)).digest("hex").slice(0, 10));
 
+  // "#C9A04A" → "201, 160, 74", for rgba(var(--color-gold-rgb), 0.4) style tints.
+  eleventyConfig.addFilter("rgbChannels", (hex) => {
+    const m = String(hex || "").match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+    if (!m) throw new Error(`Expected a colour like #C9A04A, got "${hex}"`);
+    return m.slice(1).map((h) => parseInt(h, 16)).join(", ");
+  });
+
   // Largest number of extra people on any one invitation (at least 1). The
   // RSVP form renders this many guest blocks so Netlify Forms knows every
   // field name in advance.

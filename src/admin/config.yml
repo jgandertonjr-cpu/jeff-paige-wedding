@@ -93,6 +93,24 @@ collections:
               - { name: description, label: Note in the event, widget: text, hint: "The website link is added automatically." }
           - { name: email, label: Contact email, widget: string, pattern: ['^[^\s@]+@[^\s@]+\.[^\s@]+$', "Enter an email address like name@example.com"], hint: "Every \"Email us\" link on the site uses this address." }
           - { name: footer_text, label: Footer text, widget: string, hint: "The small line at the bottom of every page." }
+      - name: theme
+        label: Colours
+        file: src/_data/theme.json
+        fields:
+          - { name: dusty_sage, label: Banner green, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "Page banners, feature bands and the footer. Keep it readable against what sits behind it." }
+          - { name: rosette, label: RSVP pink, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "The RSVP button only. Keep it readable against what sits behind it." }
+          - { name: gold, label: Gold, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "Gold borders and rings. Keep it readable against what sits behind it." }
+          - { name: ivory, label: Page background, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "The main background of every page. Keep it readable against what sits behind it." }
+          - { name: sage_mist, label: Alternate section background, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "Every other section, so the page has gentle stripes. Keep it readable against what sits behind it." }
+          - { name: white, label: Card white, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "Cards and boxes. Keep it readable against what sits behind it." }
+          - { name: hairline, label: Thin lines, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "The fine lines around cards and between sections. Keep it readable against what sits behind it." }
+          - { name: blush, label: Soft pink, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "Small touches such as highlighted text. Keep it readable against what sits behind it." }
+          - { name: evergreen, label: Main text, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "Body text, headings and dark buttons. Keep it readable against what sits behind it." }
+          - { name: sage_gray, label: Quiet text, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "Captions and secondary text. Keep it readable against what sits behind it." }
+          - { name: deep_gold, label: Gold text, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "Small gold labels, links and icons. Keep it readable against what sits behind it." }
+          - { name: deep_evergreen, label: Text on banners, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "Text that sits on the banner green. Keep it readable against what sits behind it." }
+          - { name: muted_on_sage, label: Quiet text on banners, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "Secondary text that sits on the banner green. Keep it readable against what sits behind it." }
+          - { name: gold_on_sage, label: Gold text on banners, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "Gold text that sits on the banner green. Keep it readable against what sits behind it." }
 
   # ── Pages ────────────────────────────────────────────────────────────────
   - name: pages
