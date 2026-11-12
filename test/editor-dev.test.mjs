@@ -93,3 +93,21 @@ test("a published change rebuilds the site; one that fails the check leaves the 
   assert.equal((await settled(netlify, second)).state, "failed");
   assert.equal(await fs.readFile(path.join(workDir, "_site/index.html"), "utf8"), "one");
 });
+
+test("the server listens on this computer only", async () => {
+  const { default: http } = await import("node:http");
+  const { listenLocal, LISTEN_HOST } = await import("../scripts/editor-dev.mjs");
+  assert.equal(LISTEN_HOST, "127.0.0.1");
+  const server = http.createServer();
+  await listenLocal(server, 0);
+  try {
+    assert.equal(server.address().address, "127.0.0.1");
+  } finally {
+    await new Promise((r) => server.close(r));
+  }
+});
+
+test("a change this server never built is reported as waiting, not built", async () => {
+  const { netlify } = await setup("unknown");
+  assert.deepEqual(await netlify.deployFor("f".repeat(40)), { state: "waiting" });
+});

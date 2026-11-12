@@ -37,7 +37,7 @@
       ],
       "iframes": [],
       "handlers": [
-        "onerror"
+        "onerror:35780920925841b8"
       ],
       "forms": [],
       "tags": [],
@@ -52,7 +52,7 @@
       ],
       "iframes": [],
       "handlers": [
-        "onerror"
+        "onerror:35780920925841b8"
       ],
       "forms": [],
       "tags": [],
@@ -67,7 +67,7 @@
       ],
       "iframes": [],
       "handlers": [
-        "onerror"
+        "onerror:35780920925841b8"
       ],
       "forms": [],
       "tags": [],
@@ -83,7 +83,7 @@
       ],
       "iframes": [],
       "handlers": [
-        "onerror"
+        "onerror:35780920925841b8"
       ],
       "forms": [],
       "tags": [],
@@ -98,7 +98,7 @@
       ],
       "iframes": [],
       "handlers": [
-        "onerror"
+        "onerror:35780920925841b8"
       ],
       "forms": [],
       "tags": [],
@@ -113,7 +113,7 @@
       ],
       "iframes": [],
       "handlers": [
-        "onerror"
+        "onerror:35780920925841b8"
       ],
       "forms": [],
       "tags": [],
@@ -128,7 +128,7 @@
       ],
       "iframes": [],
       "handlers": [
-        "onerror"
+        "onerror:35780920925841b8"
       ],
       "forms": [],
       "tags": [],
@@ -143,7 +143,7 @@
       ],
       "iframes": [],
       "handlers": [
-        "onerror"
+        "onerror:35780920925841b8"
       ],
       "forms": [],
       "tags": [],
@@ -174,7 +174,7 @@
       ],
       "iframes": [],
       "handlers": [
-        "onerror"
+        "onerror:35780920925841b8"
       ],
       "forms": [],
       "tags": [],
@@ -190,7 +190,7 @@
       ],
       "iframes": [],
       "handlers": [
-        "onerror"
+        "onerror:35780920925841b8"
       ],
       "forms": [],
       "tags": [],
@@ -198,7 +198,8 @@
     },
     "css/styles.css": {
       "origins": [
-        "data:"
+        "data:",
+        "http://www.w3.org"
       ]
     },
     "css/theme.css": {

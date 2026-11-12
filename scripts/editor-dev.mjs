@@ -22,6 +22,7 @@ import { checkSite } from "./check-site.mjs";
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 const PORT = 8081;
+export const LISTEN_HOST = "127.0.0.1"; // never every network interface: the password is published in this file
 const ORIGIN = `http://localhost:${PORT}`;
 const COPIED = ["src", "DESIGN.md", "eleventy.config.js", "package.json", "scripts/check-site.mjs", "scripts/protected-files.json"];
 
@@ -171,12 +172,28 @@ export function createLocalNetlify({ localDir, workDir, build, check, url, log =
     };
   }
 
+  // Only changes this server built are known; anything else is still "waiting".
   async function deployFor(sha) {
-    const job = jobs.get(sha) || start(sha, previewIds.get(sha));
+    const job = jobs.get(sha);
+    if (!job) return { state: "waiting" };
     return job.url ? { state: job.state, url: job.url } : { state: job.state };
   }
 
   return { wrapRepo, deployFor };
+}
+
+// Listens on this computer only, and checks that it did.
+export function listenLocal(server, port) {
+  return new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(port, LISTEN_HOST, () => {
+      const address = server.address();
+      if (address.address !== LISTEN_HOST) {
+        server.close();
+        reject(new Error(`The server is listening on ${address.address}, not ${LISTEN_HOST}.`));
+      } else resolve();
+    });
+  });
 }
 
 // ---- the server ---------------------------------------------------------------
@@ -317,7 +334,9 @@ async function main() {
       res.end("Something went wrong.");
     }
   });
-  server.listen(PORT, () => console.log(`editor-dev: ready at ${ORIGIN}/  (sign in with local-test-password)`));
+  await listenLocal(server, PORT);
+  console.log("editor-dev: the working copy in .editor-local/work/ keeps earlier edits until you run with --reset.");
+  console.log(`editor-dev: ready at ${ORIGIN}/  (this computer only; sign in with local-test-password)`);
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

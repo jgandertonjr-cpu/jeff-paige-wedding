@@ -16,6 +16,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { parse } from "parse5";
 
 const HERE = path.dirname(new URL(import.meta.url).pathname);
 const DEFAULT_RECORD = path.join(HERE, "protected-files.json");
@@ -30,7 +31,6 @@ const PRIVATE_PAGES = [
   "nelson-denny-practice.html", "landscaping-hours.html", "admin/index.html", "admin/rsvps/index.html",
 ];
 const HASHED_FILES = ["robots.txt", "_headers", "_redirects", "sitemap.xml"];
-const STYLESHEETS = ["css/styles.css", "css/theme.css"];
 
 const SECRET_PATTERNS = [/sk-ant-[A-Za-z0-9_-]{10,}/, /github_pat_[A-Za-z0-9_]{20,}/, /ghp_[A-Za-z0-9]{20,}/, /nfp_[A-Za-z0-9]{20,}/];
 const TEXT_EXT = new Set([".html", ".css", ".js", ".mjs", ".json", ".txt", ".xml", ".ics", ".yml", ".yaml", ".toml", ".md", ".svg", ".map", ".webmanifest", ""]);
@@ -73,23 +73,22 @@ function pageName(rel) {
 }
 
 // ---- reading HTML and CSS ---------------------------------------------------
+// Pages are read with a real HTML5 parser (parse5), the way a browser reads them, so
+// odd-but-accepted markup (comments ended by "<!-->", "</script x>", entity-encoded
+// attributes, template and foreign content) cannot hide anything.
 
-const TAG = /<([a-zA-Z][a-zA-Z0-9:-]*)((?:"[^"]*"|'[^']*'|[^'">])*)>/g;
-const ATTR = /([^\s"'<>/=]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;
-
-function attributes(text) {
-  const out = {};
-  for (const m of text.matchAll(ATTR)) {
-    const name = m[1].toLowerCase();
-    if (!(name in out)) out[name] = m[2] ?? m[3] ?? m[4] ?? "";
-  }
-  return out;
-}
+// Remove tabs and line breaks anywhere, turn backslashes into slashes and trim
+// control characters and spaces, as a browser does before reading an address.
+const cleanUrl = (value) =>
+  String(value)
+    .replace(/[\t\n\r]/g, "")
+    .replace(/\\/g, "/")
+    .replace(/^[\u0000- ]+|[\u0000- ]+$/g, "");
 
 // The origin of an absolute or protocol-relative URL, "scheme:" for other
 // schemes (data:, javascript:, blob:), "" for relative URLs and for mailto:/tel:.
 function originOf(value) {
-  const v = String(value).trim();
+  const v = cleanUrl(value);
   if (/^\/\//.test(v)) return originOf("https:" + v);
   const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(v);
   if (!scheme) return "";
@@ -105,85 +104,140 @@ function originOf(value) {
   return `${s}:`;
 }
 
+// Every address a stylesheet (or <style> text, or a style attribute) can load: CSS escapes are
+// decoded first, then anything inside url(), @import or a quoted string, and any bare absolute or
+// protocol-relative address, is reduced to its origin.
 function cssOrigins(css) {
+  const text = String(css)
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/\\([0-9a-fA-F]{1,6})[ \t\n\r\f]?/g, (_, hex) => {
+      const n = parseInt(hex, 16);
+      return n > 0 && n <= 0x10ffff ? String.fromCodePoint(n) : "�";
+    })
+    .replace(/\\\n/g, "")
+    .replace(/\\([^\n])/g, "$1");
   const found = [];
-  for (const m of css.matchAll(/url\(\s*(['"]?)([\s\S]*?)\1\s*\)/gi)) found.push(m[2]);
-  for (const m of css.matchAll(/@import\s+(['"])([\s\S]*?)\1/gi)) found.push(m[2]);
-  return found.map(originOf).filter(Boolean);
+  for (const m of text.matchAll(/url\(\s*(['"]?)([\s\S]*?)\1\s*\)/gi)) found.push(originOf(m[2]));
+  for (const m of text.matchAll(/(["'])((?:(?!\1)[^\n])*)\1/g)) {
+    const o = originOf(m[2]);
+    if (/^(https?:|\(unreadable)/.test(o) || /^\s*[\\/]{2}/.test(m[2])) found.push(o); // @import "…", image-set("…")
+  }
+  for (const m of text.matchAll(/(?:https?:)?[\\/]{2}[^\s"'()<>;,]+/gi)) found.push(originOf(m[0].replace(/^(?=[\\/]{2})/, "")));
+  return found.filter(Boolean);
 }
 
 const withoutVersion = (src) => src.replace(/([?&])v=[^&#]*&?/g, "$1").replace(/[?&]$/, "");
-
 const unique = (list) => [...new Set(list)].sort();
 
-// What a page loads or runs, as sets of short labels.
-export function pageFacts(html) {
-  const scripts = [], iframes = [], handlers = [], forms = [], tags = [], origins = [];
-  let text = html.replace(/<!--[\s\S]*?-->/g, "");
+const RESOURCE_ATTRS = ["src", "srcset", "imagesrcset", "poster", "data", "formaction", "action", "ping", "background", "manifest", "codebase", "longdesc"];
 
-  for (const m of text.matchAll(/<script\b((?:"[^"]*"|'[^']*'|[^'">])*)>([\s\S]*?)<\/script\s*>/gi)) {
-    const a = attributes(m[1]);
-    if (a.src !== undefined) scripts.push(`src:${withoutVersion(a.src.trim())}`);
-    else if (/ld\+json/i.test(a.type || "")) scripts.push("ld+json"); // its text follows the site's content
-    else scripts.push(`inline:${sha(m[2].trim()).slice(0, 16)}`);
+function* elements(node) {
+  for (const child of node.childNodes || []) {
+    if (child.tagName) yield child;
+    yield* elements(child);
   }
-  text = text.replace(/(<script\b(?:"[^"]*"|'[^']*'|[^'">])*>)[\s\S]*?<\/script\s*>/gi, "$1</script>");
-  for (const m of text.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style\s*>/gi)) origins.push(...cssOrigins(m[1]));
-  text = text.replace(/(<style\b[^>]*>)[\s\S]*?<\/style\s*>/gi, "$1</style>");
+  if (node.content) yield* elements(node.content); // <template>
+}
+const textOf = (el) => (el.childNodes || []).map((c) => (c.nodeName === "#text" ? c.value : "")).join("");
 
-  for (const m of text.matchAll(TAG)) {
-    const name = m[1].toLowerCase();
-    const a = attributes(m[2]);
-    for (const attr of Object.keys(a)) if (/^on[a-z]+$/.test(attr)) handlers.push(attr);
+// What a page loads or runs, as sets of short labels, plus its links and stylesheets.
+function scanPage(html) {
+  const scripts = [], iframes = [], handlers = [], forms = [], tags = [], origins = [];
+  const links = [], stylesheets = [];
+  const document = parse(html, { scriptingEnabled: false }); // <noscript> content is read as markup too
 
-    if (name === "iframe") iframes.push(originOf(a.src ?? "") || (a.src ? "(this site)" : "(no address)"));
-    if (name === "form") forms.push(a.action === undefined ? "(no action)" : originOf(a.action) || a.action.trim());
+  for (const el of elements(document)) {
+    const name = el.tagName.toLowerCase();
+    const attrs = el.attrs.map((a) => ({ name: a.name.toLowerCase(), value: a.value })); // xlink:href is "href"
+    const get = (n) => attrs.find((a) => a.name === n)?.value;
+    const all = (n) => attrs.filter((a) => a.name === n).map((a) => a.value);
+
+    for (const a of attrs) if (/^on[a-z]+$/.test(a.name)) handlers.push(`${a.name}:${sha(a.value).slice(0, 16)}`);
+
+    if (name === "script") {
+      const src = get("src") ?? get("href");
+      if (src !== undefined) scripts.push(`src:${withoutVersion(cleanUrl(src))}`);
+      else if ((get("type") || "").trim().toLowerCase() === "application/ld+json") scripts.push("ld+json"); // its text follows the site's content
+      else scripts.push(`inline:${sha(textOf(el).trim()).slice(0, 16)}`);
+      const s = get("src");
+      if (s !== undefined) links.push(s);
+      continue;
+    }
+    if (name === "style") origins.push(...cssOrigins(textOf(el)));
+
+    if (name === "iframe" || name === "frame") {
+      const src = get("src");
+      iframes.push(originOf(src ?? "") || (src ? "(this site)" : "(no address)"));
+    }
+    if (name === "form") {
+      const action = get("action");
+      forms.push(action === undefined ? "(no action)" : originOf(action) || cleanUrl(action));
+    }
     if (name === "base" || name === "object" || name === "embed") tags.push(name);
-    if (name === "meta" && a["http-equiv"] !== undefined) tags.push(`meta http-equiv ${a["http-equiv"].trim().toLowerCase()}`);
+    if (name === "meta" && get("http-equiv") !== undefined) tags.push(`meta http-equiv ${get("http-equiv").trim().toLowerCase()}`);
 
-    // Things the page loads. A link's destination (<a href>) is left alone, except for
+    // Things the page loads. A link's destination (<a href>, <area href>) is left alone, except for
     // schemes that run code.
+    const linkOnly = name === "a" || name === "area";
     const loaders = [];
-    for (const attr of ["src", "poster", "data"]) if (name !== "script" && a[attr] !== undefined) loaders.push(a[attr]);
-    for (const attr of Object.keys(a)) if (/^data-.*src$/.test(attr)) loaders.push(a[attr]); // the map frame is made from one
-    if (a.srcset !== undefined) for (const part of a.srcset.split(",")) loaders.push(part.trim().split(/\s+/)[0] || "");
-    if (name === "link" && a.href !== undefined) loaders.push(a.href);
+    for (const attr of RESOURCE_ATTRS) {
+      if (name === "form" && attr === "action") continue;
+      for (const v of all(attr)) {
+        if (attr === "srcset" || attr === "imagesrcset") for (const part of v.split(",")) loaders.push(part.trim().split(/\s+/)[0] || "");
+        else if (attr === "ping") loaders.push(...v.split(/\s+/));
+        else loaders.push(v);
+      }
+    }
+    if (!linkOnly) loaders.push(...all("href"));
+    for (const a of attrs) if (a.name.startsWith("data-") && originOf(a.value)) loaders.push(a.value);
     for (const v of loaders) {
       const o = originOf(v);
       if (o) origins.push(o);
     }
-    if ((name === "a" || name === "area") && a.href !== undefined) {
-      const o = originOf(a.href);
+    if (linkOnly) {
+      const o = originOf(get("href") ?? "");
       if (/^(javascript|data|vbscript):$/.test(o)) origins.push(o);
     }
-    if (a.style !== undefined) origins.push(...cssOrigins(a.style));
+    for (const v of all("style")) origins.push(...cssOrigins(v));
+
+    // For the link check and the list of stylesheets.
+    if (name === "a" || name === "link") for (const v of all("href")) links.push(v);
+    if (name === "img" || name === "source") for (const v of all("src")) links.push(v);
+    for (const v of [...all("srcset"), ...all("imagesrcset")]) for (const part of v.split(",")) links.push(part.trim().split(/\s+/)[0] || "");
+    if (name === "link" && /(^|\s)stylesheet(\s|$)/i.test(get("rel") || "") && get("href") !== undefined) stylesheets.push(get("href"));
   }
 
-  return { scripts: unique(scripts), iframes: unique(iframes), handlers: unique(handlers), forms: unique(forms), tags: unique(tags), origins: unique(origins) };
+  return {
+    facts: { scripts: unique(scripts), iframes: unique(iframes), handlers: unique(handlers), forms: unique(forms), tags: unique(tags), origins: unique(origins) },
+    links,
+    stylesheets,
+  };
 }
 
+export const pageFacts = (html) => scanPage(html).facts;
 const stylesheetFacts = (css) => ({ origins: unique(cssOrigins(css)) });
 
-// ---- internal links ---------------------------------------------------------
-
-function linksOf(html) {
-  const out = [];
-  const text = html.replace(/<!--[\s\S]*?-->/g, "");
-  for (const m of text.matchAll(TAG)) {
-    const name = m[1].toLowerCase();
-    if (name !== "a" && name !== "link" && name !== "script" && name !== "img" && name !== "source") continue;
-    const a = attributes(m[2]);
-    if ((name === "a" || name === "link") && a.href !== undefined) out.push(a.href);
-    if ((name === "script" || name === "img" || name === "source") && a.src !== undefined) out.push(a.src);
-    if (a.srcset !== undefined) for (const part of a.srcset.split(",")) out.push(part.trim().split(/\s+/)[0] || "");
-  }
-  return out;
+// A private page is hidden only if it has a real robots meta tag and every one says "noindex".
+function isHidden(html) {
+  const metas = [...elements(parse(html, { scriptingEnabled: false }))].filter(
+    (el) => el.tagName === "meta" && (el.attrs.find((a) => a.name.toLowerCase() === "name")?.value || "").trim().toLowerCase() === "robots");
+  return metas.length > 0 && metas.every((el) => /noindex/i.test(el.attrs.find((a) => a.name.toLowerCase() === "content")?.value || ""));
 }
+
+// The local stylesheet files a page links, as paths in the site.
+function localPath(page, link) {
+  const v = cleanUrl(link).replace(/[?#].*$/, "");
+  if (!v || /^([a-z][a-z0-9+.-]*:|\/\/)/i.test(v)) return null;
+  const p = path.posix.normalize(v.startsWith("/") ? v.slice(1) : path.posix.join(path.posix.dirname(page), v));
+  return p === "." || p.endsWith("/") ? null : p;
+}
+
+// ---- internal links ---------------------------------------------------------
 
 // Does the link point at something in the site? Netlify pretty URLs: /details and
 // details.html both reach details.html, and a folder reaches its index.html.
 function internalTarget(files, page, link) {
-  let v = link.trim();
+  let v = cleanUrl(link);
   if (!v || v.startsWith("#") || /^([a-z][a-z0-9+.-]*:|\/\/)/i.test(v)) return true; // fragment-only, absolute, mailto:, tel:
   v = v.replace(/[?#].*$/, "");
   if (v === "/api" || v.startsWith("/api/") || v === "/wedding.ics") return true; // served at run time or generated
@@ -193,6 +247,10 @@ function internalTarget(files, page, link) {
   if (p === "" || p.endsWith("/")) return files.has(p + "index.html");
   return files.has(p) || files.has(p + ".html") || files.has(p + "/index.html");
 }
+
+// The stylesheet files the public pages link to, as paths in the site.
+const sheetsOf = (scans) =>
+  unique(Object.entries(scans).flatMap(([page, scan]) => scan.stylesheets.map((h) => localPath(page, h)).filter(Boolean)));
 
 // ---- the check --------------------------------------------------------------
 
@@ -213,7 +271,7 @@ function newThings(where, found, allowed, describe, problems) {
 const SAYS = {
   scripts: (where) => `${where} has a new script that was not there before.`,
   iframes: (where, o) => `${where} has an embedded frame from ${o} that was not there before.`,
-  handlers: (where, n) => `${where} has a new "${n}" event attribute that was not there before.`,
+  handlers: (where, n) => `${where} has a new or changed "${n.split(":")[0]}" event handler that was not there before.`,
   forms: (where, a) => `${where} has a form that sends to ${a}, which was not there before.`,
   tags: (where, t) => `${where} has a new <${t}> tag that was not there before.`,
   origins: (where, o) => `${where} now loads something from ${o}, which is not on the allowed list.`,
@@ -246,10 +304,7 @@ export function checkSite(dir, { protectedFile = DEFAULT_RECORD } = {}) {
         problems.push(`The private page ${page} is missing from the site.`);
         continue;
       }
-      const hidden = [...text.matchAll(/<meta\b((?:"[^"]*"|'[^']*'|[^'">])*)>/gi)].some((m) => {
-        const a = attributes(m[1]);
-        return /^robots$/i.test(a.name || "") && /noindex/i.test(a.content || "");
-      });
+      const hidden = isHidden(text);
       if (!hidden) problems.push(`The private page ${page} has lost its "noindex" tag, so search engines could list it.`);
     }
 
@@ -262,24 +317,22 @@ export function checkSite(dir, { protectedFile = DEFAULT_RECORD } = {}) {
     }
 
     // 4. Internal links and images on the public pages.
-    for (const [page, text] of Object.entries(html)) {
-      const bad = unique(linksOf(text).filter((l) => !internalTarget(files, page, l)));
+    const scans = {};
+    for (const [page, text] of Object.entries(html)) scans[page] = scanPage(text);
+    for (const [page, scan] of Object.entries(scans)) {
+      const bad = unique(scan.links.filter((l) => !internalTarget(files, page, l)));
       for (const link of bad) problems.push(`The ${pageName(page)} page points at ${link}, which is not in the site.`);
     }
 
     // 5. Nothing new is loaded or run on the public pages.
     if (record?.rendered) {
-      for (const [page, text] of Object.entries(html)) {
-        const found = pageFacts(text);
+      for (const [page, { facts: found }] of Object.entries(scans)) {
         const allowed = record.rendered[page] || {};
         for (const kind of Object.keys(SAYS)) newThings(`The ${pageName(page)} page`, found[kind], allowed[kind], SAYS[kind], problems);
       }
-      for (const sheet of STYLESHEETS) {
+      for (const sheet of sheetsOf(scans)) {
         const text = readText(dir, sheet);
-        if (text === null) {
-          problems.push(`${sheet} is missing from the site.`);
-          continue;
-        }
+        if (text === null) continue; // a missing file is reported by the link check
         newThings(`The stylesheet ${sheet}`, stylesheetFacts(text).origins, record.rendered[sheet]?.origins, SAYS.origins, problems);
       }
     }
@@ -314,12 +367,14 @@ export function recordSite(dir, protectedFile = DEFAULT_RECORD) {
     hashes[file] = sha(bytes);
   }
   const rendered = {};
+  const scans = {};
   for (const page of pages) {
     const text = readText(dir, page);
     if (text === null) throw new Error(`${page} is not in ${dir}`);
-    rendered[page] = pageFacts(text);
+    scans[page] = scanPage(text);
+    rendered[page] = scans[page].facts;
   }
-  for (const sheet of STYLESHEETS) {
+  for (const sheet of sheetsOf(scans)) {
     const text = readText(dir, sheet);
     if (text === null) throw new Error(`${sheet} is not in ${dir}`);
     rendered[sheet] = stylesheetFacts(text);
