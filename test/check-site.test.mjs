@@ -77,7 +77,8 @@ test("links that are served at run time or that point elsewhere are fine", () =>
 });
 
 test("a key-shaped string anywhere in the output is a problem, and is never printed", () => {
-  for (const secret of ["sk-ant-abcdefghij1234567890", "github_pat_" + "a1".repeat(15), "ghp_" + "b2".repeat(15), "nfp_" + "c3".repeat(15)]) {
+  // Built from pieces so no key-shaped text sits in the repo for a host's secret scanner to trip on.
+  for (const secret of ["sk-" + "ant-" + "abcdefghij1234567890", "github_pat_" + "a1".repeat(15), "ghp_" + "b2".repeat(15), "nfp_" + "c3".repeat(15)]) {
     const problems = checkSite(copy(change("css/styles.css", (t) => t + `\n/* ${secret} */\n`)));
     has(problems, /css\/styles\.css/);
     assert.ok(!problems.join("\n").includes(secret));
