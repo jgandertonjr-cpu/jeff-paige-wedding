@@ -163,6 +163,10 @@ const DESIGNED_ORIGINS = {
   "after-party.html": ["https://maps.google.com"],
 };
 
+// A data-* value is read as an address only when it starts like one a script could load or run
+// ("Proposal: she said yes" is a photo description, not an address).
+const looksLikeAddress = (value) => /^(https?:|\/\/|data:|javascript:|vbscript:)/i.test(cleanUrl(value));
+
 const RESOURCE_ATTRS = ["src", "srcset", "imagesrcset", "poster", "data", "formaction", "action", "ping", "background", "manifest", "codebase", "longdesc"];
 
 function* elements(node) {
@@ -233,7 +237,7 @@ function scanPage(html) {
       }
     }
     if (!linkOnly) loaders.push(...all("href"));
-    for (const a of attrs) if (a.name.startsWith("data-") && addressToken(a.value)) loaders.push(a.value);
+    for (const a of attrs) if (a.name.startsWith("data-") && looksLikeAddress(a.value)) loaders.push(a.value);
     if (ANIMATION.has(name)) for (const attr of ["to", "from", "by", "values"]) for (const v of all(attr)) loaders.push(...v.split(";"));
     for (const v of loaders) {
       const o = addressToken(v);

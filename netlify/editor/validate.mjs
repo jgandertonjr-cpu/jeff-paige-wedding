@@ -6,13 +6,12 @@ import { contrastRatio, CONTRAST_PAIRS } from "./contrast.mjs";
 // Same settings as the site's own markdown rendering (eleventy.config.js).
 const md = markdownIt({ html: false, linkify: false, typographer: false });
 
-// Every link and image address the site would actually produce from this markdown.
+// Every link address the site would actually produce from this markdown.
 function markdownTargets(text) {
   const out = [];
   const visit = (tokens) => {
     for (const t of tokens) {
       if (t.type === "link_open") out.push(t.attrGet("href") ?? "");
-      else if (t.type === "image") out.push(t.attrGet("src") ?? "");
       if (t.children) visit(t.children);
     }
   };
@@ -22,6 +21,18 @@ function markdownTargets(text) {
   for (const m of text.matchAll(/\]\(\s*<?([^)\s>]*)/g)) out.push(m[1]);
   return out;
 }
+
+// Does the site's markdown turn this text into a picture? Pictures belong in photo fields.
+function hasMarkdownImage(text) {
+  const visit = (tokens) => tokens.some((t) => t.type === "image" || (t.children && visit(t.children)));
+  return visit(md.parse(text, {}));
+}
+
+// Text that starts like an address the site check reads as something a page loads or runs
+// (the gallery puts a photo's description into a data-* attribute). Cleaned as a browser does.
+const ADDRESS_START = /^(https?:|\/\/|data:|javascript:|vbscript:)/i;
+const startsLikeAddress = (v) =>
+  ADDRESS_START.test(v.replace(/[\t\n\r]/g, "").replace(/\\/g, "/").replace(/^[\u0000- ]+/, ""));
 
 const TAG = /<[A-Za-z/!]/;
 const HEX = /^#[0-9A-Fa-f]{6}$/;
@@ -87,11 +98,15 @@ export function validateContent(content, ctx) {
           return here(f.patternMessage ? f.patternMessage.replace(/[.]?$/, ".") : `${name} is not in the right format.`);
         }
         if (f.type === "markdown") {
-          if (markdownTargets(v).some((target) => !linkOk(target))) {
+          if (hasMarkdownImage(v)) {
+            here(`${name} cannot hold a picture, so please add the photo in its own spot instead.`);
+          } else if (markdownTargets(v).some((target) => !linkOk(target))) {
             here(`${name} has a link that cannot be used, so links must start with https://, mailto: or tel:, or go to a page on this site.`);
           }
         } else if (!inNav && isLinkField(f) && v !== "" && !linkOk(v)) {
           here(`${name} is not a link that can be used, so it must start with https://, mailto: or tel:, or be a page on this site.`);
+        } else if (!isLinkField(f) && startsLikeAddress(v)) {
+          here(`${name} cannot start with a web address, so please put some words first.`);
         }
         return;
       }

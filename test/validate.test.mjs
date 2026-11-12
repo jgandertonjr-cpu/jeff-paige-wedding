@@ -218,3 +218,22 @@ test("a duplicate meal code cannot hide a removed one while RSVPs are open", () 
   previous.rsvp.rsvp_open = false;
   only(check("rsvp", (r) => { r.meal_options[1].value = a.value; }, { previous }), "RSVP → Meal choices");
 });
+
+// Final review, item 1: shapes the validator used to accept that the site check then refused.
+test("a picture inside markdown text is refused, with or without a web address", () => {
+  const answer = (text) => check("faq", (f) => { f.questions[0].answer = text; });
+  for (const bad of ["![us](https://www.example.com/a.jpg)", "Look ![us](/images/119812256_unknown.webp) here", "![x][1]\n\n[1]: https://www.example.com/a.png"]) {
+    const i = only(answer(bad), "FAQ → Questions → item 1 → Answer");
+    assert.match(i.message, /picture/, bad);
+  }
+  only(check("story", (s) => { s.events[0].story = "We met ![x](https://www.example.com/a.png)"; }), "Our Story → Timeline → item 1 → Story");
+  assert.deepEqual(answer("See [the site](https://www.example.com) or email."), []);
+});
+
+test("plain text may start with 'Word:', but not with an address or code", () => {
+  const alt = (v) => check("gallery", (g) => { g.photos[0].alt = v; });
+  for (const ok of ["Proposal: she said yes", "Note:x", "3 < 5 & “quotes” 🎉", "Website: see below"]) assert.deepEqual(alt(ok), [], ok);
+  for (const bad of ["https://evil.com/a", "http://x", "//x.com", " \\\\x.com", "data:text/html,x", "JavaScript:alert(1)", "vbscript:x"]) {
+    only(alt(bad), "Gallery → Photos → item 1 → Photo description");
+  }
+});

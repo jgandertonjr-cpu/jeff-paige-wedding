@@ -293,3 +293,20 @@ test("turning the after-party map on passes a baseline recorded while it was off
   recordSite(off, record);
   assert.deepEqual(checkSite(copy(), { protectedFile: record }), []);
 });
+
+// ---- final review, item 1: a data-* value is an address only when it looks like one ----
+
+test("a data-* value that only starts like 'Word: rest' is not an address", () => {
+  for (const v of ["Proposal: she said yes", "Note:x", "mailto-ish: no", "blob: nope"]) {
+    assert.deepEqual(checkSite(copy(into("faq.html", `<div data-alt="${v}"></div>`))), [], v);
+  }
+});
+
+test("flagged: a data-* value that is an address or runs code", () => {
+  for (const [v, re] of [
+    ["https://evil.com/a", EVIL], ["http://evil.com/a", EVIL], ["//evil.com/a", EVIL], [" \\\\evil.com/a", EVIL],
+    ["data:text/html,x", /data/], ["javascript:alert(1)", /javascript:/], ["JavaScript:alert(1)", /javascript:/], ["vbscript:x", /vbscript:/],
+  ]) {
+    has(checkSite(copy(into("faq.html", `<div data-x="${v}"></div>`))), re);
+  }
+});
