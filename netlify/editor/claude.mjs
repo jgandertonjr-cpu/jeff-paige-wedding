@@ -12,10 +12,31 @@ const MAX_FILE_CHARS = 120_000;
 const MAX_HISTORY_TURNS = 12;
 const MAX_HISTORY_CHARS = 2000;
 
-const TOO_LONG = { kind: "message", text: "That took too long. Nothing changed. Try again." };
-const UNREACHABLE = { kind: "message", text: "I can't reach the site right now. Try again in a minute." };
-const REFUSED = { kind: "message", text: "I can't help with that one." };
-const NO_ANSWER = { kind: "message", text: "I couldn't work out a change for that. Could you say it another way?" };
+// Failure results carry a fixed code chosen here (never text from an SDK error)
+// so a permanent fault can be told apart from a passing outage. Fresh object each time.
+const TOO_LONG_TEXT = "That took too long. Nothing changed. Try again.";
+const UNREACHABLE_TEXT = "I can't reach the site right now. Try again in a minute.";
+const failure = (text, error) => ({ kind: "message", text, error });
+const tooLong = (error = "timeout") => failure(TOO_LONG_TEXT, error);
+const unreachable = (error) => failure(UNREACHABLE_TEXT, error);
+const refused = () => failure("I can't help with that one.", "refused");
+const noAnswer = () => failure("I couldn't work out a change for that. Could you say it another way?", "cut_off");
+const DEFAULT_BUDGET_MS = 50_000;
+
+function codeForSdkError(error) {
+  if (error instanceof Anthropic.APIConnectionTimeoutError || error instanceof Anthropic.APIUserAbortError) return "timeout";
+  if (error instanceof Anthropic.RateLimitError) return "rate_limited";
+  if (error instanceof Anthropic.AuthenticationError || error instanceof Anthropic.PermissionDeniedError) return "auth";
+  if (
+    error instanceof Anthropic.BadRequestError ||
+    error instanceof Anthropic.NotFoundError ||
+    error instanceof Anthropic.UnprocessableEntityError ||
+    error.status === 413
+  ) {
+    return "bad_request";
+  }
+  return "unreachable";
+}
 
 const OPS = ["set", "insert", "remove", "move"];
 const nullable = (schema) => ({ anyOf: [schema, { type: "null" }] });
@@ -130,17 +151,24 @@ function parseProposal(input, schema) {
   return { value: { kind: "proposal", note, contentOps, fileEdits } };
 }
 
+const siteData = (source, body) => `<site_data source="${source}">\n${body}\n</site_data>`;
+
 async function runReadFile(input, readFile) {
   if (!isPlain(input) || !hasOnly(input, ["path"]) || !isString(input.path)) {
     return { is_error: true, content: "read_file needs exactly one text value, path." };
   }
   if (!READABLE_LAYOUT_FILES.includes(input.path)) return { is_error: true, content: "That file is not one you can read." };
-  const text = await readFile(input.path);
+  let text;
+  try {
+    text = await readFile(input.path);
+  } catch {
+    return { is_error: true, content: "That file could not be read." };
+  }
   if (text === null || text === undefined) return { is_error: true, content: "That file was not found." };
   if (text.length > MAX_FILE_CHARS) {
-    return { content: `${text.slice(0, MAX_FILE_CHARS)}\n\n[The rest of this file was cut off; it was ${text.length} characters long.]` };
+    return { content: siteData(input.path, `${text.slice(0, MAX_FILE_CHARS)}\n\n[The rest of this file was cut off; it was ${text.length} characters long.]`) };
   }
-  return { content: text };
+  return { content: siteData(input.path, text) };
 }
 
 function historyMessages(history) {
@@ -154,7 +182,7 @@ function historyMessages(history) {
 
 function newUserTurn({ message, photo, feedback }) {
   let body = message;
-  if (photo) body += `\n\n(Paige attached the photo above. If you use it, it will be saved as ${photo.willBeSavedAs}.)`;
+  if (photo) body += `\n\n(Paige attached the photo above. To use it, set the photo field to exactly ${photo.willBeSavedAs})`;
   if (feedback) body += `\n\nYour previous proposal could not be used: ${feedback}`;
   const content = [];
   if (photo) content.push({ type: "image", source: { type: "base64", media_type: photo.mediaType, data: photo.base64 } });
@@ -164,6 +192,10 @@ function newUserTurn({ message, photo, feedback }) {
 
 const textOf = (blocks) => blocks.filter((b) => b.type === "text").map((b) => b.text).join("\n").trim();
 
+// photo.willBeSavedAs is the exact value to store in an image field, chosen by
+// the caller (for example "/images/photo-20261112-ab12cd.jpg"); the model is
+// told to use it verbatim. deadlineMs is an absolute timestamp on the `now`
+// clock; a missing or non-numeric value means 50 seconds from now.
 export async function askClaude({
   client,
   schema,
@@ -180,11 +212,12 @@ export async function askClaude({
     { type: "text", text: systemPrompt(schema), cache_control: { type: "ephemeral" } },
     { type: "text", text: contentBlock(content), cache_control: { type: "ephemeral" } },
   ];
+  const deadline = Number.isFinite(deadlineMs) ? deadlineMs : now() + DEFAULT_BUDGET_MS;
   const messages = [...historyMessages(history), newUserTurn({ message, photo, feedback })];
 
   for (let turn = 0; turn < MAX_TURNS; turn++) {
-    const remaining = deadlineMs - now();
-    if (remaining <= 0) return TOO_LONG;
+    const remaining = deadline - now();
+    if (remaining <= 0) return tooLong();
 
     let response;
     try {
@@ -193,6 +226,9 @@ export async function askClaude({
           model: MODEL,
           max_tokens: 8000,
           betas: ["server-side-fallback-2026-07-01"],
+          // Moves a breakpoint to the newest message each turn, so file text read in
+          // turn 1 is read from cache in later turns (the two system markers make three of four slots).
+          cache_control: { type: "ephemeral" },
           fallbacks: "default",
           output_config: { effort: "low" },
           system,
@@ -202,22 +238,24 @@ export async function askClaude({
         { signal: AbortSignal.timeout(remaining), timeout: remaining, maxRetries: 0 },
       );
     } catch (error) {
-      // Only the type decides the wording; the SDK's own message is never passed on.
-      if (error instanceof Anthropic.APIConnectionTimeoutError || error instanceof Anthropic.APIUserAbortError) return TOO_LONG;
-      if (error instanceof Anthropic.APIError) return UNREACHABLE;
-      if (error?.name === "TimeoutError" || error?.name === "AbortError") return TOO_LONG;
+      // Only the type decides the wording and code; the SDK's own message is never passed on.
+      if (error instanceof Anthropic.APIError) {
+        const code = codeForSdkError(error);
+        return code === "timeout" ? tooLong() : unreachable(code);
+      }
+      if (error?.name === "TimeoutError" || error?.name === "AbortError") return tooLong();
       throw error;
     }
 
     // Check the stop reason before looking at content: a cut-off or refused turn
     // can contain a half-written tool call that must never be used.
-    if (response.stop_reason === "refusal") return REFUSED;
-    if (response.stop_reason === "max_tokens") return TOO_LONG;
+    if (response.stop_reason === "refusal") return refused();
+    if (response.stop_reason === "max_tokens") return tooLong("cut_off");
 
     const calls = response.content.filter((b) => b.type === "tool_use");
     if (calls.length === 0) {
       const text = textOf(response.content);
-      return text ? { kind: "message", text } : NO_ANSWER;
+      return text ? { kind: "message", text } : noAnswer();
     }
 
     const results = [];
@@ -239,5 +277,5 @@ export async function askClaude({
     messages.push({ role: "assistant", content: response.content });
     messages.push({ role: "user", content: results });
   }
-  return TOO_LONG;
+  return tooLong();
 }

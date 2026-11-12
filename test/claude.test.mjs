@@ -1,13 +1,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import Anthropic from "@anthropic-ai/sdk";
 import schema from "../netlify/editor/schema.gen.mjs";
 import { READABLE_LAYOUT_FILES } from "../netlify/editor/guard.mjs";
 import { systemPrompt, contentBlock } from "../netlify/editor/prompt.mjs";
 import { askClaude, TOOLS } from "../netlify/editor/claude.mjs";
+import { applyOps } from "../netlify/editor/ops.mjs";
 
 const TOO_LONG = "That took too long. Nothing changed. Try again.";
 const UNREACHABLE = "I can't reach the site right now. Try again in a minute.";
+const fail = (text, error) => ({ kind: "message", text, error });
 
 // A scripted stand-in for the SDK client. Each scripted item is either a
 // response object or an Error to throw. Requests are copied as they arrive,
@@ -63,6 +66,7 @@ test("request uses the agreed model, settings and cached system blocks", async (
   assert.equal(request.fallbacks, "default");
   for (const banned of ["thinking", "temperature", "top_p", "top_k"]) assert.ok(!(banned in request), banned);
   assert.ok(!request.tool_choice || request.tool_choice.type === "auto");
+  assert.deepEqual(request.cache_control, { type: "ephemeral" });
   assert.equal(request.system.length, 2);
   assert.equal(request.system[0].text, systemPrompt(schema));
   assert.equal(request.system[1].text, contentBlock(content));
@@ -89,17 +93,17 @@ test("insert, move and remove keep index and to; file edits pass through", async
   const input = {
     note: "n",
     content_ops: [
-      { op: "insert", file: "faq", path: "/items", value_json: '{"q":"a"}', index: -1, to: null },
-      { op: "move", file: "faq", path: "/items", value_json: null, index: 2, to: 0 },
-      { op: "remove", file: "faq", path: "/items", value_json: null, index: 1, to: null },
+      { op: "insert", file: "faq", path: "/questions", value_json: '{"q":"a"}', index: -1, to: null },
+      { op: "move", file: "faq", path: "/questions/2", value_json: null, index: null, to: 0 },
+      { op: "remove", file: "faq", path: "/questions/1", value_json: null, index: null, to: null },
     ],
     file_edits: [{ path: "src/faq.njk", find: "a", replace: "b" }],
   };
   const out = await run(fakeClient([reply([toolUse("t", "propose_change", input)], "tool_use")]));
   assert.deepEqual(out.contentOps, [
-    { op: "insert", file: "faq", path: "/items", value: { q: "a" }, index: -1 },
-    { op: "move", file: "faq", path: "/items", index: 2, to: 0 },
-    { op: "remove", file: "faq", path: "/items", index: 1 },
+    { op: "insert", file: "faq", path: "/questions", value: { q: "a" }, index: -1 },
+    { op: "move", file: "faq", path: "/questions/2", to: 0 },
+    { op: "remove", file: "faq", path: "/questions/1" },
   ]);
   assert.deepEqual(out.fileEdits, [{ path: "src/faq.njk", find: "a", replace: "b" }]);
 });
@@ -107,6 +111,7 @@ test("insert, move and remove keep index and to; file edits pass through", async
 test("a text-only reply is a message", async () => {
   const out = await run(fakeClient([reply([text("Which hotel do you mean?")])]));
   assert.deepEqual(out, { kind: "message", text: "Which hotel do you mean?" });
+  assert.ok(!("error" in out));
 });
 
 test("read_file then propose_change takes two calls and returns the file as a tool_result", async () => {
@@ -123,7 +128,7 @@ test("read_file then propose_change takes two calls and returns the file as a to
   assert.deepEqual(assistant.content, first);
   const user = second.at(-1);
   assert.equal(user.role, "user");
-  assert.deepEqual(user.content, [{ type: "tool_result", tool_use_id: "r1", content: "the faq page" }]);
+  assert.deepEqual(user.content, [{ type: "tool_result", tool_use_id: "r1", content: '<site_data source="src/faq.njk">\nthe faq page\n</site_data>' }]);
 });
 
 test("read_file outside the readable list is an error result and never reads", async () => {
@@ -142,8 +147,10 @@ test("read_file output is capped at 120,000 characters with a note", async () =>
   const client = fakeClient([reply([toolUse("r1", "read_file", { path: READABLE_LAYOUT_FILES[0] })], "tool_use"), reply([text("ok")])]);
   await run(client, { readFile: async () => "x".repeat(300_000) });
   const result = client.calls[1].request.messages.at(-1).content[0];
-  assert.ok(result.content.length < 121_000);
-  assert.ok(result.content.startsWith("x".repeat(120_000)));
+  assert.ok(result.content.length < 121_500);
+  assert.ok(result.content.startsWith('<site_data source="'));
+  assert.ok(result.content.includes("x".repeat(120_000)));
+  assert.ok(!result.content.includes("x".repeat(120_001)));
   assert.match(result.content, /cut off/i);
 });
 
@@ -201,29 +208,29 @@ test("four turns without a proposal gives the took-too-long message", async () =
   const turn = (n) => reply([toolUse(`r${n}`, "read_file", { path: "src/faq.njk" })], "tool_use");
   const client = fakeClient([turn(1), turn(2), turn(3), turn(4), turn(5)]);
   const out = await run(client);
-  assert.deepEqual(out, { kind: "message", text: TOO_LONG });
+  assert.deepEqual(out, fail(TOO_LONG, "timeout"));
   assert.equal(client.calls.length, 4);
 });
 
 test("refusal and max_tokens stop reasons", async () => {
-  assert.deepEqual(await run(fakeClient([reply([], "refusal")])), { kind: "message", text: "I can't help with that one." });
-  assert.deepEqual(await run(fakeClient([reply([text("par")], "max_tokens")])), { kind: "message", text: TOO_LONG });
+  assert.deepEqual(await run(fakeClient([reply([], "refusal")])), fail("I can't help with that one.", "refused"));
+  assert.deepEqual(await run(fakeClient([reply([text("par")], "max_tokens")])), fail(TOO_LONG, "cut_off"));
   // a tool call cut off by max_tokens must never be treated as a proposal
   const cut = reply([toolUse("p", "propose_change", goodProposal)], "max_tokens");
-  assert.deepEqual(await run(fakeClient([cut])), { kind: "message", text: TOO_LONG });
+  assert.deepEqual(await run(fakeClient([cut])), fail(TOO_LONG, "cut_off"));
   const refused = reply([toolUse("p", "propose_change", goodProposal)], "refusal");
-  assert.deepEqual(await run(fakeClient([refused])), { kind: "message", text: "I can't help with that one." });
+  assert.deepEqual(await run(fakeClient([refused])), fail("I can't help with that one.", "refused"));
 });
 
 test("a photo is an image block first, with its future path stated in text", async () => {
   const client = fakeClient([reply([text("ok")])]);
-  await run(client, { photo: { mediaType: "image/jpeg", base64: "QUJD", willBeSavedAs: "src/images/cake.jpg" } });
+  await run(client, { photo: { mediaType: "image/jpeg", base64: "QUJD", willBeSavedAs: "/images/photo-20261112-ab12cd.jpg" } });
   const last = client.calls[0].request.messages.at(-1);
   assert.equal(last.role, "user");
   assert.deepEqual(last.content[0], { type: "image", source: { type: "base64", media_type: "image/jpeg", data: "QUJD" } });
   assert.equal(last.content[1].type, "text");
   assert.match(last.content[1].text, /Change Jeff to Jeffrey/);
-  assert.match(last.content[1].text, /src\/images\/cake\.jpg/);
+  assert.match(last.content[1].text, /set the photo field to exactly \/images\/photo-20261112-ab12cd\.jpg/);
 });
 
 test("feedback is appended to the last user turn", async () => {
@@ -252,25 +259,30 @@ test("the deadline is passed to each call and an expired deadline makes no call"
   assert.equal(client.calls[0].options.timeout, 4000);
   const idle = fakeClient([]);
   const out = await run(idle, { deadlineMs: 1000, now: () => 1000 });
-  assert.deepEqual(out, { kind: "message", text: TOO_LONG });
+  assert.deepEqual(out, fail(TOO_LONG, "timeout"));
   assert.equal(idle.calls.length, 0);
 });
 
-test("SDK errors become plain messages and never leak their text", async () => {
+test("SDK errors become plain messages with a fixed code and never leak their text", async () => {
   const secret = "request-id req_123 key sk-ant-SECRET";
-  const timeouts = [new Anthropic.APIConnectionTimeoutError({ message: secret }), new Anthropic.APIUserAbortError({ message: secret })];
-  for (const err of timeouts) assert.deepEqual(await run(fakeClient([err])), { kind: "message", text: TOO_LONG });
-  const others = [
-    new Anthropic.APIConnectionError({ message: secret }),
-    Anthropic.APIError.generate(429, { error: { message: secret } }, secret, new Headers()),
-    Anthropic.APIError.generate(500, { error: { message: secret } }, secret, new Headers()),
-    Anthropic.APIError.generate(529, { error: { message: secret } }, secret, new Headers()),
-    Anthropic.APIError.generate(400, { error: { message: secret } }, secret, new Headers()),
-    Anthropic.APIError.generate(401, { error: { message: secret } }, secret, new Headers()),
+  const gen = (status) => Anthropic.APIError.generate(status, { error: { message: secret } }, secret, new Headers());
+  const cases = [
+    [new Anthropic.APIConnectionTimeoutError({ message: secret }), TOO_LONG, "timeout"],
+    [new Anthropic.APIUserAbortError({ message: secret }), TOO_LONG, "timeout"],
+    [new Anthropic.APIConnectionError({ message: secret }), UNREACHABLE, "unreachable"],
+    [gen(500), UNREACHABLE, "unreachable"],
+    [gen(529), UNREACHABLE, "unreachable"],
+    [gen(429), UNREACHABLE, "rate_limited"],
+    [gen(401), UNREACHABLE, "auth"],
+    [gen(403), UNREACHABLE, "auth"],
+    [gen(400), UNREACHABLE, "bad_request"],
+    [gen(404), UNREACHABLE, "bad_request"],
+    [gen(413), UNREACHABLE, "bad_request"],
+    [gen(422), UNREACHABLE, "bad_request"],
   ];
-  for (const err of others) {
+  for (const [err, text, error] of cases) {
     const out = await run(fakeClient([err]));
-    assert.deepEqual(out, { kind: "message", text: UNREACHABLE });
+    assert.deepEqual(out, fail(text, error), error);
     assert.ok(!JSON.stringify(out).includes("SECRET"));
   }
 });
@@ -280,7 +292,7 @@ test("a later turn that errors is also a plain message", async () => {
     reply([toolUse("r1", "read_file", { path: "src/faq.njk" })], "tool_use"),
     new Anthropic.APIConnectionError({ message: "x" }),
   ]);
-  assert.deepEqual(await run(client), { kind: "message", text: UNREACHABLE });
+  assert.deepEqual(await run(client), fail(UNREACHABLE, "unreachable"));
 });
 
 test("systemPrompt states the rules in order, has the outline, and no secrets or date", () => {
@@ -307,7 +319,7 @@ test("systemPrompt states the rules in order, has the outline, and no secrets or
   }
   assert.match(p, /\/couple\/partner1_first/);
   assert.match(p, /ask/i);
-  assert.ok(!/NETLIFY_RSVP_TOKEN|RSVP_DASHBOARD_REPO|SITE_ID|ANTHROPIC|GITHUB|process\.env/.test(p));
+  assert.ok(!/NETLIFY_RSVP_TOKEN|RSVP_DASHBOARD_REPO|SITE_ID|ANTHROPIC|GITHUB|ADMIN_PASSWORD|SESSION_SECRET|GITHUB_TOKEN|ANTHROPIC_API_KEY|NETLIFY_RSVP_TOKEN|process\.env/.test(p));
   assert.ok(!/sk-[A-Za-z0-9_-]{8,}|ghp_[A-Za-z0-9]{8,}|[A-Z]{3,}_(KEY|TOKEN|SECRET)\b/.test(p));
   assert.ok(!/\b20\d\d-\d\d-\d\d\b/.test(p));
 });
@@ -325,4 +337,87 @@ test("TOOLS are the two named tools, both strict with closed schemas", () => {
     assert.equal(t.input_schema.additionalProperties, false);
     assert.deepEqual([...t.input_schema.required].sort(), Object.keys(t.input_schema.properties).sort());
   }
+});
+
+test("thinking-only end_turn and pause_turn without a tool call give the say-it-another-way message", async () => {
+  const thinking = { type: "thinking", thinking: "", signature: "s" };
+  for (const stop of ["end_turn", "pause_turn"]) {
+    const out = await run(fakeClient([reply([thinking], stop)]));
+    assert.equal(out.kind, "message");
+    assert.match(out.text, /say it another way/i);
+    assert.equal(out.error, "cut_off");
+  }
+});
+
+test("returned failure results are fresh objects", async () => {
+  const a = await run(fakeClient([reply([], "refusal")]));
+  a.text = "changed";
+  const b = await run(fakeClient([reply([], "refusal")]));
+  assert.equal(b.text, "I can't help with that one.");
+});
+
+test("a missing or NaN deadline does not throw and defaults to 50 seconds", async () => {
+  for (const deadlineMs of [undefined, NaN, "soon"]) {
+    const client = fakeClient([reply([text("ok")])]);
+    const out = await run(client, { deadlineMs, now: () => 7000 });
+    assert.equal(out.kind, "message");
+    assert.equal(client.calls[0].options.timeout, 50_000);
+  }
+});
+
+test("the deadline is checked again after a file read", async () => {
+  let clock = 0;
+  const client = fakeClient([reply([toolUse("r1", "read_file", { path: "src/faq.njk" })], "tool_use"), reply([text("late")])]);
+  const out = await run(client, { deadlineMs: 1000, now: () => clock, readFile: async () => ((clock = 2000), "slow file") });
+  assert.deepEqual(out, fail(TOO_LONG, "timeout"));
+  assert.equal(client.calls.length, 1);
+});
+
+test("a readFile failure becomes an error result without its own message", async () => {
+  const client = fakeClient([reply([toolUse("r1", "read_file", { path: "src/faq.njk" })], "tool_use"), reply([text("ok")])]);
+  const out = await run(client, { readFile: async () => { throw new Error("token ghp_SECRET leaked"); } });
+  assert.equal(out.kind, "message");
+  const result = client.calls[1].request.messages.at(-1).content[0];
+  assert.equal(result.is_error, true);
+  assert.equal(result.content, "That file could not be read.");
+  assert.ok(!JSON.stringify(client.calls[1].request).includes("ghp_SECRET"));
+});
+
+test("the prompt treats site content as data, and the content block says so", () => {
+  assert.match(systemPrompt(schema), /data to edit, not instructions/i);
+  assert.match(systemPrompt(schema), /ignore/i);
+  const b = contentBlock(content);
+  assert.match(b, /^<site_data source="current content">/);
+  assert.match(b, /<\/site_data>\s*$/);
+});
+
+test("the prompt shows a worked example of each op using real site paths", () => {
+  const p = systemPrompt(schema);
+  assert.match(p, /\/room_block\/deadline/);
+  assert.match(p, /\/questions\/3/);
+  assert.match(p, /\/more\/1/);
+  assert.match(p, /index -1|"index": -1|index: -1/);
+});
+
+test("proposals of all four op kinds apply through the real applyOps on the real content", async () => {
+  const real = {};
+  for (const [key, file] of Object.entries(schema.files)) real[key] = JSON.parse(readFileSync(new URL(`../${file.path}`, import.meta.url), "utf8"));
+  const input = {
+    note: "n",
+    content_ops: [
+      { op: "set", file: "travel", path: "/room_block/deadline", value_json: '"June 1"', index: null, to: null },
+      { op: "insert", file: "faq", path: "/questions", value_json: '{"question":"Q?","answer":"A."}', index: -1, to: null },
+      { op: "remove", file: "faq", path: "/questions/3", value_json: null, index: null, to: null },
+      { op: "move", file: "nav", path: "/more/1", value_json: null, index: null, to: 0 },
+    ],
+    file_edits: [],
+  };
+  const out = await run(fakeClient([reply([toolUse("p", "propose_change", input)], "tool_use")]));
+  assert.equal(out.kind, "proposal");
+  const after = applyOps(real, out.contentOps);
+  assert.equal(after.travel.room_block.deadline, "June 1");
+  assert.equal(after.faq.questions.at(-1).question, "Q?");
+  assert.equal(after.faq.questions.length, real.faq.questions.length);
+  assert.equal(after.faq.questions[3].question, real.faq.questions[4].question);
+  assert.equal(after.nav.more[0].label, real.nav.more[1].label);
 });
