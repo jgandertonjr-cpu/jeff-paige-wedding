@@ -74,6 +74,10 @@ test("src/admin/admin.js uses no word Paige would have to look up in its strings
   assert.deepEqual(hits(stringLiterals(read("src/admin/admin.js"))), []);
 });
 
+test("src/admin/deadline.js uses no word Paige would have to look up in its strings", () => {
+  assert.deepEqual(hits(stringLiterals(read("src/admin/deadline.js"))), []);
+});
+
 for (const rel of PAGES) {
   test(`${rel} is private, carries the content policy, and has no inline script or style`, () => {
     const metas = [];

@@ -33,6 +33,7 @@
     noRecent: "Nothing has been changed here yet.",
     loadingRecent: "Getting the list.",
     checkPrefix: "Please check: ",
+    oneMoment: "One moment…",
   };
 
   const $ = (id) => document.getElementById(id);
@@ -63,6 +64,7 @@
     message: $("message"),
     send: $("send"),
     counter: $("counter"),
+    composerStatus: $("composer-status"),
     scroller: $("scroller"),
   };
 
@@ -73,28 +75,37 @@
 
   class SignedOut extends Error {}
   class Unreachable extends Error {}
+  class TimedOut extends Unreachable {} // no answer in time; the request may still have arrived
 
   // Resolves to the response body (which may carry { error }). Throws SignedOut on
-  // a 401 from a signed-in route and Unreachable when the server can't be reached.
+  // a 401 from a signed-in route, TimedOut when no answer comes before the
+  // deadline, and Unreachable when the server can't be reached.
   async function api(route, method, body) {
-    let res;
+    const { deadlineFor, withDeadline } = window.editorDeadline;
+    let answer;
     try {
-      res = await fetch(API + route, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: body === undefined ? undefined : JSON.stringify(body),
-        credentials: "same-origin",
+      answer = await withDeadline(deadlineFor(route), async (signal) => {
+        const res = await fetch(API + route, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: body === undefined ? undefined : JSON.stringify(body),
+          credentials: "same-origin",
+          signal,
+        });
+        let data = null;
+        try {
+          data = await res.json();
+        } catch {
+          if (signal.aborted) throw new Error("stopped");
+          data = null;
+        }
+        return { status: res.status, data };
       });
-    } catch {
-      throw new Unreachable();
+    } catch (err) {
+      throw err && err.timedOut ? new TimedOut() : new Unreachable();
     }
-    let data = null;
-    try {
-      data = await res.json();
-    } catch {
-      data = null;
-    }
-    if (res.status === 401 && route !== "login") throw new SignedOut();
+    const { status, data } = answer;
+    if (status === 401 && route !== "login") throw new SignedOut();
     if (!data || typeof data !== "object") throw new Unreachable();
     return data;
   }
@@ -243,8 +254,9 @@
 
   // ---- the text box ---------------------------------------------------------
 
-  let asking = false;
+  let asking = false; // while true the text box is read-only, so nothing typed can be lost
   let photo = null; // { base64, thumbUrl } once ready
+  const typePlaceholder = ui.message.placeholder;
   let readyingPhoto = false;
 
   function saveDraft(text) {
@@ -286,6 +298,10 @@
     ui.send.disabled = asking || readyingPhoto || !ui.message.value.trim();
     ui.photoButton.disabled = asking || readyingPhoto;
     ui.chipRemove.disabled = asking || readyingPhoto;
+    ui.message.readOnly = asking;
+    ui.message.placeholder = asking ? SAY.oneMoment : typePlaceholder;
+    const hint = asking ? SAY.oneMoment : "";
+    if (ui.composerStatus.textContent !== hint) ui.composerStatus.textContent = hint;
     fitMessage();
   }
 
@@ -308,6 +324,7 @@
 
   for (const example of document.querySelectorAll(".example")) {
     example.addEventListener("click", () => {
+      if (asking) return;
       ui.message.value = example.textContent.trim();
       saveDraft(ui.message.value);
       updateComposer();
@@ -341,7 +358,8 @@
     updateComposer();
 
     // Nothing happened, so offer the request again: the "you" bubble goes, and the
-    // text and photo return to the box, unless she has typed something new meanwhile.
+    // text and photo return to the box. The box is read-only while asking, so it is
+    // empty; if it somehow is not, what is there is never overwritten.
     const putBack = () => {
       mine.remove();
       if (ui.message.value.trim()) {
@@ -550,6 +568,9 @@
         }
         return data;
       } catch (err) {
+        // A preview or publish with no answer may still have reached the site,
+        // so it is never simply offered again: the caller asks where it got to.
+        if (err instanceof TimedOut && (route === "preview" || route === "publish")) return { timedOut: true };
         failed(err);
         return null;
       } finally {
@@ -557,9 +578,56 @@
       }
     }
 
+    // After a preview or publish went unanswered: ask the site once where this
+    // change got to, and carry on from there. `was` is the card's state before.
+    async findOut(stage, was) {
+      this.busy = true;
+      this.said = "";
+      this.render();
+      let data = null;
+      try {
+        data = await api(`status?id=${encodeURIComponent(this.id)}`, "GET");
+      } catch (err) {
+        if (err instanceof SignedOut) {
+          this.busy = false;
+          showSignIn();
+          return;
+        }
+      }
+      this.busy = false;
+      if (!data || data.error) {
+        this.lost = { stage, was };
+        this.state = "unreachable";
+        this.said = SAY.cantReach;
+      } else if (data.state === "failed") {
+        this.stopPolling();
+        this.said = data.text || SAY.wentWrong;
+        this.state = "failed";
+      } else if (data.stage === "publish") {
+        // It went through. The server names an edit after its first summary line.
+        this.title = this.title || (this.summary[0] || "Site change").replace(/^Please check: /, "").slice(0, 72);
+        this.state = "publishing";
+        this.poll("publish");
+      } else if (stage === "preview") {
+        this.state = "previewing";
+        this.poll("preview");
+      } else {
+        // Not published (yet): back to where it was. Publishing again is safe now,
+        // because the site says whether it is already under way or done.
+        this.state = was;
+        this.said = SAY.cantReach;
+      }
+      this.render(true);
+    }
+
     async requestPreview() {
+      const was = this.state;
       this.state = "previewing";
       const data = await this.call("preview", { id: this.id });
+      if (data && data.timedOut) {
+        await this.findOut("preview", was);
+        return;
+      }
       if (data && data.ok) {
         this.poll("preview");
       } else if (data) {
@@ -574,7 +642,12 @@
     }
 
     async publish() {
+      const was = this.state;
       const data = await this.call("publish", { id: this.id });
+      if (data && data.timedOut) {
+        await this.findOut("publish", was);
+        return;
+      }
       if (data && data.ok) {
         this.title = data.title || "";
         this.state = "publishing";
@@ -828,6 +901,11 @@
           body();
           status(SAY.slow);
           actions(button("Check again", "line", () => this.checkAgain()));
+          break;
+        case "unreachable": // a preview or publish went unanswered and the site could not say where it got to
+          head("Here's what will change");
+          body();
+          actions(button("Check again", "line", () => this.findOut(this.lost.stage, this.lost.was)));
           break;
         case "cancelled":
           parts.push(el("p", { className: "card-status", text: SAY.cancelled }));

@@ -442,7 +442,6 @@ body.editor { overflow: hidden; overscroll-behavior: none; }
   height: 1px;
   background: var(--gold-rule);
 }
-.card:focus { outline: none; }
 .card-title {
   font-family: var(--serif);
   font-weight: 400;
