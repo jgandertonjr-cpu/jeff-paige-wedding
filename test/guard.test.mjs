@@ -202,3 +202,72 @@ test("scroll-behavior is fine but behavior: is still refused", () => {
   assert.ok(flagged(CSS, "behavior: url(x.htc)"));
   assert.ok(flagged(CSS, "a{color:red;behavior:url(x.htc)}"));
 });
+
+// Task 18 A: expressions inside added template tags must not be able to run code during the site build.
+test("template expressions that could reach code at build time are refused", () => {
+  const payload = `{{ range.constructor("return global.process.mainModule.require('child_process').execSync('env')")() }}`;
+  const cases = [
+    [payload],
+    [`{{ range["constr"+"uctor"]("return 1")() }}`],
+    [`{{ range["constr" ~ "uctor"] }}`],
+    [`{% set f = "constr" ~ "uctor" %}`],
+    [`{% set f = "constr" + "uctor" %}`],
+    [`{% set f = "con{# x #}structor" %}`],
+    ["{{ range.constructor(", "\"return 1\")() }}"],
+    ["{{ range.", "constructor }}"],
+    ["{% set f = range.constructor %}"],
+    ['{{ f("x")() }}'],
+    ['{{ x["constructor"] }}'],
+    ["{{ ''.constructor }}"],
+    ["{{ x.y(1) }}"],
+    ["{{ x . y (1) }}"],
+    ["{{ x.y", "(1) }}"],
+    ["{{ (x)(1) }}"],
+    ["{{ 'a'(1) }}"],
+    ["{{ x | first }}{{ range(3) }}"],
+    ["{{ __proto__ }}"],
+    ["{{ x.prototype }}"],
+    ["{{ x.Process }}"],
+    ["{{ require }}"],
+    ["{{ globalThis }}"],
+    ["{{ x.mainModule }}"],
+    ["{{ env }}"],
+    ["{{ eval }}"],
+    ["{{ Function }}"],
+    ["{{ cycler }}"],
+    ["{{ joiner }}"],
+    ["{{ `x` }}"],
+    ["{{ a ~ b }}"],
+    ["{{ x &#91;0&#93; }}"],
+    ["{{ x | safe }}"],
+    ["{{ x | dump }}"],
+    ["{{ range.constructor"],
+    ["{% set f = range.constructor"],
+    ["range.constructor }}"],
+    ["{{ x", "[0] }}"],
+  ];
+  for (const lines of cases) assert.ok(flagged(NJK, ...lines), JSON.stringify(lines));
+});
+
+test("ordinary template expressions still pass", () => {
+  const ok = [
+    ["{{ travel.labels.plan_your_trip }}"],
+    ['{{ site.wedding_date | dateFormat("long") }}'],
+    ["{% if details.reception.subtitle | length > 120 %}", "<p>Long</p>", "{% endif %}"],
+    ["{% for item in travel.tips.list %}", "<li>{{ item }}</li>", "{% endfor %}"],
+    ["{{ item.image | relUrl }}"],
+    ["{{ ceremony(alt) }}"],
+    ["{% set v = site.venue %}"],
+    ['{{ (v.city + ", " + v.state) | nbsp }}'],
+    ["{% if not (a or b) %}x{% endif %}"],
+    ['{{ icon("star", "small") }}'],
+  ];
+  for (const lines of ok) assert.deepEqual(checkLayoutEdit({ path: NJK, before, after: addLines(...lines) }), [], JSON.stringify(lines));
+});
+
+test("-ms-behavior is refused like behavior", () => {
+  assert.ok(flagged(CSS, "-ms-behavior: url(x.htc)"));
+  assert.ok(flagged(CSS, "a{-ms-behavior:url(x.htc)}"));
+  assert.ok(!flagged(CSS, "scroll-behavior: smooth;"));
+  assert.ok(!flagged(CSS, "overscroll-behavior: contain;"));
+});

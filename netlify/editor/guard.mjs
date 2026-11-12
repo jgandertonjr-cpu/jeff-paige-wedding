@@ -64,10 +64,110 @@ const RULES = [
   rule(/\{%-?\s*(end)?(autoescape|filter|raw|verbatim|include|import|from|extends|block)\b/i, "A new line uses a template instruction that is not allowed.", { scope: "njk" }),
   rule(/https?:\s*\/\s*\//i, "A new style line refers to another website, which is not allowed.", { scope: "css" }),
   rule(/(^|[\s'"(=,:])\/\/[a-z0-9]/im, "A new style line refers to another website, which is not allowed.", { scope: "css", loose: false }),
-  rule(/image-set\s*\(|expression\s*\(|(^|[^a-z-])behavior\s*:|-moz-binding/i, "A new style line uses a feature that is not allowed.", { scope: "css" }),
+  rule(/image-set\s*\(|expression\s*\(|(^|[^a-z-])behavior\s*:|(^|[^a-z])-[a-z]+-behavior\s*:|-moz-binding/i, "A new style line uses a feature that is not allowed.", { scope: "css" }),
 ];
 
 const lineSet = (text) => new Set(text.split("\n").map((l) => l.trim()));
+
+// Template expressions. Eleventy renders the templates during the site build
+// with the build's secrets present, so an added {{ … }} or {% … %} must not be
+// able to reach JavaScript's Function. Plain property reads, filters, macro
+// calls and grouping stay allowed; everything that could climb out does not.
+const EXPRESSION_PROBLEM = "A new line adds a template expression that could run hidden code, which is not allowed.";
+const EXPRESSION_WORDS = new Set([
+  "constructor", "__proto__", "prototype", "process", "require", "global", "globalthis", "mainmodule",
+  "env", "import", "eval", "function", "cycler", "joiner", "range",
+]);
+const STRING_LITERAL = /"(?:\\[\s\S]|[^"\\])*(?:"|$)|'(?:\\[\s\S]|[^'\\])*(?:'|$)/g;
+const IDENT = /[A-Za-z_$][\w$]*/g;
+// What may come directly before a "(" that only groups: an operator, a
+// separator, or the start of the expression.
+const GROUPING_BEFORE = /[(,|+\-*/%=<>!:?{]$/;
+
+// Split text into the code inside every {{ … }} and {% … %}, read the way the
+// template engine reads it: comments outside tags are skipped, a closing mark
+// inside a quoted string does not close the tag, a tag left open runs to the
+// end, and a closing mark with no opener before it closes code that began
+// earlier. Returns [{ start, end }] offsets into text.
+function codeRegions(text) {
+  const regions = [];
+  let i = 0;
+  const firstOpen = text.search(/\{\{|\{%/);
+  const firstClose = text.search(/\}\}|%\}/);
+  if (firstClose !== -1 && (firstOpen === -1 || firstClose < firstOpen)) {
+    regions.push({ start: 0, end: firstClose });
+    i = firstClose + 2;
+  }
+  while (i < text.length) {
+    const two = text.slice(i, i + 2);
+    if (two === "{#") {
+      const close = text.indexOf("#}", i + 2);
+      i = close === -1 ? text.length : close + 2;
+      continue;
+    }
+    if (two !== "{{" && two !== "{%") { i += 1; continue; }
+    const start = i + 2;
+    let j = start;
+    let quote = null;
+    while (j < text.length) {
+      const c = text[j];
+      if (quote) {
+        if (c === "\\") j += 1;
+        else if (c === quote) quote = null;
+      } else if (c === '"' || c === "'") quote = c;
+      else if ((c === "}" || c === "%") && text[j + 1] === "}") break;
+      j += 1;
+    }
+    const end = Math.min(j, text.length);
+    regions.push({ start, end });
+    i = end + 2;
+  }
+  return regions;
+}
+
+const words = (text) => (text.match(IDENT) || []).map((w) => w.toLowerCase());
+
+// One expression's text. `spaced` is false for the copy with all whitespace
+// removed, where words have run together and only the character and word
+// rules are meaningful.
+function unsafeExpression(code, { spaced = true } = {}) {
+  if (/[[\]~`]/.test(code)) return true;
+  const joined = code.replace(/["'~+\s]/g, "");
+  if ([...words(code), ...words(joined)].some((w) => EXPRESSION_WORDS.has(w))) return true;
+  if (!spaced) return false;
+  const bare = code.replace(STRING_LITERAL, (m) => m[0] + m[0]);
+  if (/\.\s*[A-Za-z_$][\w$]*\s*\(/.test(bare)) return true;
+  for (let k = bare.indexOf("("); k !== -1; k = bare.indexOf("(", k + 1)) {
+    const lead = bare.slice(0, k).trimEnd();
+    if (lead === "" || GROUPING_BEFORE.test(lead)) continue;
+    if (/[\w$]$/.test(lead) && !/\.\s*[\w$]+$/.test(lead) && !/^\d/.test(lead.match(/[\w$]+$/)[0])) continue;
+    return true;
+  }
+  return false;
+}
+
+const expressionsIn = (text) => codeRegions(text).map((r) => text.slice(r.start, r.end));
+
+// The code an edit adds: for each tag in the finished file, the parts of it
+// that sit on added lines (so a line added inside an existing multi-line tag
+// is checked too), plus every tag found in the normalised added block.
+function addedExpressions(after, isAdded, block) {
+  const lineStarts = [0];
+  for (let k = 0; k < after.length; k += 1) if (after[k] === "\n") lineStarts.push(k + 1);
+  const lines = after.split("\n");
+  const found = [];
+  for (const r of codeRegions(after)) {
+    const parts = [];
+    for (let n = 0; n < lines.length; n += 1) {
+      const ls = lineStarts[n];
+      const le = ls + lines[n].length;
+      if (le < r.start || ls > r.end || !isAdded(lines[n])) continue;
+      parts.push(after.slice(Math.max(ls, r.start), Math.min(le, r.end)));
+    }
+    if (parts.length) found.push(normalise(parts.join("\n")));
+  }
+  return [...found, ...expressionsIn(block)];
+}
 
 export function checkLayoutEdit({ path: filePath, before, after } = {}) {
   if (typeof before !== "string" || typeof after !== "string") {
@@ -90,6 +190,15 @@ export function checkLayoutEdit({ path: filePath, before, after } = {}) {
     { text: block.replace(/\s+/g, ""), loose: true },
   ];
   const seen = new Set();
+  if (kind !== "css") {
+    const isAdded = (l) => l.trim() !== "" && !old.has(l.trim());
+    const spacedHit = addedExpressions(after, isAdded, block).some((e) => unsafeExpression(e));
+    const strippedHit = expressionsIn(block.replace(/\s+/g, "")).some((e) => unsafeExpression(e, { spaced: false }));
+    if (spacedHit || strippedHit) {
+      seen.add(EXPRESSION_PROBLEM);
+      problems.push(EXPRESSION_PROBLEM);
+    }
+  }
   for (const r of RULES.filter(applies)) {
     const hit = variants.some((v) => (r.loose || !v.loose) && r.re.test(v.text));
     if (hit && !seen.has(r.problem)) {
