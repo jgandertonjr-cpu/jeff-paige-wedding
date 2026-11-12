@@ -1309,7 +1309,7 @@ main .form-success .section-ornament { display: block; }
   .hero__and { background-image: var(--gold-text-hero); }
   .amp { padding: 0.3em 0.18em; margin: -0.3em -0.14em; }
   /* The logo's own margin (0 0.02em) outranks the line above; give the padding back so the link keeps its height */
-  .site-logo .amp { margin: -0.3em -0.16em; }
+  .site-logo .amp { margin: -0.3em 0.02em; }
   .hero__and { --amp-room: 0.24em; padding: calc(0.08em + var(--amp-room)) 0.2em; }
   .footer__monogram .amp { background-image: var(--gold-text-on-sage); }
 }
