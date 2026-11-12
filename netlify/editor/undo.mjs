@@ -51,8 +51,8 @@ export async function undoEdit(deps, sha) {
 
     const now = filePaths.length ? await repo.readFiles(filePaths, base.sha) : {};
     for (const p of layoutPaths) {
-      if (atParent[p] === atEdit[p] || typeof atParent[p] !== "string") continue;
-      if (now[p] === atEdit[p]) {
+      if (atParent[p] === atEdit[p]) continue;
+      if (typeof atParent[p] === "string" && now[p] === atEdit[p]) {
         files[p] = atParent[p];
         restored.push(layoutLabel(p));
       } else {

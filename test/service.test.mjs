@@ -89,6 +89,9 @@ const say = (text) => ({ stop_reason: "end_turn", content: [{ type: "text", text
 const set = (file, p, value) => ({ op: "set", file, path: p, value });
 
 // Records which keys were ever given a value, so "stores nothing" can be checked.
+// Behaves like the production compare-and-swap store at its worst: every
+// update first runs `fn` on the value as it was when update was called (a
+// losing attempt whose result is thrown away), then again on the real value.
 function recordingStore() {
   const inner = memoryStore();
   const written = new Set();
@@ -97,8 +100,10 @@ function recordingStore() {
     get: (k) => inner.get(k),
     delete: (k) => inner.delete(k),
     async set(k, v) { written.add(k); return inner.set(k, v); },
-    async update(k, fn) {
+    update(k, fn) {
+      const stale = inner.get(k); // read now, before any queued update lands
       return inner.update(k, async (cur) => {
+        await fn(await stale);
         const next = await fn(cur);
         if (next !== null) written.add(k);
         return next;
@@ -397,10 +402,8 @@ test("a double tap publishing at the same moment writes once", async () => {
     t.client.queue(propose([DEADLINE]));
     const r = await ask(t.deps, { message: "deadline" });
     const results = await Promise.all([publish(t.deps, r.id), publish(t.deps, r.id)]);
-    assert.equal(results.filter((x) => x.ok).length >= 1, true);
-    for (const x of results) {
-      if (!x.ok) assert.equal(x.text, "That is already being published.");
-    }
+    assert.equal(results.filter((x) => x.ok).length, 1);
+    assert.deepEqual(results.find((x) => !x.ok), { ok: false, text: "That is already being published." });
     assert.equal((await t.repo.edits(10)).length, 1);
   } finally {
     await t.cleanup();
@@ -677,7 +680,12 @@ test("status after publish reports the live site; a failure is undone once and s
     assert.deepEqual(await status(t.deps, { id: r.id }), { stage: "publish", state: "building" });
     t.netlify.states.set(sha, "failed");
     const polls = await Promise.all([status(t.deps, { id: r.id }), status(t.deps, { id: r.id })]);
-    for (const s of polls) assert.deepEqual(seen(s), { stage: "publish", state: "failed", text: PUT_BACK });
+    // One poll puts the site back; the other is told it is still under way.
+    assert.deepEqual(polls.map(seen).sort((a, b) => a.state.localeCompare(b.state)), [
+      { stage: "publish", state: "building" },
+      { stage: "publish", state: "failed", text: PUT_BACK },
+    ]);
+    assert.deepEqual(await status(t.deps, { id: r.id }), { stage: "publish", state: "failed", text: PUT_BACK });
     const edits = await t.repo.edits(10);
     assert.equal(edits.length, 2);
     assert.match(edits[0].title, /^Undo — /);
@@ -825,6 +833,160 @@ test("an undo that meets a moved site retries once", async () => {
     failures = 1;
     assert.equal((await undo(t.deps, sha)).ok, true);
     assert.equal((await t.readData("src/_data/travel.json")).room_block.deadline, "");
+  } finally {
+    await t.cleanup();
+  }
+});
+
+// ---- fix round 1 ---------------------------------------------------------------
+
+const NOT_YET = "Something went wrong with that change, and I'm still putting the site back. Please check again in a minute.";
+const NOT_PUT_BACK = "Something went wrong with that change, and I couldn't put the site back. Please check the site.";
+
+test("two previews at the same moment open only one", async () => {
+  let opened = 0;
+  const t = await setup({ repoWrap: (local) => ({ ...local, openPreview: async (a) => { opened++; return local.openPreview(a); } }) });
+  try {
+    t.client.queue(propose([], [CSS_EDIT]));
+    const r = await ask(t.deps, { message: "wider" });
+    const results = await Promise.all([preview(t.deps, r.id), preview(t.deps, r.id)]);
+    assert.deepEqual(results, [{ ok: true }, { ok: true }]);
+    assert.equal(opened, 1);
+  } finally {
+    await t.cleanup();
+  }
+});
+
+async function failedLiveUpdate(t) {
+  t.client.queue(propose([DEADLINE]));
+  const r = await ask(t.deps, { message: "deadline" });
+  await publish(t.deps, r.id);
+  t.netlify.states.set((await t.repo.edits(1))[0].sha, "failed");
+  return r.id;
+}
+
+test("an automatic undo that fails once says so, and the next poll puts the site back", async () => {
+  let failNext = false;
+  const t = await setup({
+    repoWrap: (local) => ({ ...local, async write(a) { if (failNext) { failNext = false; throw new Error("upstream said no"); } return local.write(a); } }),
+  });
+  try {
+    const id = await failedLiveUpdate(t);
+    failNext = true;
+    assert.deepEqual(seen(await status(t.deps, { id })), { stage: "publish", state: "failed", text: NOT_YET });
+    assert.deepEqual(await status(t.deps, { id }), { stage: "publish", state: "failed", text: PUT_BACK });
+    assert.equal((await t.readData("src/_data/travel.json")).room_block.deadline, "");
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("an automatic undo is tried at most twice, then stops", async () => {
+  let failing = false;
+  let writes = 0;
+  const t = await setup({
+    repoWrap: (local) => ({ ...local, async write(a) { if (failing) { writes++; throw new Error("upstream said no"); } return local.write(a); } }),
+  });
+  try {
+    const id = await failedLiveUpdate(t);
+    failing = true;
+    assert.deepEqual(await status(t.deps, { id }), { stage: "publish", state: "failed", text: NOT_YET });
+    assert.deepEqual(seen(await status(t.deps, { id })), { stage: "publish", state: "failed", text: NOT_PUT_BACK });
+    assert.deepEqual(await status(t.deps, { id }), { stage: "publish", state: "failed", text: NOT_PUT_BACK });
+    assert.equal(writes, 2);
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("a failed preview is thrown away even if closing it fails", async () => {
+  const t = await setup({ repoWrap: (local) => ({ ...local, closePreview: async () => { throw new Error("nope"); } }) });
+  try {
+    t.client.queue(propose([], [CSS_EDIT]));
+    const r = await ask(t.deps, { message: "wider" });
+    await preview(t.deps, r.id);
+    t.netlify.states.set((await t.store.get(`proposal:${r.id}`)).preview.sha, "failed");
+    assert.deepEqual(await status(t.deps, { id: r.id }), { stage: "preview", state: "failed", text: THROWN_AWAY });
+    assert.equal(await t.store.get(`proposal:${r.id}`), null);
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("a change that expires during publish has its preview closed", async () => {
+  let closed = 0;
+  const t = await setup({ repoWrap: (local) => ({ ...local, closePreview: async (a) => { closed++; return local.closePreview(a); } }) });
+  try {
+    t.client.queue(propose([], [CSS_EDIT]));
+    const r = await ask(t.deps, { message: "wider" });
+    await preview(t.deps, r.id);
+    const sha = (await t.store.get(`proposal:${r.id}`)).preview.sha;
+    t.netlify.states.set(sha, "ready");
+    // The day runs out while the preview is being checked.
+    const deployFor = t.netlify.deployFor;
+    t.netlify.deployFor = async (s) => { t.advance(DAY); return deployFor(s); };
+    assert.deepEqual(await publish(t.deps, r.id), { ok: false, text: EXPIRED });
+    assert.equal(closed, 1);
+    assert.equal(await t.store.get(`proposal:${r.id}`), null);
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("a photo name that is already taken is drawn again", async () => {
+  const t = await setup();
+  try {
+    await fs.writeFile(path.join(t.root, "src/images/photo-20261112-000001.png"), "");
+    t.client.queue(usePhoto);
+    const r = await ask(t.deps, { message: "photo", photo: PHOTO });
+    assert.equal((await t.store.get(`proposal:${r.id}`)).photo.name, "photo-20261112-000002.png");
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("when no free photo name is found, nothing is asked or stored", async () => {
+  const t = await setup();
+  try {
+    for (let i = 1; i <= 5; i++) await fs.writeFile(path.join(t.root, `src/images/photo-20261112-00000${i}.png`), "");
+    const r = seen(await ask(t.deps, { message: "photo", photo: PHOTO }));
+    assert.deepEqual(r, { kind: "message", text: SAFE_FAIL });
+    assert.equal(t.client.calls.length, 0);
+    assert.deepEqual(proposalKeys(t.store), []);
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("undo names a page file it cannot put back because it had no earlier version", async () => {
+  const t = await setup();
+  try {
+    const faq = await t.readData("src/_data/faq.json");
+    faq.hero.title = "Questions";
+    await t.repo.write({
+      branch: "main", baseSha: await t.repo.head(), message: "Website edit: Add a bit",
+      files: { "src/_includes/new-bit.njk": "<p>hi</p>\n", "src/_data/faq.json": JSON.stringify(faq, null, 2) + "\n" },
+    });
+    const u = seen(await undo(t.deps, (await t.repo.edits(1))[0].sha));
+    assert.equal(u.ok, true);
+    assert.equal(u.restored.length, 1);
+    assert.match(u.restored[0], /FAQ/);
+    assert.deepEqual(u.skipped, ["A part shared by several pages"]);
+    assert.equal(await t.read("src/_includes/new-bit.njk"), "<p>hi</p>\n");
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("DESIGN.md keeps its upper-case colour style when the new colour is typed in lower case", async () => {
+  const t = await setup();
+  try {
+    t.client.queue(propose([set("theme", "/rosette", "#e2a99c")]));
+    const r = await ask(t.deps, { message: "pink" });
+    assert.equal((await publish(t.deps, r.id)).ok, true);
+    const design = await t.read("DESIGN.md");
+    assert.match(design, /Rosette #E2A99C/);
+    assert.ok(!design.includes("#e2a99c"));
   } finally {
     await t.cleanup();
   }
