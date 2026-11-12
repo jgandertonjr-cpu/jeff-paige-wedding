@@ -10,8 +10,8 @@ import { memoryStore } from "../netlify/editor/store.mjs";
 import { StaleError } from "../netlify/editor/github.mjs";
 import { loadContent, propose, preview, status, publish, cancel, history, undo, settleUnconfirmed } from "../netlify/editor/service.mjs";
 
-const SAFE_FAIL = "I couldn't make that change safely. Nothing changed.";
-const EXPIRED = "That change has expired. Please ask again.";
+const SAFE_FAIL = "I couldn't add that photo safely, so nothing changed. Please try again.";
+const EXPIRED = "That change has expired. Please review your changes again.";
 const CANT = "That change can't be made.";
 const NO_CHANGE = "That wouldn't change anything on the site, so there is nothing to publish.";
 const PUT_BACK = "Something went wrong and I've put the site back.";
@@ -1580,4 +1580,13 @@ test("status: a failure asking Netlify about a preview says it is still under wa
   } finally {
     await t.cleanup();
   }
+});
+
+// F3: no sentence from the chat design is left.
+test("no sentence asks her to ask, or talks about requests or messages", async () => {
+  const { TEXT } = await import("../netlify/editor/service.mjs");
+  for (const [k, v] of Object.entries(TEXT)) {
+    assert.doesNotMatch(v, /\bask\b|\basked\b|\brequest|\bmessage|I couldn't make that change/i, k);
+  }
+  assert.equal(TEXT.noFit, "The site changed since you reviewed this, so that change no longer fits. Please review your changes again.");
 });

@@ -77,7 +77,7 @@ What a failure at this stage means (the function log is under **Logs → Functio
 | What you see | What it means |
 |---|---|
 | Can't sign in: "That password didn't work.", or sent back to sign in straight after | `ADMIN_PASSWORD` or `SESSION_SECRET` is wrong or not available to Deploy Previews. |
-| "That request can't be accepted." | The address check: open the preview at exactly the address Netlify gave, not another alias of it. |
+| "That can't be accepted from here. Nothing changed." | The address check: open the preview at exactly the address Netlify gave, not another alias of it. |
 | "The editor isn't set up yet." | A variable is missing or too short. The log line with event `setup` names the missing ones. |
 | "Something went wrong. Nothing changed. Try again in a minute." | Usually `GITHUB_TOKEN` or `NETLIFY_RSVP_TOKEN` is wrong or expired. The log line with event `error` names the route. |
 
@@ -106,7 +106,7 @@ Why: while the repo is public, the guest list file and every edit Paige makes (e
 - **Change the password:** edit `ADMIN_PASSWORD` under **Environment variables**, then **Deploys → Trigger deploy → Deploy project**. This signs everyone out.
 - **Running cost:** none. The editor uses only your existing GitHub and Netlify accounts.
 - **Where edits show up:** in the GitHub commit history, as **Website edit: …**. Undo is an edit too.
-- **Unpublished changes expire:** a change Paige has reviewed but not published is forgotten after 24 hours ("That change has expired. Please ask again."). Her changes stay in the tray, so she can tap **Review** again.
+- **Unpublished changes expire:** a change Paige has reviewed but not published is forgotten after 24 hours ("That change has expired. Please review your changes again."). Her changes stay in the tray, so she can tap **Review** again.
 - **Lockout:** 5 wrong passwords from one address locks that address for 15 minutes. 60 wrong passwords across everyone in an hour locks sign-in for 15 minutes.
 
 ---

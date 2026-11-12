@@ -29,7 +29,7 @@ const ROUTES = {
   content: "GET", propose: "POST",
 };
 const SAID = {
-  rejected: "That request can't be accepted.",
+  rejected: "That can't be accepted from here. Nothing changed.",
   tooBig: "That is too big to send.",
   notSetUp: "The editor isn't set up yet.",
   failed: "Something went wrong. Nothing changed. Try again in a minute.",

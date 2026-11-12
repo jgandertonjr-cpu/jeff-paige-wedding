@@ -105,7 +105,7 @@ test("propose: coarse body shape is checked, then the service answer is passed t
   for (const b of bad) {
     const res = await handle(post("propose", b, { cookie }), ctx());
     assert.equal(res.status, 400, JSON.stringify(b).slice(0, 60));
-    assert.deepEqual(await res.json(), { error: "That request can't be accepted." });
+    assert.deepEqual(await res.json(), { error: "That can't be accepted from here. Nothing changed." });
   }
   assert.deepEqual(calls, []);
   const res = await handle(post("propose", { ops: [op], photos: ["AAAA"] }, { cookie }), ctx());
@@ -176,7 +176,7 @@ test("POST with foreign/missing origin or non-JSON type is 403 before anything e
   for (const req of bad) {
     const res = await handle(req, ctx());
     assert.equal(res.status, 403);
-    assert.deepEqual(await res.json(), { error: "That request can't be accepted." });
+    assert.deepEqual(await res.json(), { error: "That can't be accepted from here. Nothing changed." });
   }
   assert.equal(await deps.store.get("lock:all"), null, "no attempt was counted");
   assert.deepEqual(calls, []);
