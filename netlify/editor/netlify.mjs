@@ -1,7 +1,10 @@
 // Netlify client: asks whether the rebuild for a given commit has finished.
 // Collaborators (token, siteId, fetch) are passed in.
 
-const BUILDING = new Set(["new", "enqueued", "building", "uploading", "processing", "preparing"]);
+// States that are over without the site being ready. Anything else not "ready"
+// (new, enqueued, building, uploading, processing, preparing, or a state Netlify
+// adds later) is still under way.
+const FAILED = new Set(["error", "rejected", "canceled", "cancelled", "skipped"]);
 
 export function createNetlify({ token, siteId, fetch }) {
   async function page(n) {
@@ -29,7 +32,7 @@ export function createNetlify({ token, siteId, fetch }) {
     mine.sort((a, b) => Date.parse(b.created_at || 0) - Date.parse(a.created_at || 0));
     const d = mine[0];
     if (d.state === "ready") return { state: "ready", url: d.deploy_ssl_url };
-    if (d.state === "error") return { state: "failed" };
+    if (FAILED.has(d.state)) return { state: "failed" };
     return { state: "building" };
   }
   return { deployFor };

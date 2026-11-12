@@ -23,6 +23,8 @@ test("asks for the site's recent deploys with a bearer token", async () => {
 for (const [from, to] of [
   ["new", "building"], ["enqueued", "building"], ["building", "building"], ["uploading", "building"],
   ["processing", "building"], ["preparing", "building"], ["ready", "ready"], ["error", "failed"],
+  // Final states that never become ready.
+  ["rejected", "failed"], ["canceled", "failed"], ["cancelled", "failed"], ["skipped", "failed"],
 ]) {
   test(`state ${from} maps to ${to}`, async () => {
     const { nl } = client(200, [deploy(from, "abc")]);
