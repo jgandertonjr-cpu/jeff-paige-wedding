@@ -26,6 +26,7 @@ function only(issues, label) {
   assert.equal(issues[0].label, label);
   const m = issues[0].message;
   assert.match(m, /^[A-Z].*[.]$/, m);
+  assert.doesNotMatch(m.slice(0, -1), /[.!?](\s|$)/, `more than one sentence: ${m}`);
   assert.doesNotMatch(m, BANNED);
   return issues[0];
 }
@@ -82,7 +83,7 @@ test("date must be real", () => {
 });
 
 test("time must look like a time", () => {
-  assert.equal(check("site", (s) => { s.calendar.start_time = "25:00"; }).length, 1);
+  only(check("site", (s) => { s.calendar.start_time = "25:00"; }), "Names, Date & Venue → Calendar event → Start time (Eastern)");
   assert.deepEqual(check("site", (s) => { s.calendar.start_time = "16:30"; }), []);
 });
 
@@ -109,19 +110,34 @@ test("links", () => {
     assert.deepEqual(md(good), [], good);
   }
   for (const bad of ["javascript:alert(1)", "http://x.com", "//x.com", "nowhere.html"]) {
-    assert.equal(url(bad).length, 1, bad);
-    assert.equal(md(bad).length, 1, bad);
-    assert.doesNotMatch(url(bad)[0].message, BANNED);
+    only(url(bad), "Registry → Amazon registry → Registry link");
+    only(md(bad), "FAQ → Questions → item 1 → Answer");
   }
+  // Forms that a quick text match misses but the site's markdown turns into real links.
+  const answer = (text) => check("faq", (f) => { f.questions[0].answer = text; });
+  for (const bad of [
+    "See [x](//evil.com (t)) ok",
+    "[x](http://evil.com (t))",
+    "See [x][1]\n\n[1]: //evil.com",
+    "![pic](//evil.com/a.png)",
+    "Go <http://evil.com> now",
+    "[x]()",
+  ]) only(answer(bad), "FAQ → Questions → item 1 → Answer");
+  assert.deepEqual(answer("See [x][1]\n\n[1]: travel.html"), []);
+  assert.deepEqual(answer("Plain words, no links."), []);
+  // A value that fails both the schema pattern and the link rule is reported once.
+  only(check("registry", (r) => { r.amazon.url = "ftp://x.com"; }), "Registry → Amazon registry → Registry link");
+  only(check("registry", (r) => { r.amazon.url = "http://x.com"; }), "Registry → Amazon registry → Registry link");
   assert.deepEqual(check("travel", (t) => { t.room_block.booking_url = ""; }), []);
 });
 
 test("no HTML tags", () => {
   const set = (v) => check("home", (h) => { h.hero.eyebrow = v; });
-  assert.equal(set("<b>hi</b>").length, 1);
-  assert.equal(set("<script>").length, 1);
-  assert.equal(set("a <!-- b").length, 1);
-  assert.equal(check("faq", (f) => { f.questions[0].answer = "hi <img src=x>"; }).length, 1);
+  const L = "Home → Top of page → Small text above the photo";
+  only(set("<b>hi</b>"), L);
+  only(set("<script>"), L);
+  only(set("a <!-- b"), L);
+  only(check("faq", (f) => { f.questions[0].answer = "hi <img src=x>"; }), "FAQ → Questions → item 1 → Answer");
   for (const ok of ["3 < 5", "Jeff & Paige", "we’re — so 🎉"]) assert.deepEqual(set(ok), [], ok);
 });
 
@@ -139,18 +155,18 @@ test("meal codes locked while RSVPs are open", () => {
 
 test("nav addresses fixed", () => {
   only(check("nav", (n) => { n.essentials[0].url = "elsewhere.html"; }), "Menu → Main menu links → item 1 → Goes to");
-  assert.equal(check("nav", (n) => { n.more.pop(); }).length, 1);
+  only(check("nav", (n) => { n.more.pop(); }), "Menu → More links");
   assert.deepEqual(check("nav", (n) => { n.essentials[0].label = "The Details"; }), []);
   assert.deepEqual(check("nav", (n) => { n.essentials.reverse(); }), []);
 });
 
 test("section order is a full reshuffle", () => {
   const set = (v) => check("travel", (t) => { t.section_order = v; });
-  assert.equal(set(["room_block", "room_block", "tips", "airports"]).length, 1);
-  assert.equal(set(["room_block", "nearby", "airports"]).length, 1);
-  assert.equal(set(["room_block", "nearby", "airports", "bogus"]).length, 1);
+  const L = "Travel & Hotels → Order of sections";
+  only(set(["room_block", "room_block", "tips", "airports"]), L);
+  only(set(["room_block", "nearby", "airports"]), L);
+  only(set(["room_block", "nearby", "airports", "bogus"]), L);
   assert.deepEqual(set(["tips", "airports", "nearby", "room_block"]), []);
-  assert.doesNotMatch(set(["room_block"])[0].message, BANNED);
 });
 
 test("theme contrast", () => {
@@ -168,4 +184,37 @@ test("a file key the editor does not know is rejected", () => {
   const previous = load();
   const issues = validateContent({ bogus: {} }, { schema, images, previous });
   assert.equal(issues.length, 1);
+  assert.equal(issues[0].label, "bogus");
+  assert.match(issues[0].message, /^[A-Z].*[.]$/);
+});
+
+test("file keys that exist on every object never throw", () => {
+  const previous = load();
+  const ctx = { schema, images, previous };
+  const nasty = JSON.parse('{"__proto__": {}, "constructor": {}, "toString": {}, "hasOwnProperty": {}}');
+  for (const k of Object.keys(nasty)) {
+    const issues = validateContent({ [k]: {} }, ctx);
+    assert.equal(issues.length, 1, k);
+    assert.match(issues[0].message, /^[A-Z].*[.]$/, k);
+  }
+  assert.equal(validateContent(nasty, ctx).length, 4);
+});
+
+test("a required yes/no field set to an empty string is a wrong type", () => {
+  only(check("rsvp", (r) => { r.rsvp_open = ""; }), "RSVP → RSVPs are open");
+});
+
+test("a duplicate meal code cannot hide a removed one while RSVPs are open", () => {
+  const previous = load();
+  previous.rsvp.rsvp_open = true;
+  const [a, b] = previous.rsvp.meal_options;
+  const i = only(
+    check("rsvp", (r) => { r.meal_options[1].value = a.value; }, { previous }),
+    "RSVP → Meal choices",
+  );
+  assert.equal(i.path, "/meal_options");
+  assert.ok(b.value !== a.value);
+  // Duplicates are rejected even when RSVPs are closed.
+  previous.rsvp.rsvp_open = false;
+  only(check("rsvp", (r) => { r.meal_options[1].value = a.value; }, { previous }), "RSVP → Meal choices");
 });

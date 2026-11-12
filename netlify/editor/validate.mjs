@@ -1,6 +1,27 @@
 // Checks proposed content against the editor schema and the site's safety rules.
 // Pure: callers pass everything in (no file, network or environment access).
+import markdownIt from "markdown-it";
 import { contrastRatio, CONTRAST_PAIRS } from "./contrast.mjs";
+
+// Same settings as the site's own markdown rendering (eleventy.config.js).
+const md = markdownIt({ html: false, linkify: false, typographer: false });
+
+// Every link and image address the site would actually produce from this markdown.
+function markdownTargets(text) {
+  const out = [];
+  const visit = (tokens) => {
+    for (const t of tokens) {
+      if (t.type === "link_open") out.push(t.attrGet("href") ?? "");
+      else if (t.type === "image") out.push(t.attrGet("src") ?? "");
+      if (t.children) visit(t.children);
+    }
+  };
+  visit(md.parse(text, {}));
+  // markdown-it drops unsafe targets such as javascript: and shows them as plain text.
+  // They are not live links, but a request that tries one should still be refused.
+  for (const m of text.matchAll(/\]\(\s*<?([^)\s>]*)/g)) out.push(m[1]);
+  return out;
+}
 
 const TAG = /<[A-Za-z/!]/;
 const HEX = /^#[0-9A-Fa-f]{6}$/;
@@ -50,26 +71,27 @@ export function validateContent(content, ctx) {
   function checkField(file, f, v, path, trail, inNav) {
     const here = (message, p = path, t = trail) => issues.push({ file, path: p, label: t.join(" → "), message });
     const name = trail[trail.length - 1];
+    const wrong = (what) => here(`${name} must be ${what}.`);
+    if (f.type === "boolean" && v === "") return wrong("yes or no");
     if (isBlank(v)) {
-      if (f.required && f.type !== "boolean") here(`${name} needs a value and cannot be left empty.`);
-      else if (f.required && v === undefined) here(`${name} needs a value and cannot be left empty.`);
-      else if (f.required && v === null) here(`${name} needs a value and cannot be left empty.`);
+      if (f.required) here(`${name} needs a value and cannot be left empty.`);
       return;
     }
-    const wrong = (what) => here(`${name} must be ${what}.`);
     switch (f.type) {
       case "string": case "text": case "markdown": {
         if (typeof v !== "string") return wrong("text");
         if (f.required && v.trim() === "") return here(`${name} needs a value and cannot be left empty.`);
         if (TAG.test(v)) return here(`${name} cannot contain page code such as <b> or <script>.`);
-        if (f.maxlength && v.length > f.maxlength) here(`${name} is too long. Please keep it to ${f.maxlength} characters or fewer.`);
-        if (f.pattern && !new RegExp(f.pattern).test(v)) here(f.patternMessage ? f.patternMessage.replace(/[.]?$/, ".") : `${name} is not in the right format.`);
+        if (f.maxlength && v.length > f.maxlength) here(`${name} is too long, so please keep it to ${f.maxlength} characters or fewer.`);
+        if (f.pattern && !new RegExp(f.pattern).test(v)) {
+          return here(f.patternMessage ? f.patternMessage.replace(/[.]?$/, ".") : `${name} is not in the right format.`);
+        }
         if (f.type === "markdown") {
-          for (const m of v.matchAll(/\]\(\s*<?([^)\s>]*)>?(?:\s+["'][^)]*["'])?\s*\)/g)) {
-            if (!linkOk(m[1])) here(`${name} has a link that cannot be used (${m[1] || "empty"}). Links must start with https://, mailto: or tel:, or go to a page on this site.`);
+          if (markdownTargets(v).some((target) => !linkOk(target))) {
+            here(`${name} has a link that cannot be used, so links must start with https://, mailto: or tel:, or go to a page on this site.`);
           }
         } else if (!inNav && isLinkField(f) && v !== "" && !linkOk(v)) {
-          here(`${name} is not a link that can be used. It must start with https://, mailto: or tel:, or be a page on this site.`);
+          here(`${name} is not a link that can be used, so it must start with https://, mailto: or tel:, or be a page on this site.`);
         }
         return;
       }
@@ -129,6 +151,7 @@ export function validateContent(content, ctx) {
     }
   }
 
+  const hasFile = (k) => Object.hasOwn(schema.files, k);
   const fileLabel = (k) => schema.files[k].label;
   const fieldLabelTrail = (k, names) => {
     let fields = schema.files[k].fields;
@@ -143,8 +166,8 @@ export function validateContent(content, ctx) {
   };
 
   for (const [key, data] of Object.entries(content)) {
-    if (!schema.files[key]) {
-      issues.push({ file: key, path: "", label: key, message: `"${key}" is not something the editor can change.` });
+    if (!hasFile(key)) {
+      issues.push({ file: key, path: "", label: key, message: `The section called "${key}" is not something the editor can change.` });
       continue;
     }
     if (!isObj(data)) {
@@ -155,12 +178,19 @@ export function validateContent(content, ctx) {
   }
 
   // Meal codes are saved with every reply, so they stay fixed while RSVPs are open.
-  if (content.rsvp && isObj(content.rsvp) && previous && previous.rsvp && previous.rsvp.rsvp_open === true) {
-    const before = (previous.rsvp.meal_options || []).map((m) => m && m.value);
+  if (content.rsvp && isObj(content.rsvp)) {
+    const rsvpOpen = !!(previous && previous.rsvp && previous.rsvp.rsvp_open === true);
+    const before = ((previous && previous.rsvp && previous.rsvp.meal_options) || []).map((m) => m && m.value);
     const nowList = content.rsvp.meal_options;
     if (Array.isArray(nowList)) {
       const now = nowList.map((m) => m && m.value);
-      if (before.some((v) => !now.includes(v))) {
+      const base0 = fieldLabelTrail("rsvp", ["meal_options"]);
+      if (new Set(now).size !== now.length) {
+        issues.push({
+          file: "rsvp", path: "/meal_options", label: base0.join(" → "),
+          message: "Each meal choice needs its own short code, so no two can share one.",
+        });
+      } else if (rsvpOpen && before.some((v) => !now.includes(v))) {
         const base = fieldLabelTrail("rsvp", ["meal_options"]);
         if (now.length === before.length) {
           const vt = fieldLabelTrail("rsvp", ["meal_options", "value"]);
