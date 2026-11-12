@@ -50,7 +50,13 @@ export function createGitHub({ token, repo, fetch }) {
     if (!res.ok && !allow.includes(res.status)) {
       throw new Error(`GitHub request failed (${res.status})`);
     }
-    return { status: res.status, data: res.ok ? await res.json() : null };
+    if (!res.ok || res.status === 204 || method === "DELETE") return { status: res.status, data: null };
+    try {
+      return { status: res.status, data: await res.json() };
+    } catch {
+      // Never surface the parser's message: it can quote response text.
+      throw new Error(`GitHub request failed (${res.status})`);
+    }
   }
 
   const branchPath = (branch) => {
@@ -133,20 +139,29 @@ export function createGitHub({ token, repo, fetch }) {
     assertPreviewId(id);
     const branch = `edit/${id}`;
     await call("POST", "/git/refs", { ref: `refs/heads/${branch}`, sha: baseSha });
-    const sha = await write({ branch, baseSha, message, files });
-    const pr = await call("POST", "/pulls", {
-      title: `Preview: ${message}`,
-      head: branch,
-      base: "main",
-      draft: true,
-    });
-    return { number: pr.data.number, sha };
+    try {
+      const sha = await write({ branch, baseSha, message, files });
+      const pr = await call("POST", "/pulls", {
+        title: `Preview: ${message}`,
+        head: branch,
+        base: "main",
+        draft: true,
+      });
+      return { number: pr.data.number, sha };
+    } catch (err) {
+      // Don't leave an orphan branch behind; the original error wins.
+      try {
+        await call("DELETE", `/git/refs/heads/${branch}`, undefined, [404, 422]);
+      } catch {}
+      throw err;
+    }
   }
 
   async function closePreview({ id, number }) {
     assertPreviewId(id);
+    if (!Number.isInteger(number) || number < 1) throw new Error("Invalid pull request number");
     // Either may already be gone.
-    await call("PATCH", `/pulls/${Number(number)}`, { state: "closed" }, [404, 422]);
+    await call("PATCH", `/pulls/${number}`, { state: "closed" }, [404, 422]);
     await call("DELETE", `/git/refs/heads/edit/${id}`, undefined, [404, 422]);
   }
 
@@ -165,7 +180,7 @@ export function createGitHub({ token, repo, fetch }) {
 
   async function changeOf(sha) {
     const { data } = await call("GET", `/commits/${encodeURIComponent(sha)}`);
-    return { parent: data.parents[0].sha, paths: (data.files || []).map((f) => f.filename) };
+    return { parent: data.parents?.[0]?.sha ?? null, paths: (data.files || []).map((f) => f.filename) };
   }
 
   return { head, readFiles, listImages, write, openPreview, closePreview, edits, changeOf };

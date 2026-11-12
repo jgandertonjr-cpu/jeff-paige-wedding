@@ -22,7 +22,10 @@ function fake(routes) {
         return {
           ok: status >= 200 && status < 300,
           status,
-          json: async () => r.json ?? {},
+          json: async () => {
+            if (r.empty) throw new SyntaxError("Unexpected end of JSON input: BODYTEXT");
+            return r.json ?? {};
+          },
           text: async () => JSON.stringify(r.json ?? {}),
         };
       }
@@ -214,4 +217,83 @@ test("preview ids must match /^[a-z0-9]{8,32}$/ and are rejected before any requ
     await assert.rejects(repo.closePreview({ id, number: 1 }), /preview id/i);
   }
   assert.equal(calls.length, 0);
+});
+
+test("closePreview succeeds when DELETE answers 204 with no body", async () => {
+  const { repo, calls } = gh([
+    ["PATCH", /\/pulls\/7$/, () => ({ json: {} })],
+    ["DELETE", /\/git\/refs\/heads\/edit\/abc12345$/, () => ({ status: 204, empty: true })],
+  ]);
+  await repo.closePreview({ id: "abc12345", number: 7 });
+  assert.equal(calls.length, 2);
+});
+
+test("a malformed 2xx body throws a status-only error", async () => {
+  const { repo } = gh([["GET", /\/git\/ref\/heads\/main$/, () => ({ status: 200, empty: true })]]);
+  await assert.rejects(repo.head(), (e) => {
+    assert.equal(e.message, "GitHub request failed (200)");
+    return true;
+  });
+});
+
+test("a failed openPreview deletes the new branch and rethrows the original error", async () => {
+  const routes = [
+    ["POST", /\/git\/refs$/, () => ({ status: 201, json: {} })],
+    ["GET", /\/git\/ref\/heads\/edit\/abc12345$/, () => ({ json: { object: { sha: "base1" } } })],
+    ["GET", /\/git\/commits\/base1$/, () => ({ json: { tree: { sha: "tree0" } } })],
+    ["POST", /\/git\/trees$/, () => ({ status: 500 })],
+    ["DELETE", /\/git\/refs\/heads\/edit\/abc12345$/, () => ({ status: 500 })],
+  ];
+  const { repo, calls } = gh(routes);
+  await assert.rejects(
+    repo.openPreview({ id: "abc12345", baseSha: "base1", message: "m", files: { "a.txt": "x" } }),
+    /GitHub request failed \(500\)/,
+  );
+  const del = calls.filter((c) => c.method === "DELETE");
+  assert.equal(del.length, 1);
+  assert.ok(del[0].path.endsWith("/git/refs/heads/edit/abc12345"));
+  assert.ok(!calls.some((c) => c.path.endsWith("/pulls")));
+});
+
+test("closePreview rejects a bad pull request number before any request", async () => {
+  const { repo, calls } = gh([]);
+  for (const n of [0, -1, 1.5, "7", NaN, undefined]) {
+    await assert.rejects(repo.closePreview({ id: "abc12345", number: n }), /pull request number/i);
+  }
+  assert.equal(calls.length, 0);
+});
+
+test("changeOf on a root commit returns parent null", async () => {
+  const { repo } = gh([["GET", /\/commits\/s1$/, () => ({ json: { parents: [], files: [{ filename: "a" }] } })]]);
+  assert.deepEqual(await repo.changeOf("s1"), { parent: null, paths: ["a"] });
+});
+
+test("readFiles encodes spaces and # in paths", async () => {
+  const { repo, calls } = gh([["GET", /\/contents\//, () => ({ json: { content: b64("x"), encoding: "base64" } })]]);
+  await repo.readFiles(["src/my file#1.json"], "main");
+  assert.ok(calls[0].path.includes("/contents/src/my%20file%231.json?ref=main"), calls[0].path);
+});
+
+test("curly quotes and emoji survive write content and base64 reads", async () => {
+  const text = "\u201cHello\u201d \u{1F492} caf\u00e9\n";
+  const { repo, calls } = gh(writeRoutes("main", [
+    ["GET", /\/contents\/src\/t\.json/, () => ({ json: { content: Buffer.from(text).toString("base64"), encoding: "base64" } })],
+  ]));
+  await repo.write({ branch: "main", baseSha: "base1", message: "m", files: { "src/t.json": text } });
+  const tree = calls.find((c) => c.path.endsWith("/git/trees")).body.tree;
+  assert.equal(tree[0].content, text);
+  assert.deepEqual(await repo.readFiles(["src/t.json"], "main"), { "src/t.json": text });
+});
+
+test("the token never appears in an error from a failing write", async () => {
+  const routes = writeRoutes().map((r) => (r[1].test("/git/trees") ? ["POST", r[1], () => ({ status: 403, json: { message: TOKEN } })] : r));
+  const { repo } = gh(routes);
+  await assert.rejects(
+    repo.write({ branch: "main", baseSha: "base1", message: "m", files: { "a.txt": "x" } }),
+    (e) => {
+      assert.equal(e.message, "GitHub request failed (403)");
+      assert.ok(!String(e.stack).includes(TOKEN));
+      return true;
+    },
+  );
 });

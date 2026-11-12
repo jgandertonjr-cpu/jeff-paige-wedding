@@ -51,6 +51,33 @@ test("an unfamiliar state counts as building", async () => {
   assert.equal((await nl.deployFor("abc")).state, "building");
 });
 
+test("looks at page 2 before reporting waiting", async () => {
+  const urls = [];
+  const pages = [[deploy("ready", "zzz")], [deploy("ready", "abc")]];
+  const fetch = async (url) => {
+    urls.push(url);
+    const body = pages[urls.length - 1] ?? [];
+    return { ok: true, status: 200, json: async () => body };
+  };
+  const nl = createNetlify({ token: TOKEN, siteId: "site-1", fetch });
+  assert.equal((await nl.deployFor("abc")).state, "ready");
+  assert.equal(urls[1], "https://api.netlify.com/api/v1/sites/site-1/deploys?per_page=50&page=2");
+  assert.equal((await client(200, []).nl.deployFor("abc")).state, "waiting");
+});
+
+test("a malformed 2xx body throws a status-only error", async () => {
+  const fetch = async () => ({ ok: true, status: 200, json: async () => { throw new SyntaxError("BODYTEXT " + TOKEN); } });
+  await assert.rejects(createNetlify({ token: TOKEN, siteId: "s", fetch }).deployFor("a"), (e) => {
+    assert.equal(e.message, "Netlify request failed (200)");
+    return true;
+  });
+});
+
+test("the token never appears in a thrown Netlify error", async () => {
+  const { nl } = client(500, { message: TOKEN });
+  await assert.rejects(nl.deployFor("abc"), (e) => !e.message.includes(TOKEN) && !String(e.stack).includes(TOKEN));
+});
+
 test("a non-2xx response throws a bare status message", async () => {
   const { nl } = client(401, { message: "bad " + TOKEN });
   await assert.rejects(nl.deployFor("abc"), (e) => {

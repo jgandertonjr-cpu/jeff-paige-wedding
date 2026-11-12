@@ -78,12 +78,59 @@ test("listImages lists files in src/images as /images/<name>; missing folder is 
   }
 });
 
-test("openPreview writes and returns number 0; closePreview does nothing", async () => {
+test("openPreview stages files aside without touching the working files, log or head", async () => {
   const base = await repo.head();
-  const out = await repo.openPreview({ id: "abc12345", baseSha: base, message: "Preview", files: { "p.txt": "p" } });
+  const logBefore = await fs.readFile(path.join(root, ".editor-local/log.json"), "utf8");
+  const out = await repo.openPreview({
+    id: "abc12345", baseSha: base, message: "Preview",
+    files: { "p/q.txt": "p", "src/gone.txt": null, "i.png": { base64: Buffer.from("PNG").toString("base64") } },
+  });
   assert.equal(out.number, 0);
-  assert.equal(out.sha, await repo.head());
+  assert.match(out.sha, /^[0-9a-f]{40}$/);
+  assert.equal(await repo.head(), base);
+  assert.equal(await fs.readFile(path.join(root, ".editor-local/log.json"), "utf8"), logBefore);
+  await assert.rejects(fs.access(path.join(root, "p/q.txt")));
+  const dir = path.join(root, ".editor-local/previews/abc12345");
+  assert.equal(await fs.readFile(path.join(dir, "p/q.txt"), "utf8"), "p");
+  assert.equal(await fs.readFile(path.join(dir, "i.png"), "utf8"), "PNG");
+  assert.deepEqual(JSON.parse(await fs.readFile(path.join(dir, "deleted.json"), "utf8")), ["src/gone.txt"]);
+
+  // Preview, then publish with the same baseSha still works.
+  const sha = await repo.write({ branch: "main", baseSha: base, message: "Website edit: Real", files: { "real.txt": "r" } });
+  assert.equal(await repo.head(), sha);
+
   await repo.closePreview({ id: "abc12345", number: 0 });
+  await assert.rejects(fs.access(dir));
+  await repo.closePreview({ id: "abc12345", number: 0 }); // absent: no error
+});
+
+test("preview ids are validated", async () => {
+  const base = await repo.head();
+  for (const id of ["short", "../../x1234567", "ABCDEFGH1"]) {
+    await assert.rejects(repo.openPreview({ id, baseSha: base, message: "m", files: {} }), /preview id/i);
+    await assert.rejects(repo.closePreview({ id }), /preview id/i);
+  }
+});
+
+test("the log folder is protected whatever the letter case", async () => {
+  const base = await repo.head();
+  for (const p of [".editor-local/log.json", ".EDITOR-LOCAL/log.json", ".Editor-Local/x"]) {
+    await assert.rejects(repo.write({ branch: "main", baseSha: base, message: "m", files: { [p]: "x" } }));
+    await assert.rejects(repo.readFiles([p], "main"));
+  }
+});
+
+test("binary files are recorded in before as base64, text stays a string", async () => {
+  const bin = Buffer.from([0xff, 0xfe, 0x00, 0x80]);
+  await fs.writeFile(path.join(root, "bin.dat"), bin);
+  await fs.writeFile(path.join(root, "txt.dat"), "caf\u00e9");
+  const sha = await repo.write({
+    branch: "main", baseSha: await repo.head(), message: "m",
+    files: { "bin.dat": "now text", "txt.dat": "new" },
+  });
+  const entry = JSON.parse(await fs.readFile(path.join(root, ".editor-local/log.json"), "utf8")).find((e) => e.sha === sha);
+  assert.deepEqual(entry.before["bin.dat"], { base64: bin.toString("base64") });
+  assert.equal(entry.before["txt.dat"], "caf\u00e9");
 });
 
 test("paths that escape the root are rejected", async () => {

@@ -7,7 +7,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import crypto from "node:crypto";
-import { StaleError, assertRelativePath } from "./github.mjs";
+import { StaleError, assertRelativePath, assertPreviewId } from "./github.mjs";
 
 const BASE = "local-base";
 const PREFIX = "Website edit: ";
@@ -18,7 +18,8 @@ export function createLocalRepo({ root }) {
 
   const safe = (p) => {
     assertRelativePath(p);
-    if (p === LOG_DIR || p.startsWith(`${LOG_DIR}/`)) throw new Error("Invalid file path");
+    // Case-insensitive: macOS folders are, so ".EDITOR-LOCAL" is the same place.
+    if (p.split("/")[0].toLowerCase() === LOG_DIR) throw new Error("Invalid file path");
     return path.join(root, p);
   };
 
@@ -34,6 +35,19 @@ export function createLocalRepo({ root }) {
   async function readText(file) {
     try {
       return await fs.readFile(file, "utf8");
+    } catch (e) {
+      if (e.code === "ENOENT") return null;
+      throw e;
+    }
+  }
+
+  // Previous content for the undo record: a string, { base64 } when the
+  // file is not valid UTF-8, or null when absent.
+  async function readBefore(file) {
+    try {
+      const buf = await fs.readFile(file);
+      const text = buf.toString("utf8");
+      return Buffer.from(text, "utf8").equals(buf) ? text : { base64: buf.toString("base64") };
     } catch (e) {
       if (e.code === "ENOENT") return null;
       throw e;
@@ -72,7 +86,7 @@ export function createLocalRepo({ root }) {
     if (current !== baseSha) throw new StaleError();
 
     const before = {};
-    for (let i = 0; i < paths.length; i++) before[paths[i]] = await readText(targets[i]);
+    for (let i = 0; i < paths.length; i++) before[paths[i]] = await readBefore(targets[i]);
 
     for (let i = 0; i < paths.length; i++) {
       const f = files[paths[i]];
@@ -109,13 +123,34 @@ export function createLocalRepo({ root }) {
     return { parent: entry.parent, paths: [...entry.paths] };
   }
 
-  // A preview is just a write; there is no separate branch or pull request.
-  async function openPreview({ baseSha, message, files }) {
-    const sha = await write({ baseSha, message, files });
-    return { number: 0, sha };
+  // A preview is staged under .editor-local/previews/<id>/ and never touches
+  // the working files, the log or head(). Deleted paths go in deleted.json.
+  const previewDir = (id) => path.join(root, LOG_DIR, "previews", assertPreviewId(id));
+
+  async function openPreview({ id, files }) {
+    const dir = previewDir(id);
+    const paths = Object.keys(files);
+    paths.forEach(safe);
+    const deleted = [];
+    await fs.rm(dir, { recursive: true, force: true });
+    await fs.mkdir(dir, { recursive: true });
+    for (const p of paths) {
+      const f = files[p];
+      if (f === null) {
+        deleted.push(p);
+        continue;
+      }
+      const target = path.join(dir, p);
+      await fs.mkdir(path.dirname(target), { recursive: true });
+      await fs.writeFile(target, typeof f === "string" ? f : Buffer.from(f.base64, "base64"));
+    }
+    await fs.writeFile(path.join(dir, "deleted.json"), JSON.stringify(deleted, null, 2) + "\n");
+    return { number: 0, sha: crypto.randomBytes(20).toString("hex") };
   }
 
-  async function closePreview() {}
+  async function closePreview({ id }) {
+    await fs.rm(previewDir(id), { recursive: true, force: true });
+  }
 
   return { head, readFiles, listImages, write, openPreview, closePreview, edits, changeOf };
 }
