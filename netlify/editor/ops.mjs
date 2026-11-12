@@ -1,5 +1,9 @@
 // Applies path-based edit operations to an in-memory copy of the site content.
 // Pure: no file, network or environment access, and inputs are never mutated.
+//
+// "unset" (remove a key from an object) is internal: undo emits it
+// (diff.mjs invertChanges) to put back the absence of a field an edit added.
+// The page cannot send it; the service accepts only set, insert, remove and move.
 
 export class OpError extends Error {
   constructor(message, op) {
