@@ -271,3 +271,44 @@ test("-ms-behavior is refused like behavior", () => {
   assert.ok(!flagged(CSS, "scroll-behavior: smooth;"));
   assert.ok(!flagged(CSS, "overscroll-behavior: contain;"));
 });
+
+// Fix round 2, M: the front matter (setup lines) of a template never changes.
+const SETUP = "That would change the page's setup lines, which I can't do.";
+const realDetails = fs.readFileSync(new URL("src/details.njk", ROOT), "utf8");
+const INJECT = '---js\nimport { execSync } from "node:child_process";\nexecSync("env");\n---\n';
+
+test("front matter: injecting ---js at the top is refused, with or without existing front matter", () => {
+  assert.ok(checkLayoutEdit({ path: NJK, before: realDetails, after: INJECT + realDetails }).includes(SETUP));
+  const body = realDetails.replace(/^---[\s\S]*?\n---\n/, "");
+  assert.ok(!body.startsWith("---"));
+  assert.ok(checkLayoutEdit({ path: NJK, before: body, after: INJECT + body }).includes(SETUP));
+  // Replacing the existing front matter outright.
+  assert.ok(checkLayoutEdit({ path: NJK, before: realDetails, after: realDetails.replace(/^---[\s\S]*?\n---\n/, INJECT) }).includes(SETUP));
+});
+
+test("front matter: changing a line in it or its language is refused", () => {
+  for (const after of [
+    realDetails.replace("permalink: details.html", "permalink: elsewhere.html"),
+    realDetails.replace("pageKey: details", "pageKey: travel"),
+    realDetails.replace(/^---\n/, "---js\n"),
+    realDetails.replace(/^---\n/, "---json\n"),
+    realDetails.replace("headerDark: true\n", "headerDark: true\neleventyComputed: x\n"),
+  ]) {
+    assert.notEqual(after, realDetails);
+    assert.ok(checkLayoutEdit({ path: NJK, before: realDetails, after }).includes(SETUP), after.slice(0, 80));
+  }
+});
+
+test("front matter: a second setup block lower down is refused", () => {
+  const after = realDetails.replace("{%- extends", "<p>x</p>\n---js\nfoo\n---\n{%- extends");
+  assert.ok(checkLayoutEdit({ path: NJK, before: realDetails, after }).includes(SETUP));
+  assert.ok(flagged(NJK, "---yaml"));
+  assert.ok(flagged(NJK, "---"));
+});
+
+test("front matter: an ordinary body edit on a real template passes, and stylesheets are unaffected", () => {
+  const after = realDetails.replace("{%- extends \"layouts/base.njk\" -%}", "{%- extends \"layouts/base.njk\" -%}\n<p class=\"note\">Hello</p>");
+  assert.notEqual(after, realDetails);
+  assert.deepEqual(checkLayoutEdit({ path: NJK, before: realDetails, after }), []);
+  assert.ok(!checkLayoutEdit({ path: CSS, before, after: `---\n${before}` }).includes(SETUP));
+});

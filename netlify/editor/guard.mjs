@@ -67,6 +67,19 @@ const RULES = [
   rule(/image-set\s*\(|expression\s*\(|(^|[^a-z-])behavior\s*:|(^|[^a-z])-[a-z]+-behavior\s*:|-moz-binding/i, "A new style line uses a feature that is not allowed.", { scope: "css" }),
 ];
 
+// Front matter: the setup lines at the top of a template, which Eleventy reads
+// (and, as ---js, runs) during the build. A file starts one with a first line of
+// "---" plus an optional language word; it runs through the next line that is
+// exactly "---" (to the end if there is none). Empty when the file has none.
+const SETUP_PROBLEM = "That would change the page's setup lines, which I can't do.";
+const SETUP_OPEN = /^---[A-Za-z]*[ \t]*\r?$/;
+function frontMatter(text) {
+  const lines = text.split("\n");
+  if (!SETUP_OPEN.test(lines[0])) return "";
+  const close = lines.findIndex((l, i) => i > 0 && /^---\r?$/.test(l));
+  return close === -1 ? text : `${lines.slice(0, close + 1).join("\n")}\n`;
+}
+
 const lineSet = (text) => new Set(text.split("\n").map((l) => l.trim()));
 
 // Template expressions. Eleventy renders the templates during the site build
@@ -190,6 +203,10 @@ export function checkLayoutEdit({ path: filePath, before, after } = {}) {
     { text: block.replace(/\s+/g, ""), loose: true },
   ];
   const seen = new Set();
+  if (kind === "njk" && (frontMatter(before) !== frontMatter(after) || added.some((l) => /^---[A-Za-z]*$/.test(l)))) {
+    seen.add(SETUP_PROBLEM);
+    problems.push(SETUP_PROBLEM);
+  }
   if (kind !== "css") {
     const isAdded = (l) => l.trim() !== "" && !old.has(l.trim());
     const spacedHit = addedExpressions(after, isAdded, block).some((e) => unsafeExpression(e));
