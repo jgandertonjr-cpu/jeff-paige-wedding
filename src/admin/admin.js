@@ -535,7 +535,7 @@
       this.summary = Array.isArray(p.summary) ? p.summary.filter((s) => typeof s === "string") : [];
       this.note = typeof p.note === "string" ? p.note : "";
       this.bigger = p.needsPreview === true;
-      this.title = "";
+      this.sha = ""; // the published edit, which "Undo this" puts back
       this.busy = false;
       this.said = ""; // a sentence from the server shown in the card
       this.previewUrl = "";
@@ -604,8 +604,8 @@
         this.said = data.text || SAY.wentWrong;
         this.state = "failed";
       } else if (data.stage === "publish") {
-        // It went through. The server names an edit after its first summary line.
-        this.title = this.title || titleFor(this.summary);
+        // It went through; the site says which edit it made.
+        if (typeof data.sha === "string") this.sha = data.sha;
         this.state = "publishing";
         this.poll("publish");
       } else if (stage === "preview") {
@@ -649,7 +649,7 @@
         return;
       }
       if (data && data.ok) {
-        this.title = data.title || "";
+        this.sha = typeof data.sha === "string" ? data.sha : "";
         this.state = "publishing";
         this.poll("publish");
       } else if (data) {
@@ -672,28 +672,12 @@
 
     async undo() {
       if (this.busy) return;
-      this.busy = true;
-      this.said = "";
-      this.render();
-      let sha = "";
-      try {
-        const data = await api("history", "GET");
-        if (data.error) {
-          note(data.error);
-        } else {
-          const match = (data.edits || []).find((e) => e && e.title === this.title);
-          if (match) sha = match.sha;
-          else this.said = SAY.noUndo;
-        }
-      } catch (err) {
-        failed(err);
-      }
-      this.busy = false;
-      if (!sha) {
+      if (!this.sha) {
+        this.said = SAY.noUndo;
         this.render(true);
         return;
       }
-      const result = await this.call("undo", { sha });
+      const result = await this.call("undo", { sha: this.sha });
       if (result && result.ok) {
         this.undone = result;
         this.state = "undone";
@@ -759,6 +743,7 @@
         data = null; // a blip: try again on the next round
       }
       if (!polling.has(this)) return;
+      if (data && data.stage === "publish" && typeof data.sha === "string" && !this.sha) this.sha = data.sha;
       if (data && data.error) {
         this.stopPolling();
         note(data.error);
@@ -924,21 +909,6 @@
       if (hadFocus) this.node.focus({ preventScroll: true });
       if (moved) reveal(this.node);
     }
-  }
-
-  // The title the site gives an edit: a copy of titleOf in netlify/editor/service.mjs
-  // (keep the two the same). Used only when a publish's own answer never arrived.
-  function titleFor(summary) {
-    const max = 72;
-    const line = (summary[0] || "Site change").replace(/^Please check: /, "");
-    if (line.length <= max) return line;
-    const steps = line.split(" → ");
-    for (let i = 1; i < steps.length; i++) {
-      const shorter = `… → ${steps.slice(i).join(" → ")}`;
-      if (shorter.length <= max) return shorter;
-    }
-    const last = steps.length > 1 ? `… → ${steps[steps.length - 1]}` : line;
-    return `${last.slice(0, max - 1)}…`;
   }
 
   // "Done. I put back: …" and, when some were changed again since, the ones left alone.

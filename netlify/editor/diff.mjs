@@ -95,7 +95,12 @@ export function diffContent(before, after) {
 // ---- summary ---------------------------------------------------------------
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-const clip = (s) => (s.length > 80 ? `${s.slice(0, 80)}…` : s);
+// A summary line is always one line: every run of spaces, tabs or line breaks becomes one space.
+const oneLine = (s) => (typeof s === "string" ? s.replace(/\s+/g, " ") : s);
+const clip = (s) => {
+  const line = oneLine(s);
+  return line.length > 80 ? `${line.slice(0, 80)}…` : line;
+};
 
 function formatDate(s) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
@@ -176,7 +181,7 @@ export function summarize(changes, schema) {
     if (c.kind === "added") return `${check}${head}: added “${clip(itemName(c.after, c.index))}”`;
     if (c.kind === "removed") return `${check}${head}: removed “${clip(itemName(c.before, c.index))}”`;
     const plainText = !["image", "hidden", "date"].includes(field?.type);
-    const around = plainText ? aroundChange(c.before, c.after) : null;
+    const around = plainText ? aroundChange(oneLine(c.before), oneLine(c.after)) : null;
     if (around) return `${check}${head}: ${around[0]} → ${around[1]}`;
     return `${check}${head}: ${formatValue(c.before, field, "before")} → ${formatValue(c.after, field, "after")}`;
   });

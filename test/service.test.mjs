@@ -419,7 +419,7 @@ test("publish writes the content and the photo in one change with the right mess
     assert.equal(JSON.parse(home).hero.photo, `/images/${name}`);
     assert.deepEqual(await fs.readFile(path.join(t.root, "src/images", name)), Buffer.from(PHOTO, "base64"));
 
-    assert.deepEqual(await publish(t.deps, r.id), { ok: true, title: p.title });
+    assert.deepEqual(await publish(t.deps, r.id), { ok: true, title: p.title, sha: p.sha });
     assert.equal((await t.repo.edits(10)).length, 1);
   } finally {
     await t.cleanup();
@@ -854,10 +854,10 @@ test("status after publish reports the live site; a failure is undone once and s
     t.client.queue(propose([DEADLINE]));
     const r = await ask(t.deps, { message: "deadline" });
     await publish(t.deps, r.id);
-    const sha = (await t.repo.edits(1))[0].sha;
-    assert.deepEqual(await status(t.deps, { id: r.id }), { stage: "publish", state: "waiting" });
+    const { sha, title } = (await t.repo.edits(1))[0];
+    assert.deepEqual(await status(t.deps, { id: r.id }), { stage: "publish", state: "waiting", sha, title });
     t.netlify.states.set(sha, "building");
-    assert.deepEqual(await status(t.deps, { id: r.id }), { stage: "publish", state: "building" });
+    assert.deepEqual(await status(t.deps, { id: r.id }), { stage: "publish", state: "building", sha, title });
     t.netlify.states.set(sha, "failed");
     const polls = await Promise.all([status(t.deps, { id: r.id }), status(t.deps, { id: r.id })]);
     // One poll puts the site back; the other is told it is still under way.
@@ -883,9 +883,9 @@ test("status reports ready with the address once the site is live", async () => 
     t.client.queue(propose([DEADLINE]));
     const r = await ask(t.deps, { message: "deadline" });
     await publish(t.deps, r.id);
-    const sha = (await t.repo.edits(1))[0].sha;
+    const { sha, title } = (await t.repo.edits(1))[0];
     t.netlify.states.set(sha, "ready");
-    assert.deepEqual(await status(t.deps, { id: r.id }), { stage: "publish", state: "ready", url: `https://example.test/${sha}` });
+    assert.deepEqual(await status(t.deps, { id: r.id }), { stage: "publish", state: "ready", url: `https://example.test/${sha}`, sha, title });
   } finally {
     await t.cleanup();
   }
@@ -1241,12 +1241,13 @@ test("cancel after a completed publish refuses and leaves the record published",
   try {
     t.client.queue(propose([DEADLINE]));
     const r = await ask(t.deps, { message: "deadline" });
-    assert.equal((await publish(t.deps, r.id)).ok, true);
+    const p = await publish(t.deps, r.id);
+    assert.equal(p.ok, true);
     assert.deepEqual(seen(await cancel(t.deps, r.id)), { ok: false, text: ON_SITE });
     const stored = await t.store.get(`proposal:${r.id}`);
     assert.ok(stored.published);
     assert.equal(stored.cancelled, undefined);
-    assert.deepEqual(await status(t.deps, { id: r.id }), { stage: "publish", state: "waiting" });
+    assert.deepEqual(await status(t.deps, { id: r.id }), { stage: "publish", state: "waiting", sha: p.sha, title: p.title });
   } finally {
     await t.cleanup();
   }
@@ -1305,5 +1306,53 @@ test("an edit with the same title from before the claim does not count as landed
     assert.deepEqual(await cancel(t.deps, r.id), { ok: true });
   } finally {
     await t.cleanup();
+  }
+});
+
+// ---- final review, item 3: "Undo this" works by the change's own sha ----
+
+test("a multi-paragraph answer gives a one-line title, the same in the history and the publish answer", async () => {
+  const t = await setup();
+  try {
+    t.client.queue(propose([set("faq", "/questions/0/answer", "Yes, kids are welcome.\n\nPlease list them\twhen you reply.")]));
+    const r = await ask(t.deps, { message: "kids answer" });
+    assert.doesNotMatch(r.summary[0], /[\n\t]|\s\s/);
+    const p = seen(await publish(t.deps, r.id));
+    assert.doesNotMatch(p.title, /[\n\t]|\s\s/);
+    const [h] = await history(t.deps);
+    assert.equal(h.title, p.title);
+    assert.equal(h.sha, p.sha);
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("publish answers with the sha it wrote, again on a second publish, and status carries it", async () => {
+  const t = await setup();
+  try {
+    t.client.queue(propose([DEADLINE]));
+    const r = await ask(t.deps, { message: "deadline" });
+    const p = await publish(t.deps, r.id);
+    const [edit] = await t.repo.edits(10);
+    assert.deepEqual(p, { ok: true, title: edit.title, sha: edit.sha });
+    assert.deepEqual(await publish(t.deps, r.id), p);
+    assert.deepEqual(await status(t.deps, { id: r.id }), { stage: "publish", state: "waiting", sha: p.sha, title: p.title });
+    t.netlify.states.set(p.sha, "ready");
+    assert.deepEqual(await status(t.deps, { id: r.id }), { stage: "publish", state: "ready", url: `https://example.test/${p.sha}`, sha: p.sha, title: p.title });
+    assert.equal((await undo(t.deps, p.sha)).ok, true);
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("titleOf: one line, the Please check prefix dropped, at most 72 characters", async () => {
+  const { titleOf } = await import("../netlify/editor/service.mjs");
+  assert.equal(titleOf([]), "Site change");
+  assert.equal(titleOf(["Please check: RSVP → RSVPs open: Off → On"]), "RSVP → RSVPs open: Off → On");
+  assert.equal(titleOf(["FAQ → Answer: A →\n\nB\tC"]), "FAQ → Answer: A → B C");
+  for (const s of [["x".repeat(200)], ["x".repeat(72)], [`FAQ → Q → Answer: A → ${"Yes.\n\n".repeat(40)}`]]) {
+    const t = titleOf(s);
+    assert.ok(t.length <= 72, t);
+    assert.doesNotMatch(t, /[\n\t]|\s\s/);
   }
 });

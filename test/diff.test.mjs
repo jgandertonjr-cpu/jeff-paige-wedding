@@ -397,3 +397,20 @@ test("O4: a change at the very start, and short values, read as before", () => {
   assert.equal(line, `Home → Welcome section → Welcome message: ${clip(text)} → ${clip(text.replace(/^It started/, "It all started"))}`);
   assert.deepEqual(sum((c) => { c.travel.room_block.hotel_name = "New"; }), ["Travel & Hotels → Room block → Hotel name: H → New"]);
 });
+
+// Final review, item 3: a summary line is always one line.
+test("summary values collapse line breaks, tabs and runs of spaces to one space", () => {
+  const [line] = sum((c) => { c.faq.questions[0].answer = "First part.\n\nSecond\tpart   here."; });
+  assert.equal(line, "FAQ → Questions → “Q1” → Answer: A1 → First part. Second part here.");
+  const [named] = sum((c) => { c.faq.questions.push({ question: "Kids\nwelcome?", answer: "Yes" }); });
+  assert.doesNotMatch(named, /\s\s|[\n\t]/);
+  const long = "Words ".repeat(20);
+  const [around] = sum((c) => { c.faq.questions[0].answer = `${long}old\n\nending here`; });
+  assert.ok(around);
+  const [win] = summarize(diffContent(
+    edit((c) => { c.faq.questions[0].answer = `${long}old\n\nending here`; }),
+    edit((c) => { c.faq.questions[0].answer = `${long}new\n\nending  here`; }),
+  ), schema);
+  assert.match(win, /…/);
+  assert.doesNotMatch(win, /\s\s|[\n\t]/, win);
+});

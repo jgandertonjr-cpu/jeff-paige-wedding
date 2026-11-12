@@ -16,10 +16,12 @@
 //       the request can be tried again; a genuine reply from the model has no flag.
 //   preview(deps, id)   → { ok: true } | { ok: false, text }
 //   status(deps, { id })
-//     → { stage: "preview" | "publish", state: "waiting" | "building" | "ready" | "failed", url?, text? }
+//     → { stage: "preview" | "publish", state: "waiting" | "building" | "ready" | "failed", url?, text?, sha?, title? }
 //       url only when state is "ready"; text with "failed" (thrown away, expired, put back or not).
+//       sha and title (the published edit's) on a published change that has not failed.
 //       While another poll is putting the site back: { stage: "publish", state: "building" }.
-//   publish(deps, id)   → { ok: true, title } | { ok: false, text }
+//   publish(deps, id)   → { ok: true, title, sha } | { ok: false, text }
+//     sha is the edit it wrote, the one undo takes; title is one line.
 //   cancel(deps, id)    → { ok: true } | { ok: false, text }
 //     refused while it is being published, and once it is on the site (a stale
 //     publishing claim is first checked against the recent edits).
@@ -225,14 +227,13 @@ const hashFiles = (files) => crypto.createHash("sha256")
   .update(JSON.stringify(Object.keys(files).sort().map((p) => [p, files[p]])))
   .digest("hex");
 
-// The first summary line, at most 72 characters. The end says what changed, so
-// a long line loses its leading steps ("… → " stands in for them); if the last
-// step alone is still too long, its own end is cut. The same text is the saved
-// title and the publish result's title (the page matches on it for "Undo this").
-// src/admin/admin.js keeps a copy (titleFor) for a publish whose answer was lost.
+// The first summary line, on one line and at most 72 characters. The end says
+// what changed, so a long line loses its leading steps ("… → " stands in for
+// them); if the last step alone is still too long, its own end is cut. The same
+// text is the saved title and the publish result's title.
 const TITLE_MAX = 72;
 export function titleOf(summary) {
-  const line = (summary[0] || "Site change").replace(/^Please check: /, "");
+  const line = (summary[0] || "Site change").replace(/\s+/g, " ").trim().replace(/^Please check: /, "");
   if (line.length <= TITLE_MAX) return line;
   const steps = line.split(" → ");
   for (let i = 1; i < steps.length; i++) {
@@ -394,7 +395,8 @@ export async function status(deps, { id } = {}) {
 
   if (p.published) {
     const d = await deps.netlify.deployFor(p.published.sha);
-    if (d.state !== "failed") return report("publish", d);
+    // The sha and title let the page offer "Undo this" even if it lost the publish answer.
+    if (d.state !== "failed") return { ...report("publish", d), sha: p.published.sha, title: p.published.title };
     return putSiteBack(deps, id, p.published.sha);
   }
 
@@ -447,7 +449,7 @@ async function putSiteBack(deps, id, sha) {
 export async function publish(deps, id) {
   const p = await loadProposal(deps, id);
   if (!p) return refuse(TEXT.expired);
-  if (p.published) return { ok: true, title: p.published.title };
+  if (p.published) return { ok: true, title: p.published.title, sha: p.published.sha };
   if (p.needsPreview) {
     if (!p.preview) return refuse(TEXT.previewFirst);
     if ((await deps.netlify.deployFor(p.preview.sha)).state !== "ready") return refuse(TEXT.previewFirst);
@@ -481,7 +483,7 @@ export async function publish(deps, id) {
     }
     return refuse(TEXT.expired);
   }
-  if (outcome.done) return { ok: true, title: outcome.done.title };
+  if (outcome.done) return { ok: true, title: outcome.done.title, sha: outcome.done.sha };
   if (outcome.busy) return refuse(TEXT.busy);
 
   const title = titleOf(p.summary);
@@ -512,7 +514,7 @@ export async function publish(deps, id) {
   if (p.preview) {
     try { await deps.repo.closePreview({ id, number: p.preview.number }); } catch {}
   }
-  return { ok: true, title };
+  return { ok: true, title, sha: result.sha };
 }
 
 export async function cancel(deps, id) {
