@@ -66,6 +66,14 @@ eleventyExcludeFromCollections: true
     window.addEventListener('resize', onScroll);
     window.addEventListener('load', check);
     check();
+
+    /* Keyboard focus can land on a block that has not faded in yet (tabbing
+       past the scroll line), so reveal whatever holds focus. Kept for the
+       life of the page, even after the pending list empties. */
+    document.addEventListener('focusin', function (event) {
+      var block = event.target.closest && event.target.closest('.reveal');
+      if (block) block.classList.add('visible');
+    });
   }
 
   /* =============================================================
