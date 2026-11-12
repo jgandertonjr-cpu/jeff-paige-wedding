@@ -1243,6 +1243,8 @@ main p a:not(.btn):hover,
 /* Each step stays at or below the hero names, which are the largest type. */
 @media (min-width: 700px) { .countdown__number { font-size: 3.75rem; } }
 @media (min-width: 920px) { .countdown__number { font-size: 4.5rem; } }
+/* A phone held sideways sets the names smaller, so the number follows. */
+@media (orientation: landscape) and (max-height: 520px) and (min-width: 560px) { .countdown__number { font-size: 2.2rem; } }
 
 .countdown__label {
   font-size: var(--fs-xs);
