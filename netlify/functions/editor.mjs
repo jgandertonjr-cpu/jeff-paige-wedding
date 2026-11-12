@@ -171,6 +171,22 @@ export async function realServiceDeps(env, { fetch: fetchImpl = fetch, store }) 
   };
 }
 
+// A preview copy is built from a site version that is not live yet, and its
+// editor may describe content files main does not have. So a preview reads the
+// version it was built from; it can never write (canWrite), so main is safe.
+// Anything that goes wrong leaves the usual reading of main.
+export async function repoFor(repo, netlify, deploy, log) {
+  if (!deploy || deploy.context !== "deploy-preview" || !deploy.id) return repo;
+  try {
+    const sha = await netlify.commitOf(deploy.id);
+    if (!sha) return repo;
+    return { ...repo, head: (branch) => (branch === undefined ? Promise.resolve(sha) : repo.head(branch)) };
+  } catch (err) {
+    log("error", { route: "setup", name: (err && err.name) || "Error" });
+    return repo;
+  }
+}
+
 let real;
 async function realHandler(context) {
   if (real) return real;
@@ -178,6 +194,7 @@ async function realHandler(context) {
   const store = blobStore("editor");
   const serviceDeps = await realServiceDeps(env, { store });
   const deployContext = context && context.deploy && context.deploy.context;
+  serviceDeps.repo = await repoFor(serviceDeps.repo, serviceDeps.netlify, context && context.deploy, logLine);
   real = createHandler({
     service, sessionApi, store, serviceDeps, env,
     now: () => Date.now(),

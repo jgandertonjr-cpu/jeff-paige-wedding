@@ -548,3 +548,27 @@ test("a preview copy's own address is accepted: the request's origin must match 
   assert.equal((await handle(at("https://evil.example"), ctx())).status, 403);
   assert.equal((await handle(at("http://deploy-preview-13--example.netlify.app"), ctx())).status, 403);
 });
+
+test("a preview copy reads the site version it was built from; the live site reads main", async () => {
+  // A preview's editor may describe content files that main does not have yet.
+  const { repoFor } = await import("../netlify/functions/editor.mjs");
+  const sha = "b".repeat(40);
+  const repo = { head: async (branch = "main") => `head-of-${branch}`, other: 1 };
+  const netlify = { commitOf: async (id) => (id === "dep1" ? sha : null) };
+  const log = [];
+  const say = (event, fields) => log.push({ event, ...fields });
+
+  const preview = await repoFor(repo, netlify, { context: "deploy-preview", id: "dep1" }, say);
+  assert.equal(await preview.head(), sha);
+  assert.equal(await preview.head("other-branch"), "head-of-other-branch");
+  assert.equal(preview.other, 1);
+
+  assert.equal(await repoFor(repo, netlify, { context: "production", id: "dep1" }, say), repo);
+  assert.equal(await repoFor(repo, netlify, { context: "deploy-preview", id: "unknown" }, say), repo);
+  assert.equal(await repoFor(repo, netlify, undefined, say), repo);
+  assert.deepEqual(log, []);
+
+  const broken = { commitOf: async () => { throw new TypeError("secret detail"); } };
+  assert.equal(await repoFor(repo, broken, { context: "deploy-preview", id: "dep1" }, say), repo);
+  assert.deepEqual(log, [{ event: "error", route: "setup", name: "TypeError" }]);
+});

@@ -61,5 +61,19 @@ export function createNetlify({ token, siteId, fetch }) {
     if (FAILED.has(newest.state)) return { state: "failed" };
     return { state: "building" };
   }
-  return { deployFor };
+  // The site version (commit) one deploy was built from, or null when it has none.
+  async function commitOf(deployId) {
+    if (!/^[a-f0-9]{8,40}$/.test(String(deployId))) return null;
+    const res = await fetch(`https://api.netlify.com/api/v1/deploys/${deployId}`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new Error(`Netlify request failed (${res.status})`);
+    let d;
+    try {
+      d = await res.json();
+    } catch {
+      throw new Error(`Netlify request failed (${res.status})`);
+    }
+    return d && typeof d.commit_ref === "string" && /^[a-f0-9]{40}$/.test(d.commit_ref) ? d.commit_ref : null;
+  }
+
+  return { deployFor, commitOf };
 }

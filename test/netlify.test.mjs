@@ -181,3 +181,17 @@ test("a later production build on page 1 counts when the cancelled one is on pag
   const nl = createNetlify({ token: TOKEN, siteId: "site-1", fetch });
   assert.deepEqual(await nl.deployFor("abc"), { state: "ready", url: "https://later.example" });
 });
+
+test("commitOf: the site version a deploy was built from, or null when it has none or the id is odd", async () => {
+  const sha = "a".repeat(40);
+  const ok = client(200, { commit_ref: sha });
+  assert.equal(await ok.nl.commitOf("6af620ac83328ccb0bdf8aa7"), sha);
+  assert.equal(ok.calls[0].url, "https://api.netlify.com/api/v1/deploys/6af620ac83328ccb0bdf8aa7");
+  assert.equal(ok.calls[0].init.headers.Authorization, `Bearer ${TOKEN}`);
+  assert.equal(await client(200, { commit_ref: null }).nl.commitOf("6af620ac83328ccb0bdf8aa7"), null);
+  assert.equal(await client(200, { commit_ref: "not a sha" }).nl.commitOf("6af620ac83328ccb0bdf8aa7"), null);
+  const odd = client(200, { commit_ref: sha });
+  assert.equal(await odd.nl.commitOf("../sites"), null);
+  assert.equal(odd.calls.length, 0);
+  await assert.rejects(client(500, {}).nl.commitOf("6af620ac83328ccb0bdf8aa7"), /Netlify request failed \(500\)/);
+});
