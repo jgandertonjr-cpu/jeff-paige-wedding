@@ -1,6 +1,6 @@
 # Plain-English Editor: Design
 
-Date: 2026-11-12 · Branch: `plain-english-editor` · Status: awaiting Jeff's review
+Date: 2026-11-12 · Branch: `plain-english-editor` · Status: superseded in part by `2026-11-12-find-and-change-design.md` (the chat and model sections no longer apply)
 
 ## Goal
 
