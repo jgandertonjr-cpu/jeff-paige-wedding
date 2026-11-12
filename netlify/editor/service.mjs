@@ -387,8 +387,10 @@ function tooBig(value) {
 export const VERSION = /^(?:[a-f0-9]{7,64}|local-base)$/;
 
 // Has any file these ops touch changed between the version she opened and now?
-// A version that can't be read counts as changed.
+// A version that can't be read, or a step naming a section the editor no longer
+// has, counts as changed.
 async function touchedFilesMoved({ repo, schema }, from, to, ops) {
+  if (ops.some((op) => typeof op?.file !== "string" || !Object.hasOwn(schema.files, op.file))) return true;
   const paths = [...new Set(ops.map((op) => schema.files[op.file].path))];
   try {
     const [then, now] = await Promise.all([repo.readFiles(paths, from), repo.readFiles(paths, to)]);

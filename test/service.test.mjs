@@ -1590,3 +1590,22 @@ test("no sentence asks her to ask, or talks about requests or messages", async (
   }
   assert.equal(TEXT.noFit, "The site changed since you reviewed this, so that change no longer fits. Please review your changes again.");
 });
+
+// F7: a stored step naming a section the editor no longer has is "changed since you reviewed", never a crash.
+test("preview and publish of a change naming a section that is no longer there say it changed since review", async () => {
+  const t = await setup();
+  try {
+    const a = await propose(t.deps, { ops: [DEADLINE] });
+    const stored = await t.store.get(`proposal:${a.id}`);
+    await t.store.set(`proposal:${a.id}`, { ...stored, contentOps: [{ ...stored.contentOps[0], file: "retired" }] });
+    const faq = await t.readData("src/_data/faq.json");
+    faq.cta.title = "Someone else's heading";
+    await t.repo.write({ branch: "main", baseSha: "local-base", message: "x", files: { "src/_data/faq.json": JSON.stringify(faq, null, 2) + "\n" } });
+    const head = await t.repo.head();
+    assert.deepEqual(seen(await preview(t.deps, a.id)), { ok: false, text: REVIEWED_MOVED, reload: true });
+    assert.deepEqual(seen(await publish(t.deps, a.id)), { ok: false, text: REVIEWED_MOVED, reload: true });
+    assert.equal(await t.repo.head(), head, "nothing written");
+  } finally {
+    await t.cleanup();
+  }
+});
