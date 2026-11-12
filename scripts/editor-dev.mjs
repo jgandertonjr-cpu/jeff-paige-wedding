@@ -18,10 +18,10 @@ import { statSync } from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { execFile } from "node:child_process";
-import { pathToFileURL } from "node:url";
+import { pathToFileURL, fileURLToPath } from "node:url";
 import { checkSite } from "./check-site.mjs";
 
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PORT = 8081;
 export const LISTEN_HOST = "127.0.0.1"; // never every network interface: the password is published in this file
 const ORIGIN = `http://localhost:${PORT}`;

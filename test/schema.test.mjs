@@ -4,8 +4,9 @@ import fs from "node:fs";
 import path from "node:path";
 import schema from "../netlify/editor/schema.gen.mjs";
 import { renderSchemaModule } from "../scripts/build-editor-schema.mjs";
+import { fileURLToPath } from "node:url";
 
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 const KEYS = [
   "site", "theme", "nav", "home", "story", "details", "party", "rsvp",

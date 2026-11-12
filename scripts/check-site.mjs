@@ -17,9 +17,10 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { StringDecoder } from "node:string_decoder";
+import { fileURLToPath } from "node:url";
 import { parse } from "parse5";
 
-const HERE = path.dirname(new URL(import.meta.url).pathname);
+const HERE = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_RECORD = path.join(HERE, "protected-files.json");
 
 // The ten pages and the 404 page (Netlify "pretty URLs" serve /details from details.html).
@@ -460,7 +461,7 @@ export function recordSite(dir, protectedFile = DEFAULT_RECORD) {
 
 // ---- command line -----------------------------------------------------------
 
-if (process.argv[1] && path.resolve(process.argv[1]) === new URL(import.meta.url).pathname) {
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
   const dir = path.resolve(args.find((a) => !a.startsWith("--")) || "_site");
   if (args.includes("--record")) {
