@@ -818,7 +818,6 @@ main p a:not(.btn):hover,
   border-radius: 2px;
   box-shadow: var(--shadow-md);
   padding: var(--space-8) var(--space-5) var(--space-5);
-  animation: fadeIn var(--duration-max) ease both;
 }
 
 /* Thin gold rule just inside the card's edge, as on printed stationery */
@@ -892,8 +891,8 @@ main p a:not(.btn):hover,
   line-height: 1;
   color: var(--gold-text-hero-fallback);
   display: block;
-  margin: calc(-1 * var(--amp-room)) 0;
   --amp-room: 0em;   /* extra vertical padding the clipped gradient needs; margins give it back */
+  margin: calc(-1 * var(--amp-room)) 0;
 }
 
 .hero .section-ornament {
@@ -1309,6 +1308,8 @@ main .form-success .section-ornament { display: block; }
   .amp { background-image: var(--gold-text); }
   .hero__and { background-image: var(--gold-text-hero); }
   .amp { padding: 0.3em 0.18em; margin: -0.3em -0.14em; }
+  /* The logo's own margin (0 0.02em) outranks the line above; give the padding back so the link keeps its height */
+  .site-logo .amp { margin: -0.3em -0.16em; }
   .hero__and { --amp-room: 0.24em; padding: calc(0.08em + var(--amp-room)) 0.2em; }
   .footer__monogram .amp { background-image: var(--gold-text-on-sage); }
 }
@@ -2370,10 +2371,6 @@ main .form-success .section-ornament { display: block; }
     flex: 0 0 72%;
     scroll-snap-align: start;
   }
-  /* Middle card keeps its arch on mobile too */
-  .photo-strip__item:nth-child(2) .photo-strip__frame {
-    border-radius: var(--radius-arch);
-  }
 }
 
 @media (min-width: 700px) {
@@ -2390,16 +2387,20 @@ main .form-success .section-ornament { display: block; }
 }
 
 /* Middle photo gets the arch; all three share one aspect ratio so the row is level */
-@media (min-width: 700px) {
-  .photo-strip__item:nth-child(2) .photo-strip__frame {
-    border-radius: var(--radius-arch);
-  }
+.photo-strip__item:nth-child(2) .photo-strip__frame {
+  border-radius: var(--radius-arch);
 }
 
 .photo-strip__frame img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* The photo leans in a little inside its frame, as the gallery tiles do */
+@media (hover: hover) {
+  .photo-strip__frame img { transition: transform var(--duration-max) var(--ease); }
+  .photo-strip__item:hover .photo-strip__frame img { transform: scale(1.02); }
 }
 
 .photo-strip__caption {
@@ -2977,6 +2978,24 @@ main .form-success .section-ornament { display: block; }
 @keyframes fadeIn {
   from { opacity: 0; }
   to   { opacity: 1; }
+}
+
+/* Hero entrance: the photo, then the names, then the date block, each fading up
+   300ms after the last. Only with JS (the .js class) and only when motion is
+   welcome, so reduced-motion and no-JS visitors see the finished page at once. */
+@keyframes fadeRise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .js [data-enter] .hero__photo-wrap { animation: fadeRise var(--duration-max) var(--ease) both; }
+  .js [data-enter] .hero__eyebrow,
+  .js [data-enter] .hero__names { animation: fadeRise var(--duration-max) var(--ease) 120ms both; }
+  .js [data-enter] .section-ornament,
+  .js [data-enter] .hero__date,
+  .js [data-enter] .hero__location,
+  .js [data-enter] .essentials { animation: fadeRise var(--duration-max) var(--ease) 240ms both; }
 }
 
 /* =============================================================

@@ -61,7 +61,7 @@ canonical: ""
 {%- set heroSize = hero.photo | imgSize %}
     <!-- ── HERO — THE INVITATION ── -->
     <section class="hero" aria-label="{{ c.partner1_first }} and {{ c.partner2_first }} are getting married">
-      <div class="hero__card">
+      <div class="hero__card" data-enter>
         <div class="hero__photo-wrap">
           <div class="hero__photo">
             <img src="{{ hero.photo | relUrl }}" srcset="{{ hero.photo | srcset }}" sizes="{{ heroSizes }}" width="{{ heroSize.width }}" height="{{ heroSize.height }}" alt="{{ hero.photo_alt }}" fetchpriority="high">
