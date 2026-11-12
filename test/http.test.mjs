@@ -536,3 +536,15 @@ test("the real wiring gives the service a name-only logger", async () => {
   const deps = await realServiceDeps(ENV, { fetch: async () => { throw new Error("no network in tests"); }, store: memoryStore() });
   assert.equal(typeof deps.log, "function");
 });
+
+test("a preview copy's own address is accepted: the request's origin must match the address it arrived on", async () => {
+  // Netlify gives functions the live site's URL but not a preview's, so the list alone would lock previews out.
+  const { handle } = setup();
+  const PREVIEW = "https://deploy-preview-13--example.netlify.app";
+  const at = (origin) => new Request(`${PREVIEW}/api/editor/login`, {
+    method: "POST", headers: { origin, "content-type": "application/json" }, body: JSON.stringify({ password: ENV.ADMIN_PASSWORD }),
+  });
+  assert.equal((await handle(at(PREVIEW), ctx())).status, 200);
+  assert.equal((await handle(at("https://evil.example"), ctx())).status, 403);
+  assert.equal((await handle(at("http://deploy-preview-13--example.netlify.app"), ctx())).status, 403);
+});

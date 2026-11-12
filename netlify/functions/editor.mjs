@@ -135,7 +135,11 @@ export function createHandler(deps) {
       if (req.method !== ROUTES[name]) return json(405, { error: "That isn't allowed." }, { Allow: ROUTES[name] });
       if (req.method === "POST") {
         const type = (req.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
-        if (!allowedOrigins.includes(req.headers.get("origin")) || type !== "application/json") {
+        // The page must be on the address the request arrived at (which covers preview copies,
+        // whose address the function isn't told) or on one of the site's known addresses.
+        const origin = req.headers.get("origin");
+        const known = origin && (origin === new URL(req.url).origin || allowedOrigins.includes(origin));
+        if (!known || type !== "application/json") {
           return json(403, { error: SAID.rejected });
         }
       }
