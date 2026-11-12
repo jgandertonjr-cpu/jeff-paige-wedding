@@ -491,7 +491,7 @@ collections:
               - { name: intro, label: Intro text, widget: text }
               - { name: hotel_name, label: Hotel name, widget: string }
               - { name: badge, label: Badge text, widget: string }
-              - { name: hotel_details, label: Hotel address / distance, widget: string }
+              - { name: hotel_details, label: Hotel address / distance, widget: string, required: false }
               - name: deadline
                 label: Booking deadline
                 widget: datetime
