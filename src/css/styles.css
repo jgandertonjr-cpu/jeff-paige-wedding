@@ -173,7 +173,6 @@
   --fs-2xl:     clamp(2rem, 1.4rem + 2.2vw, 3rem);        /* section titles */
   --fs-3xl:     clamp(2.4rem, 1.6rem + 3.6vw, 4.25rem);   /* h1 */
   --fs-display: clamp(2.6rem, 1.6rem + 4.4vw, 5rem);      /* interior page titles */
-  --fs-hero:    clamp(3.4rem, 11vw, 8rem);                /* homepage names */
 
   --fw-light:    300;
   --fw-regular:  400;
@@ -206,7 +205,6 @@
   --section-padding-y:   clamp(4rem, 9vw, 7.5rem);
   --container-max-width: 1140px;
   --gutter:              clamp(1.25rem, 5vw, 2.5rem);
-  --card-padding:        clamp(1.5rem, 3vw, 2.25rem);
   --nav-height:          76px;
   /* Pinned to 0 — the site no longer renders edge-to-edge
      (no viewport-fit=cover), and iOS 26 Safari reports a fluctuating
@@ -232,7 +230,6 @@
   /* ── Shadows — evergreen-tinted, soft ── */
   --shadow-sm: 0 1px 3px rgba(var(--color-dark-rgb), 0.06);
   --shadow-md: 0 8px 28px rgba(var(--color-dark-rgb), 0.08);
-  --shadow-lg: 0 18px 48px rgba(var(--color-dark-rgb), 0.12);
 
   /* ── Motion — subtle, never over 300ms ── */
   --ease:              cubic-bezier(0.33, 1, 0.68, 1);
@@ -769,15 +766,15 @@ main p a:not(.btn):hover,
 }
 
 /* RSVP keeps its Rosette fill here too */
-.mobile-nav__link--primary[href^="rsvp"] { background-color: var(--color-rosette); }
+.mobile-nav__link--rsvp { background-color: var(--color-rosette); }
 
 .mobile-nav__link:hover { color: var(--color-accent-dark); }
 .mobile-nav__link.active {
   color: var(--color-accent-dark);
   font-style: italic;
 }
-.mobile-nav__link--primary[href^="rsvp"]:hover,
-.mobile-nav__link--primary[href^="rsvp"].active { color: var(--color-text); }
+.mobile-nav__link--rsvp:hover,
+.mobile-nav__link--rsvp.active { color: var(--color-text); }
 
 .mobile-nav__note {
   margin-top: var(--space-6);
@@ -1140,7 +1137,8 @@ main p a:not(.btn):hover,
   pointer-events: none;
 }
 
-.essentials-bar.visible {
+.essentials-bar.visible,
+.essentials-bar:focus-within {
   transform: translateY(0);
   pointer-events: auto;
 }
@@ -1294,8 +1292,7 @@ main p a:not(.btn):hover,
 .section-ornament__diamond { display: none; }
 
 /* On Dusty Sage the darker gold keeps the drawing visible */
-.site-footer .section-ornament,
-.section--dark .section-ornament { background: var(--color-gold-on-sage); }
+.site-footer .section-ornament { background: var(--color-gold-on-sage); }
 
 /* Section headings carry no ornament — eyebrow and title are enough */
 main .section .section-ornament { display: none; }
@@ -2939,8 +2936,6 @@ main .form-success .section-ornament { display: block; }
 
 /* A single block centered in its section — the same width as a narrow container */
 .card--centered { max-width: 660px; margin-inline: auto; }
-/* Kept as a hook for the lead block in a section; every block's top rule is gold */
-.card--featured { border-top-color: var(--color-gold); }
 
 /* Art direction for photos whose subject sits above or left of center */
 .img-focus-high { object-position: center 30%; }
@@ -3051,7 +3046,6 @@ main { overflow-x: clip; }
   :root {
     --gutter: clamp(1rem, 5vw, 1.25rem);
     --section-padding-y: clamp(3rem, 12vw, 4.25rem);
-    --card-padding: var(--space-5);
   }
 
   p,
@@ -3166,6 +3160,10 @@ main { overflow-x: clip; }
 /* Where the essentials bar is pinned to the bottom, the footer leaves it room */
 @media (max-width: 1059px) {
   body:has(.essentials-bar:not([hidden])) .site-footer { padding-bottom: calc(52px + var(--space-8) + env(safe-area-inset-bottom, 0px)); }
+}
+/* ...and a focused element is not left hidden under it */
+@media (max-width: 1059px) {
+  html { scroll-padding-bottom: 64px; }
 }
 @media (orientation: landscape) and (max-height: 520px) {
   body:has(.essentials-bar:not([hidden])) .site-footer { padding-bottom: clamp(2rem, 5vw, 3rem); }
@@ -3445,7 +3443,12 @@ main .rsvp-plus-header .section-ornament {
   .site-header,
   .site-footer,
   .hamburger,
-  .countdown { display: none; }
+  .countdown,
+  .essentials-bar,
+  .mobile-nav { display: none !important; }
+
+  /* Blocks that had not faded in yet must still print. */
+  .js .reveal { opacity: 1 !important; transform: none !important; }
 
   body::after { display: none; }
   .hero { min-height: auto; padding: 2rem; }

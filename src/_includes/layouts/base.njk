@@ -104,7 +104,7 @@
   <nav class="mobile-nav" id="mobile-nav" aria-label="Mobile navigation">
     <div class="mobile-nav__primary">
       {%- for item in nav.essentials %}
-      <a href="{{ root }}{{ item.url }}" class="mobile-nav__link mobile-nav__link--primary">{{ item.label }}</a>
+      <a href="{{ root }}{{ item.url }}" class="mobile-nav__link mobile-nav__link--primary{% if item.rsvp %} mobile-nav__link--rsvp{% endif %}">{{ item.label }}</a>
       {%- endfor %}
     </div>
     <div class="mobile-nav__more">
