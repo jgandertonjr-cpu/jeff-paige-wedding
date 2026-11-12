@@ -35,7 +35,7 @@ Do these in order.
    |---|---|
    | Token name | `wedding-site-editor` |
    | Resource owner | `jgandertonjr-cpu` |
-   | Expiration | The longest offered. Put a calendar reminder to renew it. When it expires, the editor says it can't reach the site. |
+   | Expiration | The longest offered. Put a calendar reminder to renew it. When it expires, every request answers "Something went wrong. Nothing changed. Try again in a minute." |
    | Repository access | **Only select repositories** → `jeff-paige-wedding` |
    | Repository permissions | **Contents: Read and write** and **Pull requests: Read and write**. (Metadata: Read-only is added automatically.) Nothing else. |
 
@@ -99,13 +99,14 @@ Why: while the repo is public, the guest list file and every edit Paige makes (e
 - **Change the password:** edit `ADMIN_PASSWORD` under **Environment variables**, then **Deploys → Trigger deploy → Deploy project**. This signs everyone out.
 - **Daily limit:** 150 requests a day, across all uses. After that the editor says it resets tomorrow.
 - **Where edits show up:** in the GitHub commit history, as **Website edit: …**. Undo is an edit too.
+- **Unpublished changes expire:** a change Paige has been shown but not published is forgotten after 24 hours ("That change has expired. Please ask again."). When a request fails, her typed message is put back in the box so she can send it again.
 - **Lockout:** 5 wrong passwords from one address locks that address for 15 minutes. 30 wrong passwords across everyone in an hour locks sign-in for an hour.
 
 ---
 
 ## 5. The safety checks
 
-**What the editor can change:** the content files (`src/_data/*.json`), new photos added to `src/images/`, and, for bigger changes, after a preview has been built and has passed the checks, the page templates and the stylesheet. It cannot touch the private apps, the search-engine files (`robots.txt`, `sitemap.xml`), the RSVP form's code, the functions, the build settings, or anything else. This is enforced by code with an allowlist, whatever the model says.
+**What the editor can change:** the content files (`src/_data/*.json`), new photos added to `src/images/`, and, for bigger changes, after a preview has been built and has passed the checks, the page templates and the stylesheet. The content files include the guest list. The editor can also change the shared template pieces in `src/_includes/` (not the main page shell, `layouts/base.njk`), and it updates `DESIGN.md` by itself, only when a theme colour changes, so the design notes stay true. It cannot touch the private apps, the search-engine files (`robots.txt`, `sitemap.xml`), the RSVP form's code, the functions, the build settings, or anything else. This is enforced by code with an allowlist, whatever the model says.
 
 **Site check:** every build ends with `scripts/check-site.mjs`. It fails if a page is missing, a link or image is broken, a private page loses its `noindex`, or a protected file has changed. A failed check fails the preview, so Publish never appears; on `main`, Netlify keeps the previous version live.
 
@@ -133,7 +134,8 @@ When you no longer want it: delete `src/admin/forms/` and uninstall the provider
 | Symptom | What to do |
 |---|---|
 | "The editor isn't set up yet." | A variable is missing or too short (password under 8 characters, secret under 32). Open **Logs → Functions** in Netlify; the entry says which one. Fix it, then trigger a deploy. |
-| "I can't reach the site right now. Try again in a minute." every time | A problem with the Anthropic key (wrong, revoked, or out of credit) or Anthropic itself. In **Logs → Functions** look for a line with event `ask_failed` and a short code: `auth` (key wrong or not allowed), `bad_request`, `rate_limited`, `unreachable` or `timeout`. For `auth`, renew the key (step a) and update `ANTHROPIC_API_KEY`; check your credit and monthly limit too. |
+| "I can't reach the site right now. Try again in a minute." every time | A problem with the Anthropic key (wrong, revoked, or out of credit) or Anthropic itself. In **Logs → Functions** look for a line with event `ask_failed` and a short code: `auth` (key wrong or not allowed), `bad_request`, `rate_limited` or `unreachable`. For `auth`, renew the key (step a) and update `ANTHROPIC_API_KEY`; check your credit and monthly limit too. |
+| "That took too long. Nothing changed. Try again." | Logged as `ask_failed` with code `timeout`. An occasional one is normal. If it happens every time, check Anthropic's status page. (Codes `refused` and `cut_off` in the same log are the model declining or running out of room, not faults.) |
 | "Something went wrong. Nothing changed. Try again in a minute." every time | Usually GitHub or Netlify, for example an expired GitHub token. In **Logs → Functions** look for a line with event `error`, the route and an error name (nothing more). Renew the GitHub token (step b) and update `GITHUB_TOKEN`, or check `NETLIFY_RSVP_TOKEN`, then trigger a deploy. |
 | Reading the logs | The function log never contains the keys, tokens or passwords themselves, only event names, short codes and error names. |
 | "This is a preview copy of the site, so publishing is turned off here." | Paige is on a Netlify preview address. Use jeffandpaige.net. |
