@@ -187,3 +187,18 @@ test("rules follow the file type", () => {
   assert.ok(flagged(NJK, '{% include "x.njk" %}'));
   assert.ok(!flagged(CSS, "/* note: include this {% later %} */".replace("{% later %}", "later")));
 });
+
+test("svg animation and embedded-content elements are refused", () => {
+  for (const tag of ["<set attributeName=href>", "<animate x>", "<ANIMATETRANSFORM>", "<animateMotion>", "<foreignObject>", "< set x", "&lt;animate&gt;", "<anim{# #}ate>"]) {
+    assert.ok(flagged(NJK, tag), tag);
+  }
+  assert.ok(!flagged(NJK, "<p>Settings and animated things</p>"));
+});
+
+test("scroll-behavior is fine but behavior: is still refused", () => {
+  assert.ok(!flagged(CSS, "scroll-behavior: smooth;"));
+  assert.ok(!flagged(CSS, "overscroll-behavior: contain;"));
+  assert.ok(!flagged(CSS, "html { scroll-behavior : smooth }"));
+  assert.ok(flagged(CSS, "behavior: url(x.htc)"));
+  assert.ok(flagged(CSS, "a{color:red;behavior:url(x.htc)}"));
+});

@@ -54,6 +54,7 @@ function normalise(text) {
 const rule = (re, problem, { scope = "all", loose = true } = {}) => ({ re, problem, scope, loose });
 const RULES = [
   rule(/<\s*(script|iframe|object|embed|base|meta|link|form)\b/i, "A new line adds a script, frame or page-level tag, which is not allowed."),
+  rule(/<\s*(set|animate|animatetransform|animatemotion|foreignobject)\b/i, "A new line adds an animation or embedded-content element, which is not allowed."),
   rule(/\bon[a-z]+\s*=/i, "A new line adds an inline event handler, which is not allowed."),
   rule(/javascript\s*:/i, "A new line adds a javascript link, which is not allowed."),
   rule(/\|\s*(safe|dump)\b|\bdump\s*\(/i, "A new line turns off safe text display or dumps raw data, which is not allowed."),
@@ -63,7 +64,7 @@ const RULES = [
   rule(/\{%-?\s*(end)?(autoescape|filter|raw|verbatim|include|import|from|extends|block)\b/i, "A new line uses a template instruction that is not allowed.", { scope: "njk" }),
   rule(/https?:\s*\/\s*\//i, "A new style line refers to another website, which is not allowed.", { scope: "css" }),
   rule(/(^|[\s'"(=,:])\/\/[a-z0-9]/im, "A new style line refers to another website, which is not allowed.", { scope: "css", loose: false }),
-  rule(/image-set\s*\(|expression\s*\(|behavior\s*:|-moz-binding/i, "A new style line uses a feature that is not allowed.", { scope: "css" }),
+  rule(/image-set\s*\(|expression\s*\(|(^|[^a-z-])behavior\s*:|-moz-binding/i, "A new style line uses a feature that is not allowed.", { scope: "css" }),
 ];
 
 const lineSet = (text) => new Set(text.split("\n").map((l) => l.trim()));

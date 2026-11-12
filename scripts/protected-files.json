@@ -43,7 +43,9 @@
       "tags": [],
       "origins": [
         "https://jeffandpaige.net"
-      ]
+      ],
+      "animation": [],
+      "imports": []
     },
     "our-story.html": {
       "scripts": [
@@ -58,7 +60,9 @@
       "tags": [],
       "origins": [
         "https://jeffandpaige.net"
-      ]
+      ],
+      "animation": [],
+      "imports": []
     },
     "details.html": {
       "scripts": [
@@ -74,7 +78,9 @@
       "origins": [
         "https://jeffandpaige.net",
         "https://maps.google.com"
-      ]
+      ],
+      "animation": [],
+      "imports": []
     },
     "travel.html": {
       "scripts": [
@@ -89,7 +95,9 @@
       "tags": [],
       "origins": [
         "https://jeffandpaige.net"
-      ]
+      ],
+      "animation": [],
+      "imports": []
     },
     "gallery.html": {
       "scripts": [
@@ -104,7 +112,9 @@
       "tags": [],
       "origins": [
         "https://jeffandpaige.net"
-      ]
+      ],
+      "animation": [],
+      "imports": []
     },
     "wedding-party.html": {
       "scripts": [
@@ -119,7 +129,9 @@
       "tags": [],
       "origins": [
         "https://jeffandpaige.net"
-      ]
+      ],
+      "animation": [],
+      "imports": []
     },
     "faq.html": {
       "scripts": [
@@ -134,7 +146,9 @@
       "tags": [],
       "origins": [
         "https://jeffandpaige.net"
-      ]
+      ],
+      "animation": [],
+      "imports": []
     },
     "registry.html": {
       "scripts": [
@@ -149,7 +163,9 @@
       "tags": [],
       "origins": [
         "https://jeffandpaige.net"
-      ]
+      ],
+      "animation": [],
+      "imports": []
     },
     "rsvp.html": {
       "scripts": [
@@ -165,7 +181,9 @@
       "tags": [],
       "origins": [
         "https://jeffandpaige.net"
-      ]
+      ],
+      "animation": [],
+      "imports": []
     },
     "after-party.html": {
       "scripts": [
@@ -181,7 +199,9 @@
       "origins": [
         "https://jeffandpaige.net",
         "https://maps.google.com"
-      ]
+      ],
+      "animation": [],
+      "imports": []
     },
     "404.html": {
       "scripts": [
@@ -194,16 +214,21 @@
       ],
       "forms": [],
       "tags": [],
-      "origins": []
+      "origins": [],
+      "animation": [],
+      "imports": []
     },
     "css/styles.css": {
       "origins": [
-        "data:",
-        "http://www.w3.org"
-      ]
+        "data:1d7c0ae10ab2572b",
+        "data:6b7ba573745014b1",
+        "data:e1eaa4bfb1231f3a"
+      ],
+      "imports": []
     },
     "css/theme.css": {
-      "origins": []
+      "origins": [],
+      "imports": []
     }
   }
 }

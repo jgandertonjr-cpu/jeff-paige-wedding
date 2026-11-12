@@ -104,30 +104,59 @@ function originOf(value) {
   return `${s}:`;
 }
 
-// Every address a stylesheet (or <style> text, or a style attribute) can load: CSS escapes are
-// decoded first, then anything inside url(), @import or a quoted string, and any bare absolute or
-// protocol-relative address, is reduced to its origin.
-function cssOrigins(css) {
-  const text = String(css)
-    .replace(/\/\*[\s\S]*?\*\//g, "")
+// An address as it is recorded: its origin, or for a data: address a hash of the whole thing
+// (nothing inside it is read, and any change to it is a change).
+function addressToken(value) {
+  const v = cleanUrl(value);
+  if (/^data:/i.test(v)) return `data:${sha(v).slice(0, 16)}`;
+  return originOf(v);
+}
+
+const decodeCss = (css) =>
+  String(css)
     .replace(/\\([0-9a-fA-F]{1,6})[ \t\n\r\f]?/g, (_, hex) => {
       const n = parseInt(hex, 16);
       return n > 0 && n <= 0x10ffff ? String.fromCodePoint(n) : "�";
     })
     .replace(/\\\n/g, "")
     .replace(/\\([^\n])/g, "$1");
+
+// Be conservative rather than precise: the text is read twice, as written and with comments
+// removed, and everything found in either is kept. Escapes are decoded first. Returns the
+// origins (data: addresses as hashes) and how many @import rules there are.
+function cssScan(css) {
   const found = [];
-  for (const m of text.matchAll(/url\(\s*(['"]?)([\s\S]*?)\1\s*\)/gi)) found.push(originOf(m[2]));
-  for (const m of text.matchAll(/(["'])((?:(?!\1)[^\n])*)\1/g)) {
-    const o = originOf(m[2]);
-    if (/^(https?:|\(unreadable)/.test(o) || /^\s*[\\/]{2}/.test(m[2])) found.push(o); // @import "…", image-set("…")
+  let imports = 0;
+  for (const text of [decodeCss(css), decodeCss(String(css).replace(/\/\*[\s\S]*?\*\//g, ""))]) {
+    imports = Math.max(imports, (text.match(/@\s*import/gi) || []).length);
+    let rest = text.replace(/url\(\s*(['"]?)([\s\S]*?)\1\s*\)/gi, (_, _q, inner) => {
+      found.push(addressToken(inner));
+      return " ";
+    });
+    rest = rest.replace(/(["'])((?:(?!\1)[^\n])*)\1/g, (_, _q, inner) => {
+      const o = addressToken(inner);
+      if (/^(https?:|data:|\(unreadable)/.test(o) || /^\s*[\\/]{2}/.test(inner)) found.push(o); // @import "…", image-set("…")
+      return " ";
+    });
+    for (const m of rest.matchAll(/(?:https?:)?[\\/]{2}[^\s"'()<>;,]+/gi)) found.push(originOf(m[0].replace(/^(?=[\\/]{2})/, "")));
   }
-  for (const m of text.matchAll(/(?:https?:)?[\\/]{2}[^\s"'()<>;,]+/gi)) found.push(originOf(m[0].replace(/^(?=[\\/]{2})/, "")));
-  return found.filter(Boolean);
+  return { origins: found.filter(Boolean), imports };
 }
+const importTokens = (n) => Array.from({ length: n }, (_, i) => `import#${i + 1}`);
 
 const withoutVersion = (src) => src.replace(/([?&])v=[^&#]*&?/g, "$1").replace(/[?&]$/, "");
 const unique = (list) => [...new Set(list)].sort();
+
+// SVG/MathML elements that can animate an address into an attribute or run script.
+const ANIMATION = new Set(["set", "animate", "animatetransform", "animatemotion", "discard", "foreignobject", "handler", "listener"]);
+
+// Origins the templates are designed to load whenever the content switches a feature on (the
+// map frame appears once a venue address is filled in). Always recorded, so that switching a
+// feature off and on in content never trips the check.
+const DESIGNED_ORIGINS = {
+  "details.html": ["https://maps.google.com"],
+  "after-party.html": ["https://maps.google.com"],
+};
 
 const RESOURCE_ATTRS = ["src", "srcset", "imagesrcset", "poster", "data", "formaction", "action", "ping", "background", "manifest", "codebase", "longdesc"];
 
@@ -142,7 +171,9 @@ const textOf = (el) => (el.childNodes || []).map((c) => (c.nodeName === "#text" 
 
 // What a page loads or runs, as sets of short labels, plus its links and stylesheets.
 function scanPage(html) {
-  const scripts = [], iframes = [], handlers = [], forms = [], tags = [], origins = [];
+  const scripts = [], iframes = [], handlers = [], forms = [], tags = [], origins = [], animation = [];
+  let imports = 0;
+  const counts = {};
   const links = [], stylesheets = [];
   const document = parse(html, { scriptingEnabled: false }); // <noscript> content is read as markup too
 
@@ -163,7 +194,15 @@ function scanPage(html) {
       if (s !== undefined) links.push(s);
       continue;
     }
-    if (name === "style") origins.push(...cssOrigins(textOf(el)));
+    if (name === "style") {
+      const scan = cssScan(textOf(el));
+      origins.push(...scan.origins);
+      imports += scan.imports;
+    }
+    if (ANIMATION.has(name)) {
+      counts[name] = (counts[name] || 0) + 1;
+      animation.push(`${name}#${counts[name]}`);
+    }
 
     if (name === "iframe" || name === "frame") {
       const src = get("src");
@@ -189,16 +228,21 @@ function scanPage(html) {
       }
     }
     if (!linkOnly) loaders.push(...all("href"));
-    for (const a of attrs) if (a.name.startsWith("data-") && originOf(a.value)) loaders.push(a.value);
+    for (const a of attrs) if (a.name.startsWith("data-") && addressToken(a.value)) loaders.push(a.value);
+    if (ANIMATION.has(name)) for (const attr of ["to", "from", "by", "values"]) for (const v of all(attr)) loaders.push(...v.split(";"));
     for (const v of loaders) {
-      const o = originOf(v);
+      const o = addressToken(v);
       if (o) origins.push(o);
     }
     if (linkOnly) {
-      const o = originOf(get("href") ?? "");
-      if (/^(javascript|data|vbscript):$/.test(o)) origins.push(o);
+      const o = addressToken(get("href") ?? "");
+      if (/^(javascript|vbscript):$|^data:/.test(o)) origins.push(o);
     }
-    for (const v of all("style")) origins.push(...cssOrigins(v));
+    for (const v of all("style")) {
+      const scan = cssScan(v);
+      origins.push(...scan.origins);
+      imports += scan.imports;
+    }
 
     // For the link check and the list of stylesheets.
     if (name === "a" || name === "link") for (const v of all("href")) links.push(v);
@@ -208,14 +252,17 @@ function scanPage(html) {
   }
 
   return {
-    facts: { scripts: unique(scripts), iframes: unique(iframes), handlers: unique(handlers), forms: unique(forms), tags: unique(tags), origins: unique(origins) },
+    facts: { scripts: unique(scripts), iframes: unique(iframes), handlers: unique(handlers), forms: unique(forms), tags: unique(tags), origins: unique(origins), animation: unique(animation), imports: importTokens(imports) },
     links,
     stylesheets,
   };
 }
 
 export const pageFacts = (html) => scanPage(html).facts;
-const stylesheetFacts = (css) => ({ origins: unique(cssOrigins(css)) });
+const stylesheetFacts = (css) => {
+  const scan = cssScan(css);
+  return { origins: unique(scan.origins), imports: importTokens(scan.imports) };
+};
 
 // A private page is hidden only if it has a real robots meta tag and every one says "noindex".
 function isHidden(html) {
@@ -274,7 +321,12 @@ const SAYS = {
   handlers: (where, n) => `${where} has a new or changed "${n.split(":")[0]}" event handler that was not there before.`,
   forms: (where, a) => `${where} has a form that sends to ${a}, which was not there before.`,
   tags: (where, t) => `${where} has a new <${t}> tag that was not there before.`,
-  origins: (where, o) => `${where} now loads something from ${o}, which is not on the allowed list.`,
+  origins: (where, o) =>
+    o.startsWith("data:") && o !== "data:"
+      ? `${where} has an embedded data address that is new or changed.`
+      : `${where} now loads something from ${o}, which is not on the allowed list.`,
+  animation: (where, t) => `${where} has a new <${t.split("#")[0]}> element that was not there before.`,
+  imports: (where) => `${where} pulls in another stylesheet that was not there before.`,
 };
 
 export function checkSite(dir, { protectedFile = DEFAULT_RECORD } = {}) {
@@ -333,7 +385,8 @@ export function checkSite(dir, { protectedFile = DEFAULT_RECORD } = {}) {
       for (const sheet of sheetsOf(scans)) {
         const text = readText(dir, sheet);
         if (text === null) continue; // a missing file is reported by the link check
-        newThings(`The stylesheet ${sheet}`, stylesheetFacts(text).origins, record.rendered[sheet]?.origins, SAYS.origins, problems);
+        const found = stylesheetFacts(text);
+        for (const kind of ["origins", "imports"]) newThings(`The stylesheet ${sheet}`, found[kind], record.rendered[sheet]?.[kind], SAYS[kind], problems);
       }
     }
 
@@ -373,6 +426,7 @@ export function recordSite(dir, protectedFile = DEFAULT_RECORD) {
     if (text === null) throw new Error(`${page} is not in ${dir}`);
     scans[page] = scanPage(text);
     rendered[page] = scans[page].facts;
+    rendered[page].origins = unique([...rendered[page].origins, ...(DESIGNED_ORIGINS[page] || [])]);
   }
   for (const sheet of sheetsOf(scans)) {
     const text = readText(dir, sheet);

