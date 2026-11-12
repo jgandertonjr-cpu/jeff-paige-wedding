@@ -75,6 +75,10 @@ test("src/admin/admin.js uses no word Paige would have to look up in its strings
   assert.deepEqual(hits(stringLiterals(read("src/admin/admin.js"))), []);
 });
 
+test("src/admin/find.js uses no word Paige would have to look up in its strings", () => {
+  assert.deepEqual(hits(stringLiterals(read("src/admin/find.js"))), []);
+});
+
 test("src/admin/deadline.js uses no word Paige would have to look up in its strings", () => {
   assert.deepEqual(hits(stringLiterals(read("src/admin/deadline.js"))), []);
 });
