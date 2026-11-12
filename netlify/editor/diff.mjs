@@ -27,8 +27,13 @@ function itemName(item, index) {
 
 // ---- diff ------------------------------------------------------------------
 
-function diffList(file, segs, names, before, after, out) {
+// `within` lists, outermost first, each list item a change sits inside:
+// { at: segment number, before: item before the edit, after: item as the edit
+// left it, listBefore: the list before the edit }. Undo uses it to find the
+// item again if a later edit moved it.
+function diffList(file, segs, names, before, after, out, within) {
   const path = toPointer(segs);
+  const extra = within.length ? { within } : {};
 
   // One object edited in place (some fields differ, some do not).
   if (before.length === after.length) {
@@ -38,7 +43,8 @@ function diffList(file, segs, names, before, after, out) {
       const i = diffs[0];
       const b = before[i], a = after[i];
       if (isObj(b) && isObj(a) && Object.keys({ ...b, ...a }).some((k) => same(b[k], a[k]))) {
-        diffValue(file, [...segs, String(i)], [...names, itemName(a, i)], b, a, out);
+        diffValue(file, [...segs, String(i)], [...names, itemName(a, i)], b, a, out,
+          [...within, { at: segs.length, before: b, after: a, listBefore: before }]);
         return;
       }
     }
@@ -46,7 +52,7 @@ function diffList(file, segs, names, before, after, out) {
 
   // Same items, different order.
   if (before.length === after.length && [...before.map(canon)].sort().join("\n") === [...after.map(canon)].sort().join("\n")) {
-    out.push({ file, path, kind: "moved", before, after, names, listBefore: before, listAfter: after });
+    out.push({ file, path, kind: "moved", before, after, names, listBefore: before, listAfter: after, ...extra });
     return;
   }
 
@@ -58,20 +64,23 @@ function diffList(file, segs, names, before, after, out) {
     if (hit) hit.used = true;
     else removed.push({ b, i });
   });
-  for (const { b, i } of removed) out.push({ file, path, kind: "removed", before: b, after: undefined, index: i, names, listBefore: before, listAfter: after });
-  for (const u of unmatched) if (!u.used) out.push({ file, path, kind: "added", before: undefined, after: u.a, index: u.i, names, listBefore: before, listAfter: after });
+  for (const { b, i } of removed) out.push({ file, path, kind: "removed", before: b, after: undefined, index: i, names, listBefore: before, listAfter: after, ...extra });
+  for (const u of unmatched) if (!u.used) out.push({ file, path, kind: "added", before: undefined, after: u.a, index: u.i, names, listBefore: before, listAfter: after, ...extra });
 }
 
-function diffValue(file, segs, names, before, after, out) {
+function diffValue(file, segs, names, before, after, out, within = []) {
   if (same(before, after)) return;
   if (isObj(before) && isObj(after)) {
     for (const k of new Set([...Object.keys(before), ...Object.keys(after)])) {
-      diffValue(file, [...segs, k], names, before[k], after[k], out);
+      diffValue(file, [...segs, k], names, before[k], after[k], out, within);
     }
   } else if (Array.isArray(before) && Array.isArray(after)) {
-    diffList(file, segs, names, before, after, out);
+    diffList(file, segs, names, before, after, out, within);
   } else {
-    out.push({ file, path: toPointer(segs), kind: "changed", before, after, names });
+    const inItem = within.length
+      ? { within, itemBefore: within[within.length - 1].before, itemAfter: within[within.length - 1].after }
+      : {};
+    out.push({ file, path: toPointer(segs), kind: "changed", before, after, names, ...inItem });
   }
 }
 
@@ -156,6 +165,44 @@ function valueAt(content, file, path) {
 }
 
 const countOf = (list, item) => list.filter((x) => same(x, item)).length;
+// The list holds more copies of `item` than it did before the edit, so at least
+// one of them is the edit's own.
+const extraCopy = (list, item, listBefore) => countOf(list, item) > countOf(listBefore, item);
+
+// Where a change made inside list items points now. Each list item on the way
+// is found again: the item at the old spot if it is still exactly as the edit
+// left it, otherwise the one item in that list that is. Null when the item is
+// gone, changed since, or cannot be told apart from a copy that was already
+// there before the edit.
+function resolvePath(content, c) {
+  if (!c.within?.length) return c.path;
+  const segs = c.path.split("/").slice(1);
+  const levels = new Map(c.within.map((w) => [w.at, w]));
+  let node = content?.[c.file];
+  for (let k = 0; k < segs.length; k++) {
+    const w = levels.get(k);
+    if (w) {
+      if (!Array.isArray(node) || !extraCopy(node, w.after, w.listBefore)) return null;
+      let i = Number(segs[k]);
+      if (!same(node[i], w.after)) {
+        const hits = node.flatMap((x, j) => (same(x, w.after) ? [j] : []));
+        if (hits.length !== 1) return null;
+        i = hits[0];
+      }
+      segs[k] = String(i);
+      node = node[i];
+      continue;
+    }
+    const seg = segs[k].replace(/~1/g, "/").replace(/~0/g, "~");
+    if (Array.isArray(node) && INDEX.test(seg)) node = node[Number(seg)];
+    else if (isObj(node) && Object.hasOwn(node, seg)) node = node[seg];
+    else node = undefined;
+  }
+  return `/${segs.join("/")}`;
+}
+
+// Where `item` sits in `list`: its old spot if it is still there, else its first copy.
+const spotOf = (list, item, index) => (same(list[index], item) ? index : list.findIndex((x) => same(x, item)));
 
 // Ops that turn `list` into `target` exactly (order included).
 function reorderOps(file, path, list, target) {
@@ -189,13 +236,17 @@ export function invertChanges(changes, current) {
   };
   const done = new Set();
 
+  // List items are found again in the content as it was before this undo
+  // started: putting back one field of an item must not hide the item from
+  // the next field's lookup, and no undo step moves an item another step needs.
   for (const c of changes) {
     if (c.kind === "changed") {
-      const now = valueAt(working, c.file, c.path);
+      const path = resolvePath(current, c);
+      const now = path === null ? undefined : valueAt(working, c.file, path);
       let attempt = [];
-      if (same(now, c.after)) {
-        if (c.before === undefined) attempt = [{ op: "unset", file: c.file, path: c.path }];
-        else attempt = [{ op: "set", file: c.file, path: c.path, value: c.before }];
+      if (path !== null && same(now, c.after)) {
+        if (c.before === undefined) attempt = [{ op: "unset", file: c.file, path }];
+        else attempt = [{ op: "set", file: c.file, path, value: c.before }];
       }
       if (!attempt.length || !tryOps(attempt)) skipped.push(c);
       continue;
@@ -205,26 +256,48 @@ export function invertChanges(changes, current) {
     if (done.has(key)) continue;
     done.add(key);
     const group = changes.filter((x) => x.kind !== "changed" && x.file === c.file && x.path === c.path);
-    const list = valueAt(working, c.file, c.path);
+    const path = resolvePath(current, c);
+    const list = path === null ? undefined : valueAt(working, c.file, path);
     if (!Array.isArray(list)) { skipped.push(...group); continue; }
+    const listNow = () => valueAt(working, c.file, path);
 
     // Nothing has touched this list since the edit: put it back exactly.
     if (same(list, c.listAfter)) {
-      if (tryOps(reorderOps(c.file, c.path, list, c.listBefore))) continue;
+      if (tryOps(reorderOps(c.file, path, list, c.listBefore))) continue;
       skipped.push(...group);
       continue;
     }
 
     // The list changed again: undo only the pieces that are still plainly there.
-    for (const a of group.filter((x) => x.kind === "added")) {
-      const cur = valueAt(working, a.file, a.path);
-      const at = Array.isArray(cur) ? cur.findIndex((x) => same(x, a.after)) : -1;
-      if (at < 0 || !tryOps([{ op: "remove", file: a.file, path: `${a.path}/${at}` }])) skipped.push(a);
+    // A removed item and the item added at the same spot are one replacement,
+    // put back together or not at all.
+    const adds = group.filter((x) => x.kind === "added");
+    const removes = group.filter((x) => x.kind === "removed").sort((x, y) => x.index - y.index);
+    const pairs = [];
+    for (const r of removes) {
+      const a = adds.find((x) => x.index === r.index && !pairs.some(([, pa]) => pa === x));
+      if (a) pairs.push([r, a]);
     }
-    for (const r of group.filter((x) => x.kind === "removed").sort((x, y) => x.index - y.index)) {
-      const cur = valueAt(working, r.file, r.path);
-      if (!Array.isArray(cur) || countOf(cur, r.before) >= countOf(r.listBefore, r.before)
-        || !tryOps([{ op: "insert", file: r.file, path: r.path, index: Math.min(r.index, cur.length), value: r.before }])) skipped.push(r);
+    const paired = new Set(pairs.flat());
+
+    for (const [r, a] of pairs.sort((x, y) => x[1].index - y[1].index)) {
+      const cur = listNow();
+      const ok = extraCopy(cur, a.after, a.listBefore) && countOf(cur, r.before) < countOf(r.listBefore, r.before);
+      const at = ok ? spotOf(cur, a.after, a.index) : -1;
+      if (at < 0 || !tryOps([
+        { op: "remove", file: c.file, path: `${path}/${at}` },
+        { op: "insert", file: c.file, path, index: at, value: r.before },
+      ])) skipped.push(r, a);
+    }
+    for (const a of adds.filter((x) => !paired.has(x))) {
+      const cur = listNow();
+      const at = extraCopy(cur, a.after, a.listBefore) ? spotOf(cur, a.after, a.index) : -1;
+      if (at < 0 || !tryOps([{ op: "remove", file: c.file, path: `${path}/${at}` }])) skipped.push(a);
+    }
+    for (const r of removes.filter((x) => !paired.has(x))) {
+      const cur = listNow();
+      if (countOf(cur, r.before) >= countOf(r.listBefore, r.before)
+        || !tryOps([{ op: "insert", file: c.file, path, index: Math.min(r.index, cur.length), value: r.before }])) skipped.push(r);
     }
     skipped.push(...group.filter((x) => x.kind === "moved"));
   }

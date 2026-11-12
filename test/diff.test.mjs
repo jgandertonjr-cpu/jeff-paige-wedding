@@ -221,3 +221,147 @@ test("invert: a field the edit added is removed, restoring absence", () => {
   assert.equal(inv.ops[0].op, "unset");
   assert.deepEqual(applyOps(after, inv.ops), before);
 });
+
+// Task 18 B: undo never changes, drops or duplicates something the undone edit did not touch.
+
+const qa = (list) => ({ faq: { questions: list } });
+const undoQa = (before, edited, current) => {
+  const changes = diffContent(qa(before), qa(edited));
+  const inv = invertChanges(changes, qa(current));
+  return { changes, inv, out: applyOps(qa(current), inv.ops).faq.questions };
+};
+
+test("invert B1: a field change inside a list item follows the item after a later reorder", () => {
+  const A = (answer) => ({ name: "A", answer });
+  const B = (answer) => ({ name: "B", answer });
+  const { changes, inv, out } = undoQa([A("old"), B("new")], [A("new"), B("new")], [B("new"), A("new")]);
+  assert.equal(changes.length, 1);
+  assert.deepEqual(changes[0].itemBefore, A("old"));
+  assert.deepEqual(changes[0].itemAfter, A("new"));
+  assert.deepEqual(out, [B("new"), A("old")]);
+  assert.deepEqual(inv.skipped, []);
+});
+
+test("invert B1: a field change is skipped when its item cannot be told apart or is gone", () => {
+  const A = (answer, extra) => ({ name: "A", answer, ...(extra ? { extra } : {}) });
+  // The item was changed again later: skipped, nothing touched.
+  let r = undoQa([A("old"), A("same")], [A("new"), A("same")], [A("new", "x"), A("same")]);
+  assert.deepEqual(r.out, [A("new", "x"), A("same")]);
+  assert.equal(r.inv.skipped.length, 1);
+  // Two items now look like the edited one: no guessing.
+  r = undoQa([A("old"), { name: "C", answer: "c" }], [A("new"), { name: "C", answer: "c" }], [{ name: "C", answer: "c" }, A("new"), A("new")]);
+  assert.deepEqual(r.out, [{ name: "C", answer: "c" }, A("new"), A("new")]);
+  assert.equal(r.inv.skipped.length, 1);
+  // The only matching item was already there before the edit: not the edited one.
+  r = undoQa([A("old"), A("new")], [A("new"), A("new")], [{ name: "Z", answer: "z" }, A("new")]);
+  assert.deepEqual(r.out, [{ name: "Z", answer: "z" }, A("new")]);
+  assert.equal(r.inv.skipped.length, 1);
+});
+
+test("invert B1: nested list items resolve at each level", () => {
+  const guest = (name, plus) => ({ id: name, name, party: [{ name: "P", meal: plus }, { name: "Q", meal: "fish" }] });
+  const before = { guests: { guests: [guest("Ann", "beef"), guest("Bo", "veg")] } };
+  const edited = structuredClone(before); edited.guests.guests[0].party[0].meal = "veg";
+  const changes = diffContent(before, edited);
+  assert.equal(changes.length, 1);
+  assert.equal(changes[0].path, "/guests/0/party/0/meal");
+  assert.equal(changes[0].within.length, 2);
+  // Later: the guests were reversed, so Ann is now second.
+  const current = structuredClone(edited);
+  current.guests.guests.reverse();
+  const inv = invertChanges(changes, current);
+  const out = applyOps(current, inv.ops);
+  assert.deepEqual(inv.skipped, []);
+  const expected = structuredClone(current);
+  expected.guests.guests[1].party[0].meal = "beef";
+  assert.deepEqual(out, expected);
+  // Ann's own entry changed again later (her party reordered): skipped, nothing touched.
+  const changed = structuredClone(current);
+  changed.guests.guests[1].party.reverse();
+  const inv2 = invertChanges(changes, changed);
+  assert.deepEqual(inv2.ops, []);
+  assert.equal(inv2.skipped.length, 1);
+});
+
+test("invert B2: a replacement whose new item changed again is skipped as a whole", () => {
+  const A = (answer) => ({ name: "A", answer });
+  const B = (answer) => ({ name: "B", answer });
+  const { inv, out } = undoQa([A("old"), B("old")], [A("new"), B("new")], [A("later"), B("new")]);
+  assert.deepEqual(out, [A("later"), B("old")]);
+  assert.equal(inv.skipped.length, 2);
+  assert.deepEqual(inv.skipped.map((c) => c.kind).sort(), ["added", "removed"]);
+  assert.ok(inv.skipped.some((c) => c.kind === "removed" && c.before.answer === "old" && c.before.name === "A"));
+  assert.ok(inv.skipped.some((c) => c.kind === "added" && c.after.answer === "new" && c.after.name === "A"));
+});
+
+test("invert B3: an added copy of an item that was already there is removed only while extra", () => {
+  const { inv, out } = undo("A", "AA", "AB");
+  assert.equal(out, "AB");
+  assert.equal(inv.skipped.length, 1);
+  assert.equal(inv.skipped[0].kind, "added");
+  // Still extra: removed.
+  assert.equal(undo("A", "AA", "BAA").out, "BA");
+});
+
+// A small seeded property check of the undo contract.
+function rng(seed) {
+  let s = seed >>> 0;
+  return () => { s = (s + 0x6d2b79f5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+
+test("invert: seeded property check (2,000 cases)", () => {
+  const rand = rng(20261112);
+  const pick = (a) => a[Math.floor(rand() * a.length)];
+  const item = () => ({ name: pick(["A", "B", "C"]), answer: pick(["x", "y"]) });
+  const randomEdit = (list) => {
+    const l = structuredClone(list);
+    const steps = 1 + Math.floor(rand() * 2);
+    for (let s = 0; s < steps; s++) {
+      const k = Math.floor(rand() * 4);
+      if (k === 0 && l.length) { const i = Math.floor(rand() * l.length); l[i] = { ...l[i], answer: l[i].answer === "x" ? "y" : "x" }; }
+      else if (k === 1) l.splice(Math.floor(rand() * (l.length + 1)), 0, item());
+      else if (k === 2 && l.length) l.splice(Math.floor(rand() * l.length), 1);
+      else if (l.length > 1) { const i = Math.floor(rand() * l.length), j = Math.floor(rand() * l.length); [l[i], l[j]] = [l[j], l[i]]; }
+    }
+    return l;
+  };
+  const key = (x) => `${x.name}${x.answer}`;
+  const counts = (l) => l.reduce((m, x) => m.set(key(x), (m.get(key(x)) || 0) + 1), new Map());
+  for (let n = 0; n < 2000; n++) {
+    const before = Array.from({ length: Math.floor(rand() * 5) }, item);
+    const edited = randomEdit(before);
+    const changes = diffContent(qa(before), qa(edited));
+    const immediate = applyOps(qa(edited), invertChanges(changes, qa(edited)).ops).faq.questions;
+    assert.deepEqual(immediate, before, `case ${n}: immediate undo`);
+
+    const current = randomEdit(edited);
+    let out;
+    assert.doesNotThrow(() => { out = applyOps(qa(current), invertChanges(changes, qa(current)).ops).faq.questions; }, `case ${n}`);
+    const ctx0 = `case ${n}: ${JSON.stringify({ before, edited, current, out })}`;
+    const field = changes.find((c) => c.kind === "changed");
+    if (field) {
+      // A field put back inside one item: at most one item differs, and it went
+      // from exactly the edit's version to exactly the version before the edit.
+      assert.equal(out.length, current.length, ctx0);
+      const differs = out.flatMap((x, i) => (key(x) === key(current[i]) ? [] : [i]));
+      assert.ok(differs.length <= 1, ctx0);
+      for (const i of differs) {
+        assert.deepEqual(current[i], field.itemAfter, ctx0);
+        assert.deepEqual(out[i], field.itemBefore, ctx0);
+      }
+      continue;
+    }
+    const [cb, ce, cc, co] = [before, edited, current, out].map(counts);
+    for (const k of new Set([...cc.keys(), ...co.keys()])) {
+      const d = (co.get(k) || 0) - (cc.get(k) || 0);
+      const ctx = `case ${n} ${k}: ${JSON.stringify({ before, edited, current, out })}`;
+      if (d > 0) {
+        assert.ok((cb.get(k) || 0) > (ce.get(k) || 0), `${ctx} added an item the edit did not remove`);
+        assert.ok((co.get(k) || 0) <= (cb.get(k) || 0), `${ctx} duplicated an item`);
+      } else if (d < 0) {
+        assert.ok((ce.get(k) || 0) > (cb.get(k) || 0), `${ctx} removed an item the edit did not add`);
+        assert.ok((co.get(k) || 0) >= (cb.get(k) || 0), `${ctx} removed an item that was there before the edit`);
+      }
+    }
+  }
+});
