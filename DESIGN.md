@@ -58,4 +58,4 @@ Look and feel (the "invitation suite", November 2026)
 - Lead paragraphs (the lines under a section title, a page hero, or on the registry card) are Evergreen or Deep evergreen at 7:1 or better. Sage-gray is for notes and descriptions.
 - The names are the largest type on any page; the countdown number is capped at 4.5rem so it never outsizes them.
 - The space either side of a change of ground is the same (`--section-padding-y`).
-- The hero enters once on load in three steps, 120ms apart and 300ms each (540ms in all), and nothing else animates on load.
+- The home hero enters once on load in three steps, 120ms apart and 300ms each (540ms in all); inner pages fade their title in once; nothing else has a load animation beyond the fade each block gets as it enters.
