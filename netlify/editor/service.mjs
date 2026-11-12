@@ -20,7 +20,9 @@
 //       url only when state is "ready"; text with "failed" (thrown away, expired, put back or not).
 //       While another poll is putting the site back: { stage: "publish", state: "building" }.
 //   publish(deps, id)   → { ok: true, title } | { ok: false, text }
-//   cancel(deps, id)    → { ok: true } | { ok: false, text }   (refused only while it is being published)
+//   cancel(deps, id)    → { ok: true } | { ok: false, text }
+//     refused while it is being published, and once it is on the site (a stale
+//     publishing claim is first checked against the recent edits).
 //   history(deps)       → { sha, when: ISO date string, title }[]
 //   undo(deps, sha)     → { ok: true, restored: string[], skipped: string[] } | { ok: false, text }
 //
@@ -55,6 +57,7 @@ export const TEXT = {
   noChange: "That wouldn't change anything on the site, so there is nothing to publish.",
   expired: "That change has expired. Please ask again.",
   busy: "That is already being published.",
+  onSite: "That change is already on the site. Use Undo this to put it back.",
   previewFirst: "This is a bigger change, so please wait until its preview is ready.",
   noFit: "The site changed since you asked, so that change no longer fits. Please ask again.",
   already: "That change is already on the site, so there is nothing to publish.",
@@ -517,22 +520,68 @@ export async function cancel(deps, id) {
   // Check and mark cancelled in one compare-and-swap write, so a publish cannot
   // claim it in between. The record is never deleted here (the production
   // store's delete is unchecked); a light marker stays until it expires.
-  let outcome = null;
-  await deps.store.update(key(id), (cur) => {
-    outcome = null;
-    if (!cur || cur.published || cur.cancelled) return cur;
-    if (cur.publishing && deps.now() - cur.publishing < CLAIM_MS) {
-      outcome = { busy: true };
-      return cur;
-    }
-    outcome = { preview: cur.preview };
-    return { id: cur.id, createdAt: cur.createdAt, cancelled: deps.now() };
-  });
-  if (outcome?.busy) return refuse(TEXT.busy);
+  // A stale publishing claim is cancelled only once the site shows its write
+  // never landed (`staleClaim` is the claim time that was checked).
+  const markCancelled = async (staleClaim) => {
+    let outcome = null;
+    await deps.store.update(key(id), (cur) => {
+      outcome = null;
+      if (!cur || cur.cancelled) return cur;
+      if (cur.published) {
+        outcome = { onSite: true };
+        return cur;
+      }
+      if (cur.publishing && cur.publishing !== staleClaim) {
+        outcome = deps.now() - cur.publishing < CLAIM_MS ? { busy: true } : { stale: cur.publishing };
+        return cur;
+      }
+      outcome = { preview: cur.preview };
+      return { id: cur.id, createdAt: cur.createdAt, cancelled: deps.now() };
+    });
+    return outcome;
+  };
+
+  let outcome = await markCancelled(null);
+  if (outcome?.stale) {
+    const claim = outcome.stale;
+    const landed = await landedSince(deps, id, claim);
+    outcome = landed ? await markPublished(deps, id, claim, landed) : await markCancelled(claim);
+  }
+  if (outcome?.onSite) return refuse(TEXT.onSite);
+  if (outcome?.busy || outcome?.stale) return refuse(TEXT.busy);
   if (outcome?.preview) {
     try { await deps.repo.closePreview({ id, number: outcome.preview.number }); } catch {}
   }
   return { ok: true };
+}
+
+// Did a publish that claimed this change at `claim` write it to the site before
+// its function stopped? Looks for a recent edit with its title, dated after the
+// claim (less a few seconds, for clocks that differ). Returns { sha, title } or null.
+const CLOCK_SKEW_MS = 5 * 1000;
+async function landedSince(deps, id, claim) {
+  const p = await deps.store.get(key(id));
+  if (!p || !Array.isArray(p.summary)) return null;
+  const title = titleOf(p.summary);
+  const hit = (await deps.repo.edits(10)).find((e) => e.title === title && Date.parse(e.date) >= claim - CLOCK_SKEW_MS);
+  return hit ? { sha: hit.sha, title } : null;
+}
+
+// Records a write found on the site for a stale claim, as publish would have.
+// The change is on the site whatever the record says now.
+async function markPublished(deps, id, claim, { sha, title }) {
+  let openPreview = null;
+  await deps.store.update(key(id), (cur) => {
+    openPreview = null;
+    if (!cur || cur.cancelled || cur.published || cur.publishing !== claim) return cur;
+    openPreview = cur.preview || null;
+    const { publishing, photo, ...rest } = cur;
+    return { ...rest, published: { sha, title } };
+  });
+  if (openPreview) {
+    try { await deps.repo.closePreview({ id, number: openPreview.number }); } catch {}
+  }
+  return { onSite: true };
 }
 
 export async function history(deps) {

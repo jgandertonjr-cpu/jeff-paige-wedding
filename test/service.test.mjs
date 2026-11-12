@@ -1194,3 +1194,116 @@ test("an empty message is a failure; a reply from the model is not", async () =>
     await t.cleanup();
   }
 });
+
+// ---- final review, item 2: cancel never says "ok" for a change that is on the site ----
+
+const ON_SITE = "That change is already on the site. Use Undo this to put it back.";
+
+// The local repo dates edits by the real clock; this one dates them by the test's clock.
+const clockDatedRepo = (getT) => (local) => {
+  const dates = new Map();
+  return {
+    ...local,
+    async write(a) {
+      const sha = await local.write(a);
+      dates.set(sha, new Date(getT().deps.now()).toISOString());
+      return sha;
+    },
+    async edits(n) {
+      return (await local.edits(n)).map((e) => ({ ...e, date: dates.get(e.sha) ?? e.date }));
+    },
+  };
+};
+
+// A publish whose function stopped after it claimed the change: the claim is
+// left in the store, and the write may or may not have landed.
+async function strandedPublish({ landed }) {
+  let t;
+  t = await setup({ repoWrap: clockDatedRepo(() => t) });
+  t.client.queue(propose([DEADLINE]));
+  const r = await ask(t.deps, { message: "deadline" });
+  const claimedAt = t.deps.now();
+  await t.store.update(`proposal:${r.id}`, (cur) => ({ ...cur, publishing: claimedAt }));
+  let sha = null;
+  if (landed) {
+    t.advance(2000);
+    const travel = await t.readData("src/_data/travel.json");
+    travel.room_block.deadline = "2028-06-01";
+    sha = await t.repo.write({ branch: "main", baseSha: await t.repo.head(), message: `Website edit: ${r.summary[0]}`,
+      files: { "src/_data/travel.json": JSON.stringify(travel, null, 2) + "\n" } });
+  }
+  t.advance(61 * 1000); // the claim is now stale
+  return { t, id: r.id, sha };
+}
+
+test("cancel after a completed publish refuses and leaves the record published", async () => {
+  const t = await setup();
+  try {
+    t.client.queue(propose([DEADLINE]));
+    const r = await ask(t.deps, { message: "deadline" });
+    assert.equal((await publish(t.deps, r.id)).ok, true);
+    assert.deepEqual(seen(await cancel(t.deps, r.id)), { ok: false, text: ON_SITE });
+    const stored = await t.store.get(`proposal:${r.id}`);
+    assert.ok(stored.published);
+    assert.equal(stored.cancelled, undefined);
+    assert.deepEqual(await status(t.deps, { id: r.id }), { stage: "publish", state: "waiting" });
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("cancel on a fresh publishing claim is still refused as busy", async () => {
+  const t = await setup();
+  try {
+    t.client.queue(propose([DEADLINE]));
+    const r = await ask(t.deps, { message: "deadline" });
+    await t.store.update(`proposal:${r.id}`, (cur) => ({ ...cur, publishing: t.deps.now() }));
+    t.advance(30 * 1000);
+    assert.deepEqual(await cancel(t.deps, r.id), { ok: false, text: "That is already being published." });
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("cancel on a stale claim whose write landed marks it published and refuses", async () => {
+  const { t, id, sha } = await strandedPublish({ landed: true });
+  try {
+    assert.deepEqual(seen(await cancel(t.deps, id)), { ok: false, text: ON_SITE });
+    const stored = await t.store.get(`proposal:${id}`);
+    assert.equal(stored.published.sha, sha);
+    assert.equal(stored.publishing, undefined);
+    assert.equal(stored.cancelled, undefined);
+    t.netlify.states.set(sha, "ready");
+    assert.equal((await status(t.deps, { id })).state, "ready");
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("cancel on a stale claim whose write did not land cancels normally", async () => {
+  const { t, id } = await strandedPublish({ landed: false });
+  try {
+    assert.deepEqual(await cancel(t.deps, id), { ok: true });
+    assert.ok((await t.store.get(`proposal:${id}`)).cancelled);
+    assert.deepEqual(await publish(t.deps, id), { ok: false, text: EXPIRED });
+    assert.equal((await t.repo.edits(10)).length, 0);
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("an edit with the same title from before the claim does not count as landed", async () => {
+  let t;
+  t = await setup({ repoWrap: clockDatedRepo(() => t) });
+  try {
+    t.client.queue(propose([DEADLINE]));
+    const r = await ask(t.deps, { message: "deadline" });
+    await t.repo.write({ branch: "main", baseSha: await t.repo.head(), message: `Website edit: ${r.summary[0]}`, files: { "src/_data/faq.json": (await t.read("src/_data/faq.json")) + "\n" } });
+    t.advance(60 * 1000);
+    await t.store.update(`proposal:${r.id}`, (cur) => ({ ...cur, publishing: t.deps.now() }));
+    t.advance(61 * 1000);
+    assert.deepEqual(await cancel(t.deps, r.id), { ok: true });
+  } finally {
+    await t.cleanup();
+  }
+});
