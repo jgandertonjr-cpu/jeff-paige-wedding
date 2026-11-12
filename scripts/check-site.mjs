@@ -16,6 +16,7 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { StringDecoder } from "node:string_decoder";
 import { parse } from "parse5";
 
 const HERE = path.dirname(new URL(import.meta.url).pathname);
@@ -34,7 +35,10 @@ const HASHED_FILES = ["robots.txt", "_headers", "_redirects", "sitemap.xml"];
 
 const SECRET_PATTERNS = [/sk-ant-[A-Za-z0-9_-]{10,}/, /github_pat_[A-Za-z0-9_]{20,}/, /ghp_[A-Za-z0-9]{20,}/, /nfp_[A-Za-z0-9]{20,}/];
 const TEXT_EXT = new Set([".html", ".css", ".js", ".mjs", ".json", ".txt", ".xml", ".ics", ".yml", ".yaml", ".toml", ".md", ".svg", ".map", ".webmanifest", ""]);
-const SECRET_SCAN_MAX_BYTES = 2 * 1024 * 1024;
+// Files are scanned in pieces, each overlapping the last so a key split across
+// two pieces is still seen whole.
+const SECRET_SCAN_CHUNK = 1024 * 1024;
+const SECRET_SCAN_OVERLAP = 256;
 
 const sha = (data) => crypto.createHash("sha256").update(data).digest("hex");
 const posix = (p) => p.split(path.sep).join("/");
@@ -268,7 +272,31 @@ const stylesheetFacts = (css) => {
 function isHidden(html) {
   const metas = [...elements(parse(html, { scriptingEnabled: false }))].filter(
     (el) => el.tagName === "meta" && (el.attrs.find((a) => a.name.toLowerCase() === "name")?.value || "").trim().toLowerCase() === "robots");
-  return metas.length > 0 && metas.every((el) => /noindex/i.test(el.attrs.find((a) => a.name.toLowerCase() === "content")?.value || ""));
+  const directives = (el) => (el.attrs.find((a) => a.name.toLowerCase() === "content")?.value || "")
+    .split(",").map((d) => d.trim().toLowerCase());
+  return metas.length > 0 && metas.every((el) => directives(el).some((d) => d === "noindex" || d === "none"));
+}
+
+// Does the file hold key-shaped text anywhere? Reads every byte, a piece at a time.
+function hasSecret(file) {
+  let fd;
+  try {
+    fd = fs.openSync(file, "r");
+    const buf = Buffer.alloc(SECRET_SCAN_CHUNK);
+    const decoder = new StringDecoder("utf8");
+    let tail = "";
+    for (;;) {
+      const n = fs.readSync(fd, buf, 0, buf.length, null);
+      const text = tail + (n > 0 ? decoder.write(buf.subarray(0, n)) : decoder.end());
+      if (SECRET_PATTERNS.some((re) => re.test(text))) return true;
+      if (n === 0) return false;
+      tail = text.slice(-SECRET_SCAN_OVERLAP);
+    }
+  } catch {
+    return false;
+  } finally {
+    if (fd !== undefined) fs.closeSync(fd);
+  }
 }
 
 // The local stylesheet files a page links, as paths in the site.
@@ -393,15 +421,7 @@ export function checkSite(dir, { protectedFile = DEFAULT_RECORD } = {}) {
     // 6. Key-shaped text anywhere in the output (the match itself is never printed).
     for (const rel of files) {
       if (!TEXT_EXT.has(path.extname(rel).toLowerCase())) continue;
-      let size;
-      try {
-        size = fs.statSync(path.join(dir, rel)).size;
-      } catch {
-        continue;
-      }
-      if (size > SECRET_SCAN_MAX_BYTES) continue;
-      const text = readText(dir, rel);
-      if (text !== null && SECRET_PATTERNS.some((re) => re.test(text))) problems.push(`${rel} contains text that looks like a secret key.`);
+      if (hasSecret(path.join(dir, rel))) problems.push(`${rel} contains text that looks like a secret key.`);
     }
   } catch (e) {
     problems.push(`The site check could not finish (${e?.name || "Error"}).`);

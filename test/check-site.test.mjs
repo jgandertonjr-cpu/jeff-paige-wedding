@@ -83,6 +83,34 @@ test("a key-shaped string anywhere in the output is a problem, and is never prin
   }
 });
 
+// Task 18 E: large files are scanned in full; "noindex" must be a real directive.
+test("a key-shaped string in a file over 2 MB is found, including across a chunk boundary", () => {
+  const key = "sk-ant-" + "q".repeat(40);
+  const filler = (n) => "<p>" + "x".repeat(n - 7) + "</p>";
+  const nearEnd = copy((d) => fs.writeFileSync(path.join(d, "big.html"), filler(3 * 1024 * 1024) + key + "<p>end</p>"));
+  let problems = checkSite(nearEnd);
+  has(problems, /big\.html/);
+  assert.ok(!problems.join("\n").includes(key));
+  for (const boundary of [1024 * 1024, 2 * 1024 * 1024]) {
+    const straddle = copy((d) => fs.writeFileSync(path.join(d, "big.html"),
+      filler(boundary - 20) + key + filler(3 * 1024 * 1024 - boundary)));
+    problems = checkSite(straddle);
+    has(problems, /big\.html/);
+  }
+});
+
+test("noindex must be a directive of its own", () => {
+  for (const content of ["not-noindex", "noindexing", "index, follow", "nofollow"]) {
+    has(checkSite(copy(change("study/index.html", (t) =>
+      t.replace(/<meta name="robots"[^>]*>/, `<meta name="robots" content="${content}">`)))), /study\/index\.html.*noindex/);
+  }
+  for (const content of ["noindex", "NOINDEX, nofollow", " nofollow ,noindex ", "none"]) {
+    const problems = checkSite(copy(change("study/index.html", (t) =>
+      t.replace(/<meta name="robots"[^>]*>/, `<meta name="robots" content="${content}">`))));
+    assert.ok(!problems.some((p) => /study\/index\.html/.test(p)), `${content}: ${problems.join("\n")}`);
+  }
+});
+
 test("a missing folder never throws", () => {
   const problems = checkSite(path.join(tmpRoot, "nothing-here"));
   assert.ok(problems.length > 0);
