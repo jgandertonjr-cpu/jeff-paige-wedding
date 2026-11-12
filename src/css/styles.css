@@ -3260,16 +3260,6 @@ main { overflow-x: clip; }
   .flex--center:has(> :nth-child(3)) .btn { padding-inline: 1.5em; white-space: nowrap; }
 }
 
-/* A button that has nowhere to go yet (e.g. the room-block booking link) */
-.btn--disabled,
-.btn--disabled:hover {
-  background-color: transparent;
-  border-color: var(--color-hairline);
-  color: var(--color-text-muted);
-  cursor: default;
-  transform: none;
-}
-
 /* =============================================================
    REDUCED MOTION
    ============================================================= */

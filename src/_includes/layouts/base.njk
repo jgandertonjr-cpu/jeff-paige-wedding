@@ -26,8 +26,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  {#- Marks that scripts run, so content is only held back for the scroll fade when it can also be revealed. #}
-  <script>document.documentElement.classList.add('js')</script>
+  {#- Marks that scripts run, so content is only held back for the scroll fade when it can also be
+      revealed. If main.js has not confirmed it is running within 4 seconds (it failed to load, or
+      stopped early), the mark is withdrawn and everything shows. #}
+  <script>document.documentElement.classList.add('js');setTimeout(function(){if(!window.__revealReady)document.documentElement.classList.remove('js')},4000)</script>
 
   <meta name="theme-color" content="#FBF8F2">
   <meta name="msapplication-navbutton-color" content="#FBF8F2">
@@ -152,7 +154,7 @@
   </nav>
 {%- endif %}
 {% block scripts %}
-  <script src="{{ root }}js/main.js?v={{ mainJsVersion }}" defer></script>
+  <script src="{{ root }}js/main.js?v={{ mainJsVersion }}" defer onerror="document.documentElement.classList.remove('js')"></script>
 {%- endblock %}
 </body>
 </html>

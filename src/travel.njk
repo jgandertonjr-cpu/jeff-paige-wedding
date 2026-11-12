@@ -49,8 +49,8 @@ headerDark: true
             {%- if block.booking_url %}
             <a href="{{ block.booking_url }}" class="btn btn--primary" target="_blank" rel="noopener noreferrer">Book Your Room</a>
             {%- else %}
-{#- No booking link yet: shown as a disabled button rather than a link to nowhere. #}
-            <span class="btn btn--disabled" role="link" aria-disabled="true" title="Booking link coming soon">Book Your Room</span>
+{#- No booking link yet: say so in plain text rather than show a button that goes nowhere. #}
+            <p class="fine-print">Booking link coming soon</p>
             {%- endif %}
           </div>
         </div>
