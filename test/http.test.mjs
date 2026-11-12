@@ -26,6 +26,8 @@ function setup(over = {}) {
     cancel: rec("cancel", { ok: true }),
     history: rec("history", [{ sha: "abc1234", when: "2026-11-01", title: "T" }]),
     undo: rec("undo", { ok: true, restored: [], skipped: [] }),
+    loadContent: rec("loadContent", { schema: { files: {} }, content: { guests: [{ name: "Secret Guest" }] }, images: ["/images/a.jpg"] }),
+    propose: rec("propose", { kind: "proposal", id: ID, summary: ["One thing changed"] }),
     ...(over.service || {}),
   };
   const deps = {
@@ -67,12 +69,72 @@ test("every response is JSON, uncached and noindex", async () => {
 
 test("every route but login and session is 401 without a session", async () => {
   const { handle, calls } = setup();
-  for (const p of ["status?id=" + ID, "history"]) assert.equal((await handle(get(p), ctx())).status, 401, p);
-  for (const p of ["preview", "publish", "cancel", "undo"]) {
-    const res = await handle(post(p, { id: ID, sha: "abc1234" }), ctx());
+  for (const p of ["status?id=" + ID, "history", "content"]) assert.equal((await handle(get(p), ctx())).status, 401, p);
+  for (const p of ["preview", "publish", "cancel", "undo", "propose"]) {
+    const res = await handle(post(p, { id: ID, sha: "abc1234", ops: [{}] }), ctx());
     assert.equal(res.status, 401, p);
   }
   assert.deepEqual(calls, []);
+});
+
+test("content: signed-in only, returns the three keys, never cached", async () => {
+  const { handle, calls } = setup();
+  const anon = await handle(get("content"), ctx());
+  assert.equal(anon.status, 401);
+  assert.ok(!(await anon.text()).includes("Secret Guest"));
+  assert.deepEqual(calls, []);
+  const cookie = await login(handle);
+  const res = await handle(get("content", cookie), ctx());
+  assert.equal(res.status, 200);
+  assert.equal(res.headers.get("cache-control"), "no-store");
+  assert.equal(res.headers.get("x-robots-tag"), "noindex, nofollow");
+  const body = await res.json();
+  assert.deepEqual(Object.keys(body).sort(), ["content", "images", "schema"]);
+  assert.deepEqual(body.images, ["/images/a.jpg"]);
+  assert.equal((await handle(post("content", {}, { cookie }), ctx())).status, 405);
+});
+
+test("propose: coarse body shape is checked, then the service answer is passed through", async () => {
+  const { handle, calls } = setup();
+  const cookie = await login(handle);
+  const op = { op: "set", file: "travel", path: "/a", value: "x" };
+  const bad = [
+    {}, { ops: "x" }, { ops: [] }, { ops: Array.from({ length: 51 }, () => op) }, { ops: [null] }, { ops: ["x"] }, { ops: [[]] },
+    { ops: [op], photos: "AAAA" }, { ops: [op], photos: [1] }, { ops: [op], photos: ["a", "b", "c", "d"] },
+  ];
+  for (const b of bad) {
+    const res = await handle(post("propose", b, { cookie }), ctx());
+    assert.equal(res.status, 400, JSON.stringify(b).slice(0, 60));
+    assert.deepEqual(await res.json(), { error: "That request can't be accepted." });
+  }
+  assert.deepEqual(calls, []);
+  const res = await handle(post("propose", { ops: [op], photos: ["AAAA"] }, { cookie }), ctx());
+  assert.equal(res.status, 200);
+  assert.deepEqual(await res.json(), { kind: "proposal", id: ID, summary: ["One thing changed"] });
+  assert.deepEqual(calls, [["propose", { ops: [op], photos: ["AAAA"] }]]);
+  // Fifty is fine; a refusal from the service is still a 200 with its own shape.
+  const { handle: h2 } = setup({ service: { propose: async () => ({ ok: false, text: "That change can't be made." }) } });
+  const c2 = await login(h2);
+  const r2 = await h2(post("propose", { ops: Array.from({ length: 50 }, () => op) }, { cookie: c2 }), ctx());
+  assert.equal(r2.status, 200);
+  assert.deepEqual(await r2.json(), { ok: false, text: "That change can't be made." });
+});
+
+test("propose needs the exact origin and JSON type; ask is gone", async () => {
+  const { handle } = setup();
+  const cookie = await login(handle);
+  const body = { ops: [{ op: "set", file: "travel", path: "/a" }] };
+  assert.equal((await handle(post("propose", body, { cookie, origin: "https://evil.example" }), ctx())).status, 403);
+  assert.equal((await handle(post("propose", body, { cookie, type: "text/plain" }), ctx())).status, 403);
+  assert.equal((await handle(post("ask", body, { cookie }), ctx())).status, 404);
+  assert.equal((await handle(get("ask", cookie), ctx())).status, 404);
+});
+
+test("propose and content work on a preview copy, since they write nothing", async () => {
+  const { handle } = setup({ canWrite: false });
+  const cookie = await login(handle);
+  assert.equal((await handle(post("propose", { ops: [{ op: "set", file: "travel", path: "/a" }] }, { cookie }), ctx())).status, 200);
+  assert.equal((await handle(get("content", cookie), ctx())).status, 200);
 });
 
 test("session answers 200 either way", async () => {
@@ -249,10 +311,13 @@ test("missing env: 500 'not set up', names only in the log, session still works"
 test("each route needs only its own variables", async () => {
   const NEEDS = {
     login: [], logout: [],
-    preview: ["GITHUB_TOKEN"], publish: ["GITHUB_TOKEN"], undo: ["GITHUB_TOKEN"], cancel: ["GITHUB_TOKEN"], history: ["GITHUB_TOKEN"],
+    preview: ["GITHUB_TOKEN"], publish: ["GITHUB_TOKEN", "NETLIFY_RSVP_TOKEN"], undo: ["GITHUB_TOKEN"], cancel: ["GITHUB_TOKEN"],
+    history: ["GITHUB_TOKEN", "NETLIFY_RSVP_TOKEN"], content: ["GITHUB_TOKEN"], propose: ["GITHUB_TOKEN", "NETLIFY_RSVP_TOKEN"],
     status: ["GITHUB_TOKEN", "NETLIFY_RSVP_TOKEN"],
   };
   const send = (handle, route, cookie) => {
+    if (route === "propose") return handle(post("propose", { ops: [{ op: "set", file: "x", path: "/a", value: 1 }] }, { cookie }), ctx());
+    if (route === "content") return handle(get("content", cookie), ctx());
     if (route === "history") return handle(get("history", cookie), ctx());
     if (route === "status") return handle(get(`status?id=${ID}`, cookie), ctx());
     if (route === "login") return handle(post("login", { password: ENV.ADMIN_PASSWORD }), ctx());

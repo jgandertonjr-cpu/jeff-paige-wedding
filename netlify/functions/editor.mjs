@@ -16,13 +16,17 @@ const MAX_BODY = 6_000_000;
 const SIGN_IN_VARS = ["ADMIN_PASSWORD", "SESSION_SECRET"];
 const ROUTE_VARS = {
   login: [], logout: [], session: [],
-  preview: ["GITHUB_TOKEN"], publish: ["GITHUB_TOKEN"], undo: ["GITHUB_TOKEN"], cancel: ["GITHUB_TOKEN"], history: ["GITHUB_TOKEN"],
+  preview: ["GITHUB_TOKEN"], undo: ["GITHUB_TOKEN"], cancel: ["GITHUB_TOKEN"], content: ["GITHUB_TOKEN"],
+  // These settle earlier unconfirmed publishes through Netlify, so they need its token too.
+  publish: ["GITHUB_TOKEN", "NETLIFY_RSVP_TOKEN"], history: ["GITHUB_TOKEN", "NETLIFY_RSVP_TOKEN"],
+  propose: ["GITHUB_TOKEN", "NETLIFY_RSVP_TOKEN"],
   status: ["GITHUB_TOKEN", "NETLIFY_RSVP_TOKEN"],
 };
 const WRITE_ROUTES = new Set(["preview", "publish", "undo"]);
 const ROUTES = {
   login: "POST", logout: "POST", session: "GET", preview: "POST",
   status: "GET", publish: "POST", cancel: "POST", history: "GET", undo: "POST",
+  content: "GET", propose: "POST",
 };
 const SAID = {
   rejected: "That request can't be accepted.",
@@ -96,6 +100,7 @@ export function createHandler(deps) {
     if (!sess.hasSession(req.headers.get("cookie"), env, now())) return json(401, { error: SAID.signIn });
     if (WRITE_ROUTES.has(name) && !canWrite) return json(403, { error: SAID.previewCopy });
 
+    if (name === "content") return json(200, await svc.loadContent(serviceDeps));
     if (name === "history") return json(200, { edits: await svc.history(serviceDeps) });
     if (name === "status") {
       const id = pick(new URL(req.url).searchParams.get("id"), ID);
@@ -103,6 +108,13 @@ export function createHandler(deps) {
     }
 
     const body = await readJson(req);
+    if (name === "propose") {
+      const { ops, photos } = body;
+      const plain = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
+      if (!Array.isArray(ops) || ops.length < 1 || ops.length > 50 || !ops.every(plain)) throw badRequest();
+      if (photos !== undefined && (!Array.isArray(photos) || photos.length > 3 || !photos.every((p) => typeof p === "string"))) throw badRequest();
+      return json(200, await svc.propose(serviceDeps, photos === undefined ? { ops } : { ops, photos }));
+    }
     if (name === "undo") return json(200, await svc.undo(serviceDeps, pick(body.sha, SHA)));
     // preview, publish, cancel
     return json(200, await svc[name](serviceDeps, pick(body.id, ID)));

@@ -8,7 +8,7 @@ import schema from "../netlify/editor/schema.gen.mjs";
 import { createLocalRepo } from "../netlify/editor/localrepo.mjs";
 import { memoryStore } from "../netlify/editor/store.mjs";
 import { StaleError } from "../netlify/editor/github.mjs";
-import { propose, preview, status, publish, cancel, history, undo, settleUnconfirmed } from "../netlify/editor/service.mjs";
+import { loadContent, propose, preview, status, publish, cancel, history, undo, settleUnconfirmed } from "../netlify/editor/service.mjs";
 
 const SAFE_FAIL = "I couldn't make that change safely. Nothing changed.";
 const NO_FIT = "The site changed since you asked, so that change no longer fits. Please ask again.";
@@ -17,6 +17,7 @@ const CANT = "That change can't be made.";
 const NO_CHANGE = "That wouldn't change anything on the site, so there is nothing to publish.";
 const PUT_BACK = "Something went wrong and I've put the site back.";
 const THROWN_AWAY = "That change didn't work on the site, so I've thrown it away.";
+const LOOKS_ONLY = "That change was to how the pages look, which this editor no longer changes, so I left it.";
 const NOTHING_TO_UNDO = "Everything in that change has been changed again since, so there is nothing to undo.";
 const BANNED = /\b(commit|deploy|json|branch|repository|merge|build|token)/i;
 const START = Date.UTC(2026, 10, 12, 15, 0, 0);
@@ -155,7 +156,7 @@ async function setup({ repoWrap, store: makeStore } = {}) {
 // Every user-facing sentence goes through here so the banned-word test sees it.
 const allTexts = [];
 const seen = (r) => {
-  for (const k of ["text", "title", "note"]) if (typeof r?.[k] === "string") allTexts.push(r[k]);
+  for (const k of ["text", "title"]) if (typeof r?.[k] === "string") allTexts.push(r[k]);
   for (const k of ["summary", "restored", "skipped"]) if (Array.isArray(r?.[k])) allTexts.push(...r[k]);
   if (Array.isArray(r?.problems)) for (const p of r.problems) allTexts.push(p.label, p.message);
   return r;
@@ -163,6 +164,60 @@ const seen = (r) => {
 
 const DEADLINE = set("travel", "/room_block/deadline", "2028-06-01");
 const proposalKeys = (store) => [...store.written].filter((k) => k.startsWith("proposal:"));
+
+// ---- loadContent --------------------------------------------------------------
+
+test("loadContent returns the schema, every content file by key, and sorted image addresses", async () => {
+  const t = await setup();
+  try {
+    const r = await loadContent(t.deps);
+    assert.deepEqual(Object.keys(r).sort(), ["content", "images", "schema"]);
+    assert.equal(r.schema, schema);
+    assert.deepEqual(Object.keys(r.content).sort(), Object.keys(schema.files).sort());
+    assert.equal(r.content.travel.room_block.deadline, (await t.readData("src/_data/travel.json")).room_block.deadline);
+    assert.ok(Array.isArray(r.images) && r.images.length > 0);
+    assert.ok(r.images.every((i) => /^\/images\/[^/]+$/.test(i)));
+    assert.deepEqual(r.images, [...r.images].sort());
+  } finally {
+    await t.cleanup();
+  }
+});
+
+// ---- propose: input limits -----------------------------------------------------
+
+test("propose never throws on a missing or non-object input", async () => {
+  const t = await setup();
+  try {
+    for (const input of [null, undefined, "x", 5, true, []]) {
+      assert.deepEqual(await propose(t.deps, input), { ok: false, text: CANT }, String(input));
+    }
+    assert.deepEqual(proposalKeys(t.store), []);
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("a value nested too deeply or too long is refused before any recursive work", async () => {
+  const t = await setup();
+  try {
+    let deep = "x";
+    for (let i = 0; i < 200_000; i++) deep = [deep];
+    let ok13 = "x";
+    for (let i = 0; i < 13; i++) ok13 = [ok13];
+    const long = "y".repeat(200_001);
+    for (const value of [deep, ok13, long, { a: long }]) {
+      assert.deepEqual(await propose(t.deps, { ops: [set("travel", "/room_block/deadline", value)] }), { ok: false, text: CANT });
+    }
+    assert.deepEqual(proposalKeys(t.store), []);
+    // Twelve levels is within the limit (it fails later, on its own merits, with a different answer).
+    let ok12 = "x";
+    for (let i = 0; i < 12; i++) ok12 = [ok12];
+    const r = await propose(t.deps, { ops: [set("travel", "/room_block/deadline", ok12)] });
+    assert.notDeepEqual(r, { ok: false, text: CANT });
+  } finally {
+    await t.cleanup();
+  }
+});
 
 // ---- propose ----------------------------------------------------------------
 
@@ -870,7 +925,7 @@ test("undo leaves alone a stylesheet an old edit changed, and says so", async ()
       branch: "main", baseSha: await t.repo.head(), message: "Website edit: Wider still",
       files: { "src/css/styles.css": css.replace("max-width: 640px", "max-width: 680px") },
     });
-    assert.deepEqual(seen(await undo(t.deps, (await t.repo.edits(1))[0].sha)), { ok: false, text: NOTHING_TO_UNDO });
+    assert.deepEqual(seen(await undo(t.deps, (await t.repo.edits(1))[0].sha)), { ok: false, text: LOOKS_ONLY });
     assert.match(await t.read("src/css/styles.css"), /max-width: 680px/);
   } finally {
     await t.cleanup();

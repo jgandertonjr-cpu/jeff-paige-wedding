@@ -40,6 +40,8 @@ export async function undoEdit(deps, sha) {
   const keys = paths.filter((p) => keyOf.has(p)).map((p) => keyOf.get(p));
   const layoutPaths = paths.filter((p) => LAYOUT_FILE.test(p));
   const filePaths = paths.includes("DESIGN.md") ? ["DESIGN.md"] : [];
+  // An old edit that touched only a template or the stylesheet leaves nothing to restore.
+  if (!keys.length && !paths.includes("DESIGN.md") && layoutPaths.length) return refuse(TEXT.looksOnly);
   const wanted = [...keys.map((k) => schema.files[k].path), ...filePaths];
 
   // What the edit changed, read once: the files just before it and just after it.

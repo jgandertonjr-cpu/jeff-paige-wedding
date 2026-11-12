@@ -21,6 +21,7 @@
 //       notice: a sentence to show before the answer, when an earlier change failed
 //       on the live site and was put back just now (see settleUnconfirmed).
 //     Nothing is stored unless the answer is a proposal.
+//   loadContent(deps)   → { schema, content: { [file key]: parsed file }, images: "/images/<name>"[] sorted }
 //   preview(deps, id)   → { ok: true } | { ok: false, text }
 //   status(deps, { id })
 //     → { stage: "preview" | "publish", state: "waiting" | "building" | "ready" | "failed", url?, text?, sha?, title? }
@@ -73,6 +74,7 @@ export const TEXT = {
   notPutBack: "Something went wrong with that change, and I couldn't put the site back. Please check the site.",
   undoNotFound: "I can't find that change in the recent list, so I can't undo it.",
   nothingToUndo: "Everything in that change has been changed again since, so there is nothing to undo.",
+  looksOnly: "That change was to how the pages look, which this editor no longer changes, so I left it.",
   undoUnsafe: "I couldn't undo that change safely. Nothing changed.",
   movedUndo: "The site changed while I was saving, so nothing was undone. Please try again.",
 };
@@ -111,6 +113,13 @@ export async function loadBase({ repo, schema }) {
     content[k] = JSON.parse(text);
   }
   return { sha, content, images: await repo.listImages(sha) };
+}
+
+// What the editor page needs: the field description, every content file by key,
+// and the photo addresses already on the site ("/images/<name>"), sorted.
+export async function loadContent(deps) {
+  const base = await loadBase(deps);
+  return { schema: deps.schema, content: base.content, images: [...base.images].sort() };
 }
 
 // Files to write for every content section that differs. The path always comes
@@ -332,10 +341,34 @@ function replacePhotoRefs(value, swap) {
   return value;
 }
 
-async function proposeChange(deps, { ops, photos } = {}) {
+// Longest JSON text and deepest nesting an op value may have. Checked before
+// anything walks the value, and without recursion, so a hostile value cannot
+// overflow the stack.
+const MAX_VALUE_CHARS = 200_000;
+const MAX_VALUE_DEPTH = 12;
+function tooBig(value) {
+  let level = [value];
+  for (let depth = 0; level.length; depth++) {
+    if (depth > MAX_VALUE_DEPTH) return true;
+    const next = [];
+    for (const v of level) {
+      if (Array.isArray(v)) for (const child of v) next.push(child);
+      else if (isPlainObject(v)) for (const child of Object.values(v)) next.push(child);
+    }
+    level = next;
+  }
+  let text;
+  try { text = JSON.stringify(value); } catch { return true; }
+  return typeof text === "string" && text.length > MAX_VALUE_CHARS;
+}
+
+async function proposeChange(deps, input) {
+  if (!isPlainObject(input)) return refuse(TEXT.cantMake);
+  const { ops, photos } = input;
   const { schema } = deps;
   if (!Array.isArray(ops) || ops.length > MAX_OPS || !ops.every((op) => wellFormedOp(schema, op))) return refuse(TEXT.cantMake);
   if (photos !== undefined && photos !== null && (!Array.isArray(photos) || photos.length > MAX_PHOTOS)) return refuse(TEXT.cantMake);
+  if (ops.some((op) => "value" in op && tooBig(op.value))) return refuse(TEXT.cantMake);
   const checked = [];
   for (const photo of photos || []) {
     const c = checkPhoto(photo);
