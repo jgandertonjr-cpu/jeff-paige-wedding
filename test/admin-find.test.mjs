@@ -605,3 +605,44 @@ test("each change's spot is followed through the later changes in the tray", () 
   assert.equal(view.faq.questions[3].answer, "B");
   assert.equal(view.faq.questions[n - 2].question, "New?");
 });
+
+// ---- fix round 2 ---------------------------------------------------------------------
+
+test("search: hyphenated and spaced words match each other both ways", () => {
+  assert.deepEqual(top("rsvp deadline"), ["rsvp:/deadline"]);
+  const three = top("deadline", 3);
+  assert.ok(three.includes("travel:/room_block/deadline") && three.includes("rsvp:/deadline"), three.join());
+  assert.deepEqual(top("e-mail"), ["site:/email"]);
+  assert.deepEqual(top("reply by"), ["rsvp:/deadline"]);
+  assert.deepEqual(top("reply-by"), ["rsvp:/deadline"]);
+  assert.deepEqual(top("replyby"), ["rsvp:/deadline"]);
+  // Spaced in the query, joined on the site, and the other way round.
+  const copy = structuredClone(content);
+  copy.travel.room_block.booking_note = "Early check-in is free.";
+  copy.travel.room_block.hotel_details = "Ask about checkin times.";
+  const idx = buildIndex(schema, copy);
+  for (const q of ["check in", "check-in", "checkin"]) {
+    const found = search(idx, q).map((e) => e.path);
+    assert.ok(found.includes("/room_block/booking_note") && found.includes("/room_block/hotel_details"), `${q}: ${found.join()}`);
+  }
+});
+
+test("search: a list item's words count like its value, so a page's own field comes first", () => {
+  assert.deepEqual(top("after party time"), ["afterparty:/details/time"]);
+  for (const q of ["add a guest", "guest", "guests"]) assert.deepEqual(top(q), ["guests:/guests"], q);
+});
+
+test("fresh content that already has a change (it was published) drops it quietly", () => {
+  let tray = add([], setOp("travel", "/room_block/hotel_name", "Inn"));
+  tray = add(tray, { op: "insert", file: "faq", path: "/questions", index: -1, value: { question: "New?", answer: "Yes." } });
+  const n = content.faq.questions.length;
+  tray = add(tray, setOp("faq", `/questions/${n}/answer`, "Yes, really."));
+  tray = add(tray, { op: "remove", file: "guests", path: "/guests/0" });
+  const published = applyLocal(content, tray.map((t) => t.op));
+  assert.deepEqual(pruneTray(published, tray), { tray: [], dropped: 0 });
+  // Only part of it there: the rest stays.
+  const partly = applyLocal(content, [tray[0].op]);
+  const r = pruneTray(partly, tray);
+  assert.equal(r.dropped, 0);
+  assert.deepEqual(r.tray.map((t) => t.op.op), ["insert", "set", "remove"]);
+});

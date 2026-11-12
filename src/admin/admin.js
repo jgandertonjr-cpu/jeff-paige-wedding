@@ -50,6 +50,8 @@ const SAY = {
   locked: "Finish or cancel the review first.",
   siteMovedScreen: "The site changed, so what you had open isn't there any more.",
   photosTooBig: "Those photos are too big to send together. Remove one and try again.",
+  stillInTray: "Your changes are still in the tray.",
+  reviewAgain: "The site changed, so please review your changes again.",
   moreMatches: `Showing the first ${SHOW_MATCHES}. Add a word to narrow it down.`,
   gettingReady: "Getting your changes ready.",
   fixFirst: "A few things need fixing first.",
@@ -198,7 +200,12 @@ let view = null; // site.content with the tray applied: what every screen shows
 let index = null; // search entries over `view`, built when first needed
 let tray = []; // { id, op, entryLabel, marks, photoRef? }[]
 let spots = []; // where each tray change is in `view` (currentSpots)
-let gen = 0; // goes up each time fresh content arrives; screens check their place again
+// Changes each time fresh content arrives; a screen drawn for another generation
+// checks its place again. Unique to this page load, so a screen restored from
+// the browser's history after a reload is always checked.
+const LOAD_ID = Math.random().toString(36).slice(2, 10);
+let genCount = 0;
+let gen = `${LOAD_ID}-0`;
 let liveDraft = null; // the Change screen's value as typed: { key, value }
 const photos = new Map(); // phone photos by ref: { base64, thumbUrl, bytes }
 const drafts = new Map(); // item forms in progress, by route key
@@ -249,16 +256,40 @@ function setTray(next) {
 
 // While a reviewed set of changes is on its way (from the summary card until it
 // is live, cancelled or has failed), the tray stays as it was reviewed.
-const SETTLED = new Set(["live", "cancelled", "failed", "undone", "stopped"]);
+// "moved": the site changed under the card (it was thrown away).
+const SETTLED = new Set(["live", "cancelled", "failed", "undone", "stopped", "moved"]);
 const locked = () => !!review.card && !SETTLED.has(review.card.state);
-const lockLine = () => (locked() ? el("p", { className: "flash", role: "status", text: SAY.locked }) : null);
+// Every editing screen has this line; it shows only while the tray is locked.
+const lockLine = () => el("p", { className: "flash lock-line", role: "status", text: SAY.locked, hidden: !locked() });
 let wasLocked = false;
-// A card changed state: when that unlocks (or locks) the tray, the open screen is redrawn.
+// A card changed state: when that unlocks (or locks) the tray, the open screen is
+// brought up to date (without rebuilding a form she may be typing in).
 function lockMaybeChanged() {
   const now = locked();
   if (now === wasLocked) return;
   wasLocked = now;
-  if (signedIn && site && route.name !== "review") render({ scroll: ui.scroller.scrollTop });
+  if (signedIn && site && route.name !== "review" && !refreshInPlace()) render({ scroll: ui.scroller.scrollTop });
+}
+
+// The Change and item screens are not rebuilt when their item is still where it
+// was: only the lock line and the controls the lock disables change, so the
+// keyboard and the caret stay put. Returns false when the screen must be redrawn.
+function refreshInPlace() {
+  if (!["change", "item"].includes(route.name) || ui.screen.hidden || !renderedSig) return false;
+  const was = `${route.name}:${route.path}:${route.at}`;
+  followRoute();
+  if (`${route.name}:${route.path}:${route.at}` !== was) return false;
+  const spot = routeSpot(route);
+  const here = spot && locate(site.schema, view, route.file, spot);
+  if (!here || (route.name === "change" && (here.item || controlFor(here) === null))) return false;
+  const frozen = locked();
+  for (const line of ui.screen.querySelectorAll(".lock-line")) line.hidden = !frozen;
+  for (const b of ui.screen.querySelectorAll("[data-lockable]")) b.disabled = frozen;
+  route = { ...route, gen, marks: marksOf(view, route.file, spot) };
+  history.replaceState({ ...route, app: "editor" }, "");
+  renderedSig = JSON.stringify(route);
+  updateTrayBar();
+  return true;
 }
 
 // After a tap that redraws a list, the next control can land under the same
@@ -898,7 +929,7 @@ function changeScreen(r) {
     liveDraft = null;
     announce(outcome === "same" ? SAY.same : SAY.added);
     back();
-  }, { disabled: locked() });
+  }, { disabled: locked(), "data-lockable": true });
   ctl.node.addEventListener("keydown", (e) => {
     if (e.key === "Enter" && e.target.tagName === "INPUT" && !e.isComposing) {
       e.preventDefault();
@@ -934,8 +965,7 @@ function listScreen(r) {
   const photoField = (f.fields || []).find((x) => x.type === "image");
   const frozen = locked();
   const parts = head(f.label, { eyebrow: trailText(list.trail.slice(0, -1)) });
-  const lockNote = lockLine();
-  if (lockNote) parts.push(lockNote);
+  parts.push(lockLine());
 
   const say = el("p", { className: "flash", role: "status", hidden: true });
   const tell = (text) => {
@@ -1133,7 +1163,7 @@ function itemScreen(r) {
     setTray(next);
     announce(changed ? SAY.added : SAY.same);
     back();
-  }, { disabled: locked() });
+  }, { disabled: locked(), "data-lockable": true });
   const cancel = button("Cancel", "line", () => {
     drafts.delete(key);
     forgetUnusedPhotos();
@@ -1332,8 +1362,7 @@ function trayScreen() {
     return parts;
   }
   const frozen = locked();
-  const note = lockLine();
-  if (note) parts.push(note);
+  parts.push(lockLine());
   const rows = tray.map((t, i) => {
     const li = el("li", { className: "change" });
     const words = el("p", { className: "change-words", text: t.entryLabel });
@@ -1367,7 +1396,7 @@ function trayScreen() {
     render({ scroll: ui.scroller.scrollTop }); // focus goes to the list's heading
   };
   parts.push(el("ol", { className: "changes" }, rows));
-  parts.push(el("div", { className: "actions" }, button("Review", "publish", () => navigate({ name: "review" }, { replace: false }))));
+  parts.push(el("div", { className: "actions" }, button("Review", "publish", goOnce("review"))));
   return parts;
 }
 
@@ -1527,13 +1556,36 @@ function fixFor(label) {
   return null;
 }
 
-// After a publish went through: exactly the changes it carried leave the tray
-// (the tray was locked meanwhile, so they are all still there).
+// The publish was accepted: the card stays on Review even once the tray has
+// moved on. The tray keeps the changes (locked) until the site is live.
 function onPublished(card) {
-  if (card.published) return;
   card.published = true;
+}
+
+// Live: exactly the changes it carried leave the tray (it was locked meanwhile).
+function onLive(card) {
+  if (card.liveSeen) return;
+  card.liveSeen = true;
   setTray(removeEntries(tray, card.ids));
   loadSite({ quiet: true });
+}
+
+// The site changed under a reviewed card (the server says so on preview or
+// publish, or an undo just changed it): the card is thrown away, cancelled on
+// the server as well (best effort), the tray unlocks, the site is loaded again
+// (which checks every change), and Review shows the sentence.
+async function discardCard(card, text) {
+  card.stopPolling();
+  card.state = "moved";
+  if (review.card === card) {
+    review.card = null;
+    review.outcome = { kind: "text", text, sticky: true };
+    review.sig = traySig();
+  }
+  api("cancel", "POST", { id: card.id }).catch(() => {});
+  lockMaybeChanged();
+  await loadSite({ quiet: true });
+  if (route.name === "review" && signedIn) render();
 }
 
 // ---- proposal cards -------------------------------------------------------
@@ -1653,6 +1705,10 @@ class ProposalCard {
       await this.findOut("preview", was);
       return;
     }
+    if (data && data.reload === true) {
+      await discardCard(this, data.text || SAY.reviewAgain);
+      return;
+    }
     if (data && data.ok) {
       this.poll("preview");
     } else {
@@ -1667,6 +1723,10 @@ class ProposalCard {
     const data = await this.call("publish", { id: this.id });
     if (data && data.timedOut) {
       await this.findOut("publish", was);
+      return;
+    }
+    if (data && data.reload === true) {
+      await discardCard(this, data.text || SAY.reviewAgain);
       return;
     }
     if (data && data.ok) {
@@ -1937,13 +1997,24 @@ class ProposalCard {
       if (at >= 0) parts.splice(at, 0, saidNode);
       else parts.push(saidNode);
     }
+    if (this.state === "failed" && tray.some((t) => this.ids.includes(t.id))) {
+      parts.push(el("p", { className: "card-status", text: SAY.stillInTray }),
+        el("div", { className: "actions" }, button("See my changes", "line", () => navigate({ name: "tray" }))));
+    }
 
     const hadFocus = this.node.contains(document.activeElement);
     this.node.replaceChildren(...parts);
     if (hadFocus) this.node.focus({ preventScroll: true });
     if (moved && this.node.isConnected) reveal(this.node);
     if (moved) announce(this.node.querySelector(".card-status, .card-done, .card-said")?.textContent || "");
-    if (this === review.card) lockMaybeChanged();
+    if (this === review.card) {
+      if (this.state === "live") onLive(this);
+      if (this.state === "failed" && this.published && !this.failSeen) {
+        this.failSeen = true;
+        loadSite({ quiet: true }); // the site was put back; her changes stay in the tray
+      }
+      lockMaybeChanged();
+    }
   }
 }
 
@@ -1990,10 +2061,10 @@ async function loadSite({ quiet = false } = {}) {
     saveTray();
     refreshView();
     forgetUnusedPhotos();
-    gen++; // every screen checks its place again
+    gen = `${LOAD_ID}-${++genCount}`; // every screen checks its place again
     ui.loading.hidden = true;
     if (!signedIn) return;
-    render({ scroll: quiet ? ui.scroller.scrollTop : route.scroll || 0 });
+    if (!(quiet && refreshInPlace())) render({ scroll: quiet ? ui.scroller.scrollTop : route.scroll || 0 });
     if (pruned.dropped) {
       const words = flashText === SAY.siteMovedScreen ? `${siteChanged(pruned.dropped)} ${SAY.siteMovedScreen}` : siteChanged(pruned.dropped);
       flash(words);
@@ -2019,7 +2090,8 @@ document.addEventListener("visibilitychange", () => {
     return;
   }
   resumeAllPolling();
-  if (signedIn && site && hiddenAt && Date.now() - hiddenAt > STALE_MS) loadSite({ quiet: true });
+  // Not while a review is under way: the tray it covers must stay as reviewed.
+  if (signedIn && site && hiddenAt && Date.now() - hiddenAt > STALE_MS && !locked()) loadSite({ quiet: true });
   hiddenAt = 0;
 });
 
@@ -2219,7 +2291,11 @@ function recentRow(edit) {
         setActions();
         recentResult.replaceChildren(...undoResult(result));
         loadRecent(); // the undo is itself a new change at the top of the list
-        loadSite({ quiet: true });
+        // A review made before this undo no longer matches the site: it is
+        // thrown away and she reviews again. A publish under way is left to finish.
+        const card = review.card;
+        if (card && ["review", "previewing", "previewReady"].includes(card.state)) discardCard(card, SAY.reviewAgain);
+        else if (!locked()) loadSite({ quiet: true });
       } else {
         say(result.text || "");
         offerUndo();

@@ -83,7 +83,7 @@ export function buildIndex(schema, content) {
   const out = [];
   for (const file of fileOrder(schema)) {
     const def = schema.files[file];
-    collect(out, file, def.fields, content[file], "", [def.label], false, null, -1);
+    collect(out, file, def.fields, content[file], "", [def.label], false, null, -1, []);
   }
   return out;
 }
@@ -91,22 +91,26 @@ export function buildIndex(schema, content) {
 // `rowAt` is where in the trail a label-and-value row's label sits (-1: none):
 // for such rows (a detail's "Time", a meal's name) that label is what the row is
 // called, so search weighs it like the field's own label.
-function collect(out, file, fields, obj, path, trail, inList, ownNameKey, rowAt) {
+// `names` are the trail positions that hold list items' names (content, not labels).
+function collect(out, file, fields, obj, path, trail, inList, ownNameKey, rowAt, names) {
   for (const f of fields || []) {
     if (!isShown(f, inList)) continue;
     const p = `${path}/${escapeSegment(f.name)}`;
     const v = isObj(obj) ? obj[f.name] : undefined;
     if (f.type === "object") {
-      collect(out, file, f.fields, v, p, [...trail, f.label], false, null, rowAt);
+      collect(out, file, f.fields, v, p, [...trail, f.label], false, null, rowAt, names);
       continue;
     }
     if (f.type === "list") {
       const items = Array.isArray(v) ? v : [];
-      out.push({ file, path: p, trail: [...trail, f.label], type: "list", field: f, value: v });
+      const listEntry = { file, path: p, trail: [...trail, f.label], type: "list", field: f, value: v };
+      if (names.length) listEntry.names = [...names];
+      out.push(listEntry);
       if (!f.fields) continue;
       items.forEach((item, i) => {
         const key = nameKey(item);
-        collect(out, file, f.fields, item, `${p}/${i}`, [...trail, f.label, itemName(item, i)], true, key, key === "label" ? trail.length + 1 : -1);
+        collect(out, file, f.fields, item, `${p}/${i}`, [...trail, f.label, itemName(item, i)], true, key,
+          key === "label" ? trail.length + 1 : -1, [...names, trail.length + 1]);
       });
       continue;
     }
@@ -114,6 +118,8 @@ function collect(out, file, fields, obj, path, trail, inList, ownNameKey, rowAt)
     const entry = { file, path: p, trail: leafTrail, type: f.type, field: f, value: v };
     if (f.type === "select") entry.choices = optionLabels(f, fields);
     if (rowAt >= 0 && ownNameKey !== f.name) entry.rowAt = rowAt;
+    const itemNames = names.filter((i) => i < leafTrail.length - 1);
+    if (itemNames.length) entry.names = itemNames;
     out.push(entry);
   }
 }
@@ -233,7 +239,7 @@ export function describe(entry, value = entry.value) {
 
 const STOP = new Set([
   "the", "a", "an", "of", "to", "on", "in", "for", "my", "our", "and", "change", "edit", "update", "please", "i", "want",
-  "is", "are", "what", "where", "how", "do", "can", "at", "it", "where's", "whats", "what's",
+  "is", "are", "what", "where", "how", "do", "can", "at", "it", "where's", "whats", "what's", "add", "new",
 ]);
 const GROUPS = [
   ["hotel", "room block", "nearby hotels"],
@@ -252,21 +258,51 @@ const ONE_WAY = {
   deadline: ["reply-by", "reply by"],
   date: ["deadline", "day"],
 };
+// A hyphenated synonym is one joined word ("reply-by" → "replyby"), as on the site.
+const joinHyphens = (w) => w.replace(/-/g, "");
 const SYNONYMS = (() => {
   const map = new Map();
   for (const group of GROUPS) for (const w of group) map.set(w, group.filter((x) => x !== w));
   for (const [w, alts] of Object.entries(ONE_WAY)) map.set(w, [...(map.get(w) || []), ...alts]);
+  for (const [w, alts] of map) map.set(w, [...new Set(alts.map(joinHyphens))]);
   return map;
 })();
 
 const norm = (s) => String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[‘’]/g, "'");
 const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const tokensOf = (text) => norm(text).split(/[^\p{L}\p{N}:#@']+/u).filter(Boolean);
+// The words of a piece of text. A hyphenated word counts both joined and as its
+// parts ("Reply-by" → "replyby", "reply", "by"), so "reply by", "reply-by" and
+// "replyby" all find it.
+function tokensOf(text) {
+  const out = [];
+  for (const raw of norm(text).split(/[^\p{L}\p{N}:#@'-]+/u)) {
+    const t = raw.replace(/^-+|-+$/g, "");
+    if (!t) continue;
+    if (!t.includes("-")) {
+      out.push(t);
+      continue;
+    }
+    out.push(joinHyphens(t), ...t.split("-").filter(Boolean));
+  }
+  return out;
+}
 
+// Her words, without the little ones, each with the forms it may take: as typed
+// (hyphens joined), its singular, and joined to the word before or after it
+// ("e mail" → "email", "check in" → "checkin").
 function queryWords(query) {
-  const words = norm(query).split(/\s+/).map((w) => w.replace(/^[^\p{L}\p{N}#@]+|[^\p{L}\p{N}]+$/gu, "")).filter(Boolean);
-  const useful = words.filter((w) => !STOP.has(w));
-  return useful.length ? useful : words;
+  const raw = norm(query).split(/\s+/).map((w) => joinHyphens(w.replace(/^[^\p{L}\p{N}#@]+|[^\p{L}\p{N}]+$/gu, ""))).filter(Boolean);
+  const keep = raw.map((w) => !STOP.has(w));
+  const useAll = !keep.some(Boolean);
+  const out = [];
+  raw.forEach((w, i) => {
+    if (!useAll && !keep[i]) return;
+    const forms = w.length > 3 && w.endsWith("s") ? [w, w.slice(0, -1)] : [w];
+    if (i > 0) forms.push(raw[i - 1] + w);
+    if (i < raw.length - 1) forms.push(w + raw[i + 1]);
+    out.push({ word: w, forms });
+  });
+  return out;
 }
 
 // The words of an entry's current value that search looks at.
@@ -288,19 +324,21 @@ const LEVEL = { own: 400, section: 300, value: 200, page: 100 };
 const PARTIAL = 10;
 const SYNONYM = 25;
 const DEMOTED = /^\/(seo|labels)\//; // search-engine and button-wording settings
+const DEMOTE = 60; // they count a little less, and come last among equals
 
 // How well `form` is found in a piece of text: 0 none, 1 as a word start, 2 a whole word.
 function found(tokens, text, form) {
-  if (form.includes(" ")) return new RegExp(`(?:^|[^\\p{L}\\p{N}])${escapeRe(form)}`, "u").test(text) ? 2 : 0;
+  if (form.includes(" ")) return new RegExp(`(?:^|[^\\p{L}\\p{N}])${escapeRe(form)}`, "u").test(text.replace(/-/g, " ")) ? 2 : 0;
   if (tokens.includes(form)) return 2;
   return tokens.some((t) => t.startsWith(form)) ? 1 : 0;
 }
 
-function pieces(e) {
+function pieces(e, pageNamed) {
   const last = e.trail.length - 1;
-  const out = e.trail.map((text, i) => ({
-    text, level: i === 0 && last > 0 ? LEVEL.page : i === last || i === e.rowAt ? LEVEL.own : LEVEL.section, label: i === last || i === e.rowAt,
-  }));
+  // A list item's name is words from the site, so it counts like a value. A page
+  // she named in full ("after party") counts like a section.
+  const levelAt = (i) => (i === 0 && last > 0 ? (pageNamed ? LEVEL.section : LEVEL.page) : i === last || i === e.rowAt ? LEVEL.own : e.names?.includes(i) ? LEVEL.value : LEVEL.section);
+  const out = e.trail.map((text, i) => ({ text, level: levelAt(i), label: i === last || i === e.rowAt }));
   out.push({ text: valueText(e), level: LEVEL.value, label: false });
   for (const p of out) {
     p.norm = norm(p.text);
@@ -316,14 +354,21 @@ export function search(index, query, limit = 20) {
   const words = queryWords(query);
   if (!words.length) return [];
   const scored = [];
+  const named = new Map(); // page name → did she type every word of it?
+  const pageNamed = (label) => {
+    if (!named.has(label)) {
+      const toks = tokensOf(label);
+      named.set(label, toks.length > 0 && toks.every((t) => words.some((w) => w.forms.some((f) => t === f || t.startsWith(f)))));
+    }
+    return named.get(label);
+  };
   index.forEach((e, order) => {
-    const parts = pieces(e);
+    const parts = pieces(e, pageNamed(e.trail[0]));
     const covered = parts.map(() => new Set());
     let score = 0;
-    for (const w of words) {
-      const forms = w.length > 3 && w.endsWith("s") ? [w, w.slice(0, -1)] : [w];
+    for (const { forms } of words) {
       // A synonym that is itself one of her words is already counted as that word.
-      const alts = forms.flatMap((x) => SYNONYMS.get(x) || []).filter((x) => !words.includes(x));
+      const alts = forms.flatMap((x) => SYNONYMS.get(x) || []).filter((x) => !words.some((q) => q.word === x));
       let best = 0;
       parts.forEach((p, i) => {
         for (const [list, cost] of [[forms, 0], [alts, SYNONYM]]) {
@@ -339,7 +384,8 @@ export function search(index, query, limit = 20) {
       score += best;
     }
     const coverage = Math.max(0, ...parts.map((p, i) => (p.label && p.tokens.length ? covered[i].size / p.tokens.length : 0)));
-    scored.push({ e, score, demoted: DEMOTED.test(e.path) ? 1 : 0, coverage, depth: e.trail.length, order });
+    const demoted = DEMOTED.test(e.path) ? 1 : 0;
+    scored.push({ e, score: score - demoted * DEMOTE, demoted, coverage, depth: e.trail.length, order });
   });
   scored.sort((a, b) => b.score - a.score || a.demoted - b.demoted || b.coverage - a.coverage || a.depth - b.depth || a.order - b.order);
   return scored.slice(0, limit).map((s) => s.e);
@@ -707,25 +753,69 @@ export function removeEntries(tray, ids) {
   return gone.size ? tray.filter((t) => !gone.has(t.id)) : tray;
 }
 
+// Is this change already in the content (it was published)? A setting that
+// already has its value, an item already where it would be added, or an item
+// to remove that is no longer there.
+// `later` are the tray's changes after this one: an added item may have been
+// edited after it was added, and is compared as those edits leave it.
+function alreadyThere(content, t, later = []) {
+  const op = t.op;
+  if (op.op === "set") return same(valueAt(content, op.file, op.path), op.value);
+  if (op.op === "insert") {
+    const list = valueAt(content, op.file, op.path);
+    if (!Array.isArray(list)) return false;
+    const at = op.index === -1 || op.index === undefined ? list.length - 1 : op.index;
+    if (at < 0 || at >= list.length) return false;
+    const itemPath = `${op.path}/${at}`;
+    const scratch = { [op.file]: structuredClone(content[op.file]) };
+    const scratchList = valueAt(scratch, op.file, op.path);
+    scratchList.splice(at, 1); // the list as it was before the item was added
+    try {
+      applyOne(scratch, op);
+      for (const l of later) if (l.op.file === op.file && l.op.path.startsWith(`${itemPath}/`)) applyOne(scratch, l.op);
+    } catch {
+      return false;
+    }
+    return stable(list[at]) === stable(valueAt(scratch, op.file, itemPath));
+  }
+  if (op.op === "remove") {
+    const marks = Array.isArray(t.marks) ? t.marks : [];
+    const own = marks[marks.length - 1];
+    const segs = segmentsOf(op.path) || [];
+    if (!own || own.at !== segs.length - 1) return false;
+    const listPath = relocate(content, op.file, parentOf(op.path), marks.slice(0, -1));
+    const list = listPath === null ? null : valueAt(content, op.file, listPath);
+    return Array.isArray(list) && !list.some((x) => stable(x) === own.item);
+  }
+  return false;
+}
+
 // After fresh content arrives: each change is checked against its marks and
 // moved with its item, or dropped (with the changes that relied on it) when its
-// item is gone or can't be told apart, or when it no longer applies.
-// Returns { tray, dropped: count }; the same tray when nothing had to change.
+// item is gone or can't be told apart, or when it no longer applies. A change
+// the content already has (it was published) is dropped quietly: it is not
+// counted. Returns { tray, dropped: count }; the same tray when nothing changed.
 export function pruneTray(content, tray) {
   const copy = structuredClone(content);
   const keep = [];
   const gone = [];
   let moved = false;
-  for (const t of tray) {
+  tray.forEach((t, n) => {
     if (gone.some((g) => dependsOn(t.op, g))) {
       gone.push(t.op);
-      continue;
+      return;
     }
     let op = t.op;
+    const later = tray.slice(n + 1);
     const path = relocate(copy, op.file, op.path, t.marks);
     if (path === null) {
-      gone.push(t.op);
-      continue;
+      if (alreadyThere(copy, t, later)) moved = true;
+      else gone.push(t.op);
+      return;
+    }
+    if (alreadyThere(copy, { ...t, op: path === op.path ? op : { ...op, path } }, later)) {
+      moved = true;
+      return;
     }
     if (path !== op.path) {
       op = { ...op, path };
@@ -742,7 +832,7 @@ export function pruneTray(content, tray) {
     } catch {
       gone.push(t.op);
     }
-  }
+  });
   return gone.length || moved ? { tray: keep, dropped: gone.length } : { tray, dropped: 0 };
 }
 
