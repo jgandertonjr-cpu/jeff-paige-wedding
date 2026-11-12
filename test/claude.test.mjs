@@ -463,3 +463,11 @@ test("O2: a request about how something looks means reading the stylesheet or pa
   assert.match(p, /never say you can't change how something looks without having read/i);
   assert.doesNotMatch(p, /Use read_file only when/);
 });
+
+test("O3: no emoji or decorative symbols in replies or notes", () => {
+  const p = systemPrompt(schema);
+  assert.match(p, /no emoji or decorative symbols/i);
+  assert.match(p, /replies or in note/i);
+  // The rule sits with the other reply-style rules, before the tool rules.
+  assert.ok(p.search(/no emoji/i) < p.search(/propose_change/));
+});
