@@ -127,6 +127,10 @@ test("a new inline script is a problem", () => {
   has(checkSite(copy(change("travel.html", (t) => t.replace("</body>", "<script>alert(1)</script></body>")))), /new script/);
 });
 
+test("a second copy of an allowed script element is a problem", () => {
+  has(checkSite(copy(change("faq.html", (t) => t.replace("</body>", '<script src="js/main.js"></script></body>')))), /new script/);
+});
+
 test("a new iframe origin is a problem", () => {
   has(checkSite(copy(change("travel.html", (t) => t.replace("</body>", '<iframe src="https://evil.example/f"></iframe></body>')))), /embedded frame|iframe/i);
 });

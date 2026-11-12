@@ -261,7 +261,8 @@ function scanPage(html) {
   }
 
   return {
-    facts: { scripts: unique(scripts), iframes: unique(iframes), handlers: unique(handlers), forms: unique(forms), tags: unique(tags), origins: unique(origins), animation: unique(animation), imports: importTokens(imports) },
+    // Scripts keep every occurrence: a second copy of an allowed script is new too.
+    facts: { scripts: [...scripts].sort(), iframes: unique(iframes), handlers: unique(handlers), forms: unique(forms), tags: unique(tags), origins: unique(origins), animation: unique(animation), imports: importTokens(imports) },
     links,
     stylesheets,
   };
@@ -343,9 +344,14 @@ function loadRecord(file) {
   }
 }
 
+// Each found item must be allowed, and appear no more often than recorded.
 function newThings(where, found, allowed, describe, problems) {
-  const known = new Set(allowed || []);
-  for (const item of found) if (!known.has(item)) problems.push(describe(where, item));
+  const left = new Map();
+  for (const item of allowed || []) left.set(item, (left.get(item) || 0) + 1);
+  for (const item of found) {
+    if (left.get(item) > 0) left.set(item, left.get(item) - 1);
+    else problems.push(describe(where, item));
+  }
 }
 
 const SAYS = {

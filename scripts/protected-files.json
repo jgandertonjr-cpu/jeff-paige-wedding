@@ -33,6 +33,7 @@
       "scripts": [
         "inline:ca542334353d2e46",
         "ld+json",
+        "ld+json",
         "src:js/main.js"
       ],
       "iframes": [],
