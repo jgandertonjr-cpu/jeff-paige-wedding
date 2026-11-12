@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import schema from "../netlify/editor/schema.gen.mjs";
 import { diffContent, summarize, invertChanges } from "../netlify/editor/diff.mjs";
 import { applyOps } from "../netlify/editor/ops.mjs";
+import { isDeepStrictEqual } from "node:util";
 
 const BANNED = /\b(commit|deploy|json|branch|repository|merge|build|token|wcag)\b/i;
 const mk = () => ({
@@ -244,9 +245,9 @@ test("invert B1: a field change inside a list item follows the item after a late
 
 test("invert B1: a field change is skipped when its item cannot be told apart or is gone", () => {
   const A = (answer, extra) => ({ name: "A", answer, ...(extra ? { extra } : {}) });
-  // The item was changed again later: skipped, nothing touched.
-  let r = undoQa([A("old"), A("same")], [A("new"), A("same")], [A("new", "x"), A("same")]);
-  assert.deepEqual(r.out, [A("new", "x"), A("same")]);
+  // The item was changed again later and the list was also reordered: skipped, nothing touched.
+  let r = undoQa([A("old"), { name: "C", answer: "c" }], [A("new"), { name: "C", answer: "c" }], [{ name: "C", answer: "c" }, A("new", "x")]);
+  assert.deepEqual(r.out, [{ name: "C", answer: "c" }, A("new", "x")]);
   assert.equal(r.inv.skipped.length, 1);
   // Two items now look like the edited one: no guessing.
   r = undoQa([A("old"), { name: "C", answer: "c" }], [A("new"), { name: "C", answer: "c" }], [{ name: "C", answer: "c" }, A("new"), A("new")]);
@@ -281,6 +282,40 @@ test("invert B1: nested list items resolve at each level", () => {
   const inv2 = invertChanges(changes, changed);
   assert.deepEqual(inv2.ops, []);
   assert.equal(inv2.skipped.length, 1);
+});
+
+test("invert CR3: undoing one field keeps a later change to another field of the same item", () => {
+  const start = [{ question: "Q1", answer: "A1" }, { question: "Other", answer: "O" }];
+  const edit1 = [{ question: "Q2", answer: "A1" }, { question: "Other", answer: "O" }];
+  const edit2 = [{ question: "Q2", answer: "A2" }, { question: "Other", answer: "O" }];
+  const r = undoQa(start, edit1, edit2);
+  assert.deepEqual(r.inv.skipped, []);
+  assert.deepEqual(r.out, [{ question: "Q1", answer: "A2" }, { question: "Other", answer: "O" }]);
+});
+
+test("invert CR3: with the item changed again, a reorder or a change to another item means skip, not guess", () => {
+  const start = [{ question: "Q1", answer: "A1" }, { question: "Other", answer: "O" }];
+  const edit1 = [{ question: "Q2", answer: "A1" }, { question: "Other", answer: "O" }];
+  // Reordered as well.
+  const moved = [{ question: "Other", answer: "O" }, { question: "Q2", answer: "A2" }];
+  let r = undoQa(start, edit1, moved);
+  assert.equal(r.inv.skipped.length, 1);
+  assert.deepEqual(r.out, moved);
+  // Another item changed as well.
+  const other = [{ question: "Q2", answer: "A2" }, { question: "Other", answer: "O2" }];
+  r = undoQa(start, edit1, other);
+  assert.equal(r.inv.skipped.length, 1);
+  assert.deepEqual(r.out, other);
+  // An item added as well.
+  const added = [{ question: "Q2", answer: "A2" }, { question: "Other", answer: "O" }, { question: "New", answer: "N" }];
+  r = undoQa(start, edit1, added);
+  assert.equal(r.inv.skipped.length, 1);
+  assert.deepEqual(r.out, added);
+  // The undone field itself changed again.
+  const again = [{ question: "Q3", answer: "A2" }, { question: "Other", answer: "O" }];
+  r = undoQa(start, edit1, again);
+  assert.equal(r.inv.skipped.length, 1);
+  assert.deepEqual(r.out, again);
 });
 
 test("invert B2: a replacement whose new item changed again is skipped as a whole", () => {
@@ -340,14 +375,25 @@ test("invert: seeded property check (2,000 cases)", () => {
     const ctx0 = `case ${n}: ${JSON.stringify({ before, edited, current, out })}`;
     const field = changes.find((c) => c.kind === "changed");
     if (field) {
-      // A field put back inside one item: at most one item differs, and it went
-      // from exactly the edit's version to exactly the version before the edit.
+      // A field put back inside one item: at most one item differs. Either it
+      // went from exactly the edit's version to exactly the version before the
+      // edit, or (CR3) it is the item at the edit's spot, the only item that
+      // differs from how the edit left the list, and only the undone field,
+      // still holding the edit's value, went back.
       assert.equal(out.length, current.length, ctx0);
       const differs = out.flatMap((x, i) => (key(x) === key(current[i]) ? [] : [i]));
       assert.ok(differs.length <= 1, ctx0);
+      const [, , at, prop] = field.path.split("/");
       for (const i of differs) {
-        assert.deepEqual(current[i], field.itemAfter, ctx0);
-        assert.deepEqual(out[i], field.itemBefore, ctx0);
+        if (isDeepStrictEqual(current[i], field.itemAfter)) {
+          assert.deepEqual(out[i], field.itemBefore, ctx0);
+          continue;
+        }
+        assert.equal(i, Number(at), ctx0);
+        assert.equal(current.length, edited.length, ctx0);
+        current.forEach((x, j) => { if (j !== i) assert.deepEqual(x, edited[j], ctx0); });
+        assert.equal(current[i][prop], field.after, ctx0);
+        assert.deepEqual(out[i], { ...current[i], [prop]: field.before }, ctx0);
       }
       continue;
     }

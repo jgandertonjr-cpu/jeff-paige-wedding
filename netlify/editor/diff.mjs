@@ -204,11 +204,28 @@ const countOf = (list, item) => list.filter((x) => same(x, item)).length;
 // one of them is the edit's own.
 const extraCopy = (list, item, listBefore) => countOf(list, item) > countOf(listBefore, item);
 
-// Where a change made inside list items points now. Each list item on the way
-// is found again: the item at the old spot if it is still exactly as the edit
-// left it, otherwise the one item in that list that is. Null when the item is
-// gone, changed since, or cannot be told apart from a copy that was already
-// there before the edit.
+// Which item of `list` a change recorded at `index` inside item `w.after` is
+// in now, or -1. First the item exactly as the edit left it: at its old spot,
+// else the one such item, as long as it is not a copy that was already there
+// before the edit. Failing that, the item at the old spot when it is the only
+// item that differs from how the edit left the list (same length, every other
+// item unchanged): another of its fields changed since. Whether the undone
+// field itself still holds the edit's value is checked by the caller.
+function findItem(list, w, index) {
+  if (!Array.isArray(list)) return -1;
+  if (extraCopy(list, w.after, w.listBefore)) {
+    if (same(list[index], w.after)) return index;
+    const hits = list.flatMap((x, j) => (same(x, w.after) ? [j] : []));
+    if (hits.length === 1) return hits[0];
+  }
+  const listAfter = w.listBefore.map((x, j) => (j === index ? w.after : x));
+  const onlyThisOne = index < list.length && list.length === listAfter.length
+    && list.every((x, j) => j === index || same(x, listAfter[j]));
+  return onlyThisOne ? index : -1;
+}
+
+// Where a change made inside list items points now: each list item on the way
+// is found again with findItem. Null when an item is gone or cannot be told apart.
 function resolvePath(content, c) {
   if (!c.within?.length) return c.path;
   const segs = c.path.split("/").slice(1);
@@ -217,13 +234,8 @@ function resolvePath(content, c) {
   for (let k = 0; k < segs.length; k++) {
     const w = levels.get(k);
     if (w) {
-      if (!Array.isArray(node) || !extraCopy(node, w.after, w.listBefore)) return null;
-      let i = Number(segs[k]);
-      if (!same(node[i], w.after)) {
-        const hits = node.flatMap((x, j) => (same(x, w.after) ? [j] : []));
-        if (hits.length !== 1) return null;
-        i = hits[0];
-      }
+      const i = findItem(node, w, Number(segs[k]));
+      if (i < 0) return null;
       segs[k] = String(i);
       node = node[i];
       continue;
