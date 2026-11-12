@@ -460,3 +460,14 @@ test("summary values collapse line breaks, tabs and runs of spaces to one space"
   assert.match(win, /…/);
   assert.doesNotMatch(win, /\s\s|[\n\t]/, win);
 });
+
+// CR4: a change to paragraph breaks alone would read the same on both sides.
+test("summary says when only paragraph breaks changed", () => {
+  assert.deepEqual(sum((c) => { c.faq.questions[0].answer = "First. Second."; }), ["FAQ → Questions → “Q1” → Answer: A1 → First. Second."]);
+  const [line] = summarize(diffContent(
+    edit((c) => { c.faq.questions[0].answer = "First. Second."; }),
+    edit((c) => { c.faq.questions[0].answer = "First.\n\nSecond."; }),
+  ), schema);
+  assert.equal(line, "FAQ → Questions → “Q1” → Answer: paragraph breaks changed");
+  assert.doesNotMatch(line, BANNED);
+});

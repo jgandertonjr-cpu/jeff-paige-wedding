@@ -181,6 +181,11 @@ export function summarize(changes, schema) {
     if (c.kind === "added") return `${check}${head}: added “${clip(itemName(c.after, c.index))}”`;
     if (c.kind === "removed") return `${check}${head}: removed “${clip(itemName(c.before, c.index))}”`;
     const plainText = !["image", "hidden", "date"].includes(field?.type);
+    // Different text that reads the same on one line differs only in its breaks.
+    if (plainText && typeof c.before === "string" && typeof c.after === "string"
+      && c.before !== c.after && oneLine(c.before) === oneLine(c.after)) {
+      return `${check}${head}: paragraph breaks changed`;
+    }
     const around = plainText ? aroundChange(oneLine(c.before), oneLine(c.after)) : null;
     if (around) return `${check}${head}: ${around[0]} → ${around[1]}`;
     return `${check}${head}: ${formatValue(c.before, field, "before")} → ${formatValue(c.after, field, "after")}`;
