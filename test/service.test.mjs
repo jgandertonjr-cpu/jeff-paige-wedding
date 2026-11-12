@@ -655,6 +655,57 @@ test("cancel closes the preview, deletes the change, and succeeds when it is alr
   }
 });
 
+// Task 18 C: cancel and publish racing never end with "cancelled" and a change on the site.
+test("cancel and publish at the same moment: never both cancelled and written", async () => {
+  const ticks = async (n) => { for (let i = 0; i < n; i++) await Promise.resolve(); };
+  for (const cancelFirst of [true, false]) {
+    for (let delay = 0; delay < 12; delay++) {
+      const t = await setup();
+      try {
+        t.client.queue(propose([DEADLINE]));
+        const r = await ask(t.deps, { message: "deadline" });
+        const first = cancelFirst ? () => cancel(t.deps, r.id) : () => publish(t.deps, r.id);
+        const second = cancelFirst ? () => publish(t.deps, r.id) : () => cancel(t.deps, r.id);
+        const [a, b] = await Promise.all([first(), ticks(delay).then(second)]);
+        const [cancelled, published] = cancelFirst ? [a, b] : [b, a];
+        const written = (await t.repo.edits(10)).length;
+        const where = `cancel ${cancelFirst ? "first" : "second"}, delay ${delay}`;
+        if (cancelled.ok) {
+          assert.equal(written, 0, `${where}: told cancelled, but it went live`);
+          assert.equal(await t.store.get(`proposal:${r.id}`), null, where);
+        }
+        if (written) assert.ok(published.ok, where);
+      } finally {
+        await t.cleanup();
+      }
+    }
+  }
+});
+
+test("publish does not bring back a change that vanished while it was publishing", async () => {
+  let t;
+  t = await setup({
+    repoWrap: (local) => ({
+      ...local,
+      async write(args) {
+        await t.store.delete(`proposal:${current}`);
+        return local.write(args);
+      },
+    }),
+  });
+  let current;
+  try {
+    t.client.queue(propose([DEADLINE]));
+    const r = await ask(t.deps, { message: "deadline" });
+    current = r.id;
+    const res = await publish(t.deps, r.id);
+    assert.equal(res.ok, true);
+    assert.equal(await t.store.get(`proposal:${r.id}`), null);
+  } finally {
+    await t.cleanup();
+  }
+});
+
 test("a change expires 24 hours after it was made", async () => {
   const t = await setup();
   try {

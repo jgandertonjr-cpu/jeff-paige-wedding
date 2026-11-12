@@ -474,8 +474,10 @@ export async function publish(deps, id) {
     return refuse(result.stale ? TEXT.movedPublish : result.problem);
   }
 
+  // A record that vanished meanwhile is not brought back.
   await deps.store.update(key(id), (cur) => {
-    const { publishing, photo, ...rest } = cur || p;
+    if (!cur) return null;
+    const { publishing, photo, ...rest } = cur;
     return { ...rest, published: { sha: result.sha, title } };
   });
   if (p.preview) {
@@ -486,11 +488,22 @@ export async function publish(deps, id) {
 
 export async function cancel(deps, id) {
   if (typeof id !== "string" || !ID.test(id)) return { ok: true };
-  const p = await deps.store.get(key(id));
-  if (!p || p.published) return { ok: true };
-  if (p.publishing && deps.now() - p.publishing < CLAIM_MS) return refuse(TEXT.busy);
-  if (p.preview) await deps.repo.closePreview({ id, number: p.preview.number });
-  await deps.store.delete(key(id));
+  // Check and delete in one step, so a publish cannot claim it in between.
+  let outcome = null;
+  await deps.store.update(key(id), (cur) => {
+    outcome = null;
+    if (!cur || cur.published) return cur;
+    if (cur.publishing && deps.now() - cur.publishing < CLAIM_MS) {
+      outcome = { busy: true };
+      return cur;
+    }
+    outcome = { preview: cur.preview };
+    return null;
+  });
+  if (outcome?.busy) return refuse(TEXT.busy);
+  if (outcome?.preview) {
+    try { await deps.repo.closePreview({ id, number: outcome.preview.number }); } catch {}
+  }
   return { ok: true };
 }
 
