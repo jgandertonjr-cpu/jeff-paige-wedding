@@ -1,233 +1,170 @@
-# Website Admin: Setup & Editing Guide
+# Website Editor: Setup & Maintenance (for Jeff)
 
-The wedding site now has an editing page at **https://jeffandpaige.net/admin/**. You fill in forms there instead of editing HTML. Every time you click **Save**, the change goes to GitHub and Netlify rebuilds the live site in about a minute.
+Paige edits the wedding site at **https://jeffandpaige.net/admin/** by typing what she wants changed. This file is the one-time setup and the upkeep. Her own one-page guide is `ADMIN-GUIDE.md` (also at `/admin/guide/`).
 
-This guide covers:
+> Vendor menus (Anthropic, GitHub, Netlify) get renamed from time to time. The click paths below were right when written; if a label has moved, the nearest match is almost always the one.
 
-1. [One-time setup](#1-one-time-setup) (about 15 minutes, done once by Jeff)
-2. [Giving Paige access](#2-giving-paige-access)
-3. [Editing the site](#3-editing-the-site)
-4. [Testing edits on your computer first](#4-testing-edits-on-your-computer-first-local-mode)
-5. [Which file holds what](#5-which-file-holds-what)
-6. [Troubleshooting](#6-troubleshooting)
+## 1. What changed
+
+- Paige no longer needs a GitHub account. She signs in at `/admin/` with a password you choose.
+- She types a request, reads a plain summary, and taps **Publish**. Every change can be undone with one tap.
+- The old form editor (Sveltia) is still at `/admin/forms/` as your fallback.
+- The RSVP dashboard at `/admin/rsvps/` now uses the same password. No GitHub sign-in there either.
 
 ---
 
-## 1. One-time setup
+## 2. One-time setup checklist
 
-Do these in order. Steps A and B can happen before the new code goes live; step C needs it live.
+Do these in order.
 
-### A. Create a GitHub OAuth App
+### a. Anthropic API key
 
-This lets the admin page ask GitHub "is this really Jeff?"
+1. Go to **https://platform.claude.com** and sign in.
+2. Click **API keys** → **Create key**. Name it `wedding-site-editor`. Copy the key now; it is shown once.
+3. Click **Billing** and add some credit ($20 is plenty to start).
+4. Click **Settings → Limits** and set a monthly spend limit. Suggested: **$20**.
 
-1. Go to **https://github.com** and sign in as **jgandertonjr-cpu**.
-2. Click your **profile picture** (top right) → **Settings**.
-3. In the left sidebar, scroll to the bottom and click **Developer settings**.
-4. Click **OAuth Apps** → **New OAuth App**. On a brand-new account the button says **Register a new application**.
-5. Fill in the form:
+**What it costs:** roughly 3 to 8 cents for an ordinary change, and 15 to 25 cents for a change to how a page looks. The editor also stops at 150 requests a day by itself, so a runaway can't run up a bill.
 
-   | Field | What to enter |
+### b. GitHub access token (this repository only)
+
+1. Go to **https://github.com**, click your **profile picture** → **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens** → **Generate new token**.
+2. Fill in:
+
+   | Field | Value |
    |---|---|
-   | Application name | `Jeff & Paige Website Admin` |
-   | Homepage URL | `https://jeffandpaige.net` |
-   | Application description | *(leave empty)* |
-   | Redirect URI (older form: "Authorization callback URL") | `https://api.netlify.com/auth/done` |
-   | Allow wildcard matching | *(leave unchecked)* |
-   | Enable Device Flow | *(leave unchecked)* |
-   | Expire user access tokens | *(leave checked — more secure; you may need to sign in again after about 8 hours)* |
+   | Token name | `wedding-site-editor` |
+   | Resource owner | `jgandertonjr-cpu` |
+   | Expiration | The longest offered. Put a calendar reminder to renew it. When it expires, the editor says it can't reach the site. |
+   | Repository access | **Only select repositories** → `jeff-paige-wedding` |
+   | Repository permissions | **Contents: Read and write** and **Pull requests: Read and write**. (Metadata: Read-only is added automatically.) Nothing else. |
 
-6. Click **Register application**.
-7. You're now on the app's page. Copy the **Client ID** into a temporary note.
-8. Click **Generate a new client secret**. GitHub may ask for your password or 2FA code. Copy the secret right away, because GitHub only shows it once.
+3. Click **Generate token** and copy it. GitHub shows it once.
 
-   > Keep the secret private. Don't put it in the repo, an email or a chat. It only goes into Netlify in the next step. If it ever leaks, come back here, delete it and generate a new one.
+### c. A password and a session secret
 
-### B. Install the GitHub provider in Netlify
+- **Password for Paige:** at least 8 characters. Four random words works well and is easy to type on a phone.
+- **Session secret:** in Terminal run this and copy the result (it needs to be at least 32 characters; this gives 64):
 
-1. Go to **https://app.netlify.com** and open the **jeffandpaige.net** project.
-2. In the left sidebar, click **Project configuration**.
-3. Click **Security**, then scroll down to the **OAuth** section. It says "No authentication providers installed."
-4. Click **Install provider**.
-5. Provider: **GitHub**. Paste the **Client ID** and **Client Secret** from step A.
-6. Click **Install**.
-7. Delete the temporary note holding the secret.
+  ```bash
+  openssl rand -hex 32
+  ```
 
-> Netlify's older docs call this page "Site configuration → Access & security → OAuth". It's the same setting under its new name.
+### d. Netlify environment variables
 
-### C. Go live and test an edit end to end
+1. Go to **https://app.netlify.com** → the **jeffandpaige.net** project → **Project configuration** → **Environment variables**.
+2. For each row below: **Add a variable** → **Add a single variable**, enter the key and value, tick **Contains secret values**, and if offered limit the scope to **Functions**. Then **Create variable**.
 
-1. **Merge the `admin-cms` branch into `main`.** Ask Claude to do it, or open a pull request on GitHub and merge it there. Netlify then builds the new version. Check **Deploys** in Netlify for a green **Published**.
-2. Open **https://jeffandpaige.net/admin/**.
-   - The site's visitor access is currently set to **Private**, so you may see a Netlify login first. Sign in with your Netlify account. (See [Giving Paige access](#2-giving-paige-access) for what that means for her.)
-3. Click **Sign In with GitHub**. A popup opens. Click **Authorize** the first time. The popup closes and you'll see **Site Settings**, **Pages** and **Guest List** in the left sidebar.
-4. Make a harmless test edit:
-   1. Click **Pages** → **FAQ**.
-   2. Open **Bottom section** and add the word `TEST` to the end of **Message**.
-   3. Click **Save** (top right).
-5. In Netlify, open **Deploys**. Within a few seconds a new deploy starts. Wait for **Published** (about a minute).
-6. Open **https://jeffandpaige.net/faq** and scroll to the bottom. You should see `TEST`. If you don't, refresh.
-7. Go back to the admin, remove `TEST`, and **Save** again. 🎉 Setup is done.
-
-### D. Connect the RSVP dashboard
-
-The dashboard at **https://jeffandpaige.net/admin/rsvps/** shows live totals, meal counts, every response, and **who hasn't replied yet**. It reads responses from Netlify, so it needs a Netlify access token. This takes about 3 minutes.
-
-1. **Create the token.** In Netlify, click your **avatar** (bottom left) → **User settings** → **Applications**. Under **Personal access tokens**, click **New access token**.
-   - Description: `RSVP dashboard`
-   - Expiration: the longest option offered. Put a reminder in your calendar to renew it; when it expires, the dashboard tells you.
-   - Click **Generate token** and copy it. Netlify only shows it once.
-
-   > This token can manage your Netlify account, so treat it like a password. Don't put it in the repo, an email or a chat. It only goes into the next step, where only the server can read it.
-2. **Store it as a secret.** Open the **jeffandpaige.net** project → **Project configuration** → **Environment variables** → **Add a variable** → **Add a single variable**.
-   - Key: `NETLIFY_RSVP_TOKEN`
-   - Value: paste the token
-   - If offered, tick **Contains secret values**, and limit the scope to **Functions**.
-   - Click **Create variable**.
-3. **Redeploy** so the server picks it up: **Deploys** → **Trigger deploy** → **Deploy project** (or **Deploy site**).
-4. Open **https://jeffandpaige.net/admin/rsvps/**. If you're signed in to the editor, you're signed in here too. Otherwise click **Sign in with GitHub**.
-
-**Who can see it:** only GitHub accounts that can edit the website repo (you, and Paige once she's a collaborator). Everyone else gets "no access", even after the site goes public. Guests' IP addresses and other Netlify metadata are never sent to the page.
-
----
-
-## 2. Giving Paige access
-
-Paige needs two things:
-
-1. **A GitHub account with write access to the repo.** The admin saves changes as GitHub commits, so she needs permission to write to it.
-   - Paige creates a free account at github.com if she doesn't have one.
-   - Jeff: open **https://github.com/jgandertonjr-cpu/jeff-paige-wedding** → **Settings** → **Collaborators** → **Add people** → enter her GitHub username or email → **Add**.
-   - Paige accepts the invitation email. She can then sign in at `/admin` with **Sign In with GitHub**.
-2. **A way past the Netlify login wall** while the site is private. Either:
-   - **Make the site public** when you're ready for guests: **Project configuration → General → Visitor access → Edit visibility → Production visibility: Public**. After that, anyone can open the site, but only people with GitHub write access can edit at `/admin`. The admin page is also hidden from search engines.
-   - Or add Paige as a member of your Netlify team (**Project configuration → General → Project members → Go to Team members panel**). Depending on your Netlify plan, extra members may not be available or may cost money.
-
----
-
-## 3. Editing the site
-
-The left sidebar has three sections:
-
-| Section | What's in it |
-|---|---|
-| **Site Settings** | Names, wedding date, venue address, contact email, footer. These appear on many pages at once. |
-| **Pages** | One entry per page: Home, Our Story, Details, Wedding Party, RSVP, Registry, Travel & Hotels, After Party, FAQ, Gallery, Page Not Found. |
-| **Guest List** | Names the RSVP form recognizes while guests type. |
-
-**Things to know**
-
-- **Saving publishes.** Each **Save** goes live in about a minute. There's no draft stage, so read before you save. Everything is kept in GitHub history (each change is labelled like "Website edit: Pages → faq (by your-github-name)"), so any change can be undone.
-- **See your change:** on any page entry, the editor has a link (in its toolbar or the **⋮** menu) that opens that page on jeffandpaige.net. Give it about a minute after saving.
-- **Lists** (FAQ questions, schedule events, wedding party, hotels, gallery photos, timeline moments, and more): use **Add** to add one, the **⋮** menu to delete one, and drag the handle to reorder.
-- **Photos:** click the photo field → **Upload** (or pick an existing photo). Uploads are automatically shrunk to at most 2000 pixels on the long side, compressed to WebP, and given a web-safe file name, so phone photos are fine as-is (up to 25 MB). Photos are saved in `src/images/`. Always fill in the **Photo description**; screen readers use it. iPhone HEIC photos may not upload from Chrome; export them as JPEG first, or upload from Safari.
-- **Formatting** (bold, italic, links) is only available in the Our Story moments and FAQ answers. Every other field is plain text, so the design stays consistent.
-- **Wedding date** (Site Settings) updates the countdown, the home page, the Details and RSVP pages, and the search-engine info. Sentences you wrote yourself that mention the date need updating by hand. Search for "August 5" in the Welcome text, Wedding Party bottom section, Gallery note, and the Search & Sharing descriptions.
-- **Add to Calendar:** the home page, Details, Wedding Party and the RSVP save-the-date message have an **Add to Calendar** button. Guests pick Apple Calendar, Google Calendar, Outlook or a plain event file, with the best one for their phone listed first. The event uses the wedding date and venue address, plus Site Settings → **Calendar event** (title, times and note). With no start time it's an all-day event. Guests who already added it keep their copy, so let them know if the time changes.
-- **Opening RSVPs:** Pages → **RSVP** → turn on **RSVPs are open**, optionally set a **Reply-by date**, then **Save**. Also update the RSVP card text on the Home page and the RSVP page subtitle. Responses still arrive in Netlify under **Forms**.
-- **Guest list & parties:** in **Guest List**, each guest has **Others on this invitation**: add one entry per extra person (a plus-one, a spouse, four kids, anyone). Names are optional. Leave a name blank to give them a guest of their choosing. When that guest finds their name on the RSVP form, the form shows one block per person (name, attending, meal, after party), with names pre-filled. If the guest declines, the party is skipped.
-- **Only names on the Guest List can RSVP.** Guests start typing and must choose their name from the list; the rest of the form stays hidden until they do. If a name can't be found, the form asks them to email you, so add them to the Guest List (spelled as on the invitation) and they can reply right away after the next deploy.
-- **After party question:** everyone who accepts is asked whether they'll join the after party (yes, maybe, or no), and so is each person in their party who's coming. The line under the question shows the after party's place and timing note from Pages → **After Party**.
-- **Wedding song question:** guests who accept see a separate "For Married Guests" box headed "Your Wedding Dance Song", where married guests can list the song from their first dance (optional), so you can play it during cocktail hour. It sits away from the dance-floor song request so the two don't get mixed up.
-- **Changing or turning off these questions:** Pages → **RSVP** → **Extra questions**. You can reword the after-party and wedding-song questions or switch either one off.
-- **RSVP dashboard:** **https://jeffandpaige.net/admin/rsvps/**. It's also linked from Pages → RSVP and from Guest List in the editor.
-  - **Filters** (top row): Everyone / Attending / Declined / Awaiting, meal, dietary group, and a search box (names, emails, notes, songs). Every number, chart, list and the table below follow the filters. **Clicking a bar or a segment in any chart filters by it**; click it again to undo. **Clear filters** resets everything.
-  - **Totals:** people attending, declined and awaiting, plus the response rate for the guest list.
-  - **Where replies stand:** everyone invited, split by reply.
-  - **Replies over time:** how many invitations have been answered each day, with the reply-by date marked when it's set (Pages → RSVP). Hover, or use the arrow keys, to see a day.
-  - **Meals:** counts among people attending, for the caterer.
-  - **After party:** how many people attending are joining, maybe, or not joining (and who hasn't answered). The **After party** total at the top counts people joining.
-  - **Wedding songs:** each married couple's wedding song with their names, for the cocktail-hour playlist.
-  - **Dietary needs:** what guests typed, grouped (nut allergy, gluten-free, vegetarian, dairy, shellfish…), with allergies flagged. One reply can fall in several groups. Hover a bar to see who.
-  - **Song requests:** most-requested first. The same song typed differently ("Mr. Brightside - The Killers", "mr brightside") counts once. Click a song to see who asked.
-  - **Haven't replied yet:** everyone on the Guest List who hasn't responded, with their party.
-  - **Every invitation:** one row per invitation, including those still waiting. Sort by clicking a column heading. If someone replies twice, the latest answer counts (marked "Updated"). Replies from names that aren't on the Guest List are flagged.
-  - **Download Excel:** a workbook with Summary (including after-party counts), People (one row per person, with their after-party answer), Invitations, Not replied, Dietary, Songs and Wedding songs sheets, each with filter buttons on the header row. **Downloads follow your current filters**, so filter to "Attending" first for a caterer-only sheet.
-  - **Google Sheets:** in Google Sheets choose **File → Import → Upload** and pick the Excel file (or drag it into Google Drive and open it with Google Sheets).
-  - **CSV:** the People sheet as a plain CSV.
-  - Click **Refresh** to load new responses.
-- **Raw responses** are still in Netlify → **Forms** → **rsvp** if you ever need them. There, `guest_1_…`, `guest_2_…` are the people in each party in the order you listed them, and `party_size` is that response's head count.
-- **Empty "coming soon" spots:** Registry links, Nearby hotels, the hotel booking link, and the After Party map all show their current "coming soon" text until you fill them in. Then they appear automatically.
-- **Guest list privacy:** the guest list has always been part of the public site code (the RSVP form needs it). Anyone who knows where to look can read the names.
-- **Don't drag-and-drop deploy any more.** Netlify now builds the site from GitHub. Dragging the `src` folder into Netlify would publish raw templates instead of the finished site.
-
----
-
-## 4. Testing edits on your computer first (local mode)
-
-Use this to try changes without touching the live site. It works in **Chrome, Edge or Brave**. Safari and Firefox don't support it. Brave first needs `brave://flags/#file-system-access-api` set to **Enabled**.
-
-**First time only:** open Terminal in the project folder and install the tools:
-
-```bash
-npm install
-```
-
-**Each time:**
-
-1. Start the local site:
-
-   ```bash
-   npm start
-   ```
-
-   Leave it running. It prints `Server at http://localhost:8080/`.
-2. In Chrome, open **http://localhost:8080/admin/**.
-3. Click **Work with Local Repository**. When asked, select the **jeff-paige-wedding** folder (the one that contains `src`, `package.json` and the hidden `.git` folder), then click **View files / Edit files** to allow access.
-4. Edit and **Save** as usual. Instead of going to GitHub, the change is written to the files in `src/_data/` on your computer. The local site rebuilds instantly. View it at **http://localhost:8080/**.
-5. When you're happy, commit and push the changes with git (or ask Claude). Nothing goes live until you push to `main`. To throw the changes away instead:
-
-   ```bash
-   git restore src/_data src/images
-   ```
-
-   (Newly uploaded photos are new files. Delete them from `src/images/` by hand, or run `git clean -n src/images` to list them.)
-
-Stop the local site with **Ctrl+C** in Terminal.
-
----
-
-## 5. Which file holds what
-
-All editable content is in `src/_data/`, one JSON file per page or section. The admin edits these files for you.
-
-| File | Content | Admin entry |
+| Name | What it is | Where the value comes from |
 |---|---|---|
-| `site.json` | Couple's names, wedding date, venue and address, calendar event, contact email, footer text | Site Settings |
-| `home.json` | Home page: hero photo, welcome text, three photos, quick-link cards, save-the-date text | Pages → Home |
-| `story.json` | Our Story timeline (date, title, story, photo for each moment) | Pages → Our Story |
-| `details.json` | Ceremony details, reception details, schedule of the day | Pages → Details |
-| `party.json` | Bridesmaids and groomsmen (name, role, bio, photo) | Pages → Wedding Party |
-| `rsvp.json` | RSVP open/closed, reply-by date, messages, meal choices, extra questions (after party, wedding song) | Pages → RSVP |
-| `registry.json` | Registry message and registry links | Pages → Registry |
-| `travel.json` | Room block, nearby hotels, airports, local tips | Pages → Travel & Hotels |
-| `afterparty.json` | After party place, time, dress code, what to expect | Pages → After Party |
-| `faq.json` | FAQ questions and answers | Pages → FAQ |
-| `gallery.json` | Gallery photos and the wedding-photos note | Pages → Gallery |
-| `notfound.json` | The "Page Not Found" message | Pages → Page Not Found |
-| `guests.json` | Guest list for the RSVP name lookup, with everyone on each invitation (becomes `js/guests.js`) | Guest List |
+| `ADMIN_PASSWORD` | Paige's sign-in password | Step c |
+| `SESSION_SECRET` | Signs the sign-in cookie | Step c (`openssl rand -hex 32`) |
+| `ANTHROPIC_API_KEY` | Lets the editor ask Claude | Step a |
+| `GITHUB_TOKEN` | Lets the editor read and change the site's files | Step b |
+| `NETLIFY_RSVP_TOKEN` | Already exists from the RSVP dashboard setup; reused to see when a new version is live. The editor will say it isn't set up if it is missing. | Netlify |
 
-Each page also has a **Search & Sharing** group (browser-tab title, Google description, link-preview text).
+If `NETLIFY_RSVP_TOKEN` is missing: click your **avatar** (bottom left) → **User settings** → **Applications** → **Personal access tokens** → **New access token**. Description `RSVP dashboard`, longest expiration (set a reminder), copy it once, and add it as above.
+
+Never put any of these in the repo, an email or a chat.
+
+### e. Confirm Deploy Previews are on
+
+**Project configuration** → **Build & deploy** → **Continuous deployment** → **Deploy Previews** should be set to "Any pull request against your production branch / branch deploy branches". The editor's **See it first** and look-and-layout changes depend on it.
+
+### f. Merge and go live
+
+1. On GitHub, open a pull request for the `plain-english-editor` branch into `main` and merge it.
+2. In Netlify, open **Deploys** and wait for **Published**. (The new variables are only picked up by a deploy made after you added them, so if you added them late, use **Trigger deploy → Deploy project**.)
+
+### g. First test
+
+1. Open `https://jeffandpaige.net/admin/` and sign in.
+2. Ask: *add the word TEST to the end of the FAQ's last answer*.
+3. Read the summary, tap **Publish**, and wait for **It's live**.
+4. Open the FAQ page and check the word is there.
+5. Tap **Undo this**, and check it's gone again.
+
+---
+
+## 3. Recommended: make the GitHub repository private
+
+On GitHub: the repo → **Settings** → **General** → **Danger Zone** → **Change repository visibility** → **Make private**.
+
+Why: while the repo is public, the guest list file and every edit Paige makes (each is recorded in the open history) can be read by anyone. Making it private closes that. It won't hide the guest names completely, because the RSVP form needs them and they are served in the site's own code, so anyone who knows where to look can still read them there. Netlify keeps working; it reads the repo through its existing GitHub connection. The editor reads it with your token, which is unaffected.
+
+---
+
+## 4. Day to day
+
+- **Change the password:** edit `ADMIN_PASSWORD` under **Environment variables**, then **Deploys → Trigger deploy → Deploy project**. This signs everyone out.
+- **Daily limit:** 150 requests a day, across all uses. After that the editor says it resets tomorrow.
+- **Where edits show up:** in the GitHub commit history, as **Website edit: …**. Undo is an edit too.
+- **Lockout:** 5 wrong passwords from one address locks that address for 15 minutes. 30 wrong passwords across everyone in an hour locks sign-in for an hour.
+
+---
+
+## 5. The safety checks
+
+**What the editor can change:** the content files (`src/_data/*.json`), new photos added to `src/images/`, and, for bigger changes, after a preview has been built and has passed the checks, the page templates and the stylesheet. It cannot touch the private apps, the search-engine files (`robots.txt`, `sitemap.xml`), the RSVP form's code, the functions, the build settings, or anything else. This is enforced by code with an allowlist, whatever the model says.
+
+**Site check:** every build ends with `scripts/check-site.mjs`. It fails if a page is missing, a link or image is broken, a private page loses its `noindex`, or a protected file has changed. A failed check fails the preview, so Publish never appears; on `main`, Netlify keeps the previous version live.
+
+**Automatic put-back:** if a publish reaches `main` but the live build fails, the editor undoes it and tells Paige nothing changed.
 
 **For developers**
 
-- Pages are built by [Eleventy](https://www.11ty.dev/) from `src/*.njk` templates. The shared header, nav and footer are in `src/_includes/layouts/base.njk`.
-- `src/js/main.js.njk` and `src/js/guests.js.njk` generate `js/main.js` (the countdown date) and `js/guests.js`.
-- Everything else in `src/` (CSS, images, the `study/` and `pd-tracker/` apps, the other tool pages, `_headers`, `_redirects`, `sitemap.xml`) is copied through unchanged.
-- Netlify runs `npm run build` and publishes `_site/` (see `netlify.toml`).
-- The admin is `src/admin/index.html` plus `src/admin/config.yml`. The RSVP dashboard is `src/rsvp-dashboard.njk` (published at `/admin/rsvps/`), backed by the Netlify Function `netlify/functions/rsvp-responses.mjs` (`/api/rsvp-responses`). Sveltia CMS is pinned to an exact version in `index.html`. To upgrade, change the version number and test `/admin` locally first.
+- After you (or Claude) intentionally change a template, script, `_headers`, `robots.txt` or `sitemap.xml`, or add a page, run `npm run protect:record` and commit `scripts/protected-files.json`, or the next build fails its site check.
+- After editing `src/admin/config.yml`, run `npm run schema`.
+- Tests: `npm test`.
+- A local copy of the editor: `npm run editor:dev`, then open **http://localhost:8081**. Password `local-test-password`. To use the real model, put `ANTHROPIC_API_KEY=…` in `.editor-local/env` (otherwise every question gets "I can't reach the site").
 
 ---
 
-## 6. Troubleshooting
+## 6. The old form editor at `/admin/forms/`
 
-| Problem | Fix |
+Still works as a fallback. It needs the GitHub sign-in provider from the old setup (a GitHub OAuth App, installed in Netlify under **Project configuration → Security → OAuth**) and a GitHub account with write access.
+
+When you no longer want it: delete `src/admin/forms/` and uninstall the provider in Netlify (**Project configuration → Security → OAuth**).
+
+---
+
+## 7. Troubleshooting
+
+| Symptom | What to do |
 |---|---|
-| The sign-in popup shows an error or closes with nothing happening | Check that step A's Redirect URI is exactly `https://api.netlify.com/auth/done` and that step B's provider is installed. Allow popups for jeffandpaige.net. |
-| The admin suddenly asks you to sign in again | Normal after a few hours with expiring tokens (step A). Click **Sign In with GitHub** again. |
-| Signed in, but saving fails with a permissions error | That GitHub account doesn't have write access. See [Giving Paige access](#2-giving-paige-access). |
-| Saved, but the live site didn't change | Check Netlify → **Deploys**. If the newest deploy says **Failed**, open it and read the log; the error usually names the problem, e.g. `Image not found: src/images/….jpg` when a photo still in use was deleted. The previous version stays live until a build succeeds, so guests never see a broken site. Fix the field in the admin and save again. |
-| "A repository root directory could not be selected" in local mode | Use Chrome, Edge or Brave, and select the top `jeff-paige-wedding` folder, not `src`. |
-| RSVP dashboard says "Almost there" or that the token is invalid | Do (or redo) [step D](#d-connect-the-rsvp-dashboard): create a new Netlify access token, update `NETLIFY_RSVP_TOKEN`, and trigger a deploy. |
-| RSVP dashboard says this account has no access | Sign in with a GitHub account that's a collaborator on the repo ([Giving Paige access](#2-giving-paige-access)). |
-| Want to undo a change | Edit the field back in the admin and save. To restore an older version of a whole file, use GitHub's history for that file in `src/_data/`, or ask Claude. |
+| "The editor isn't set up yet." | A variable is missing or too short (password under 8 characters, secret under 32). Open **Logs → Functions** in Netlify; the entry says which one. Fix it, then trigger a deploy. |
+| "I can't reach the site right now." every time | The Anthropic key is wrong or out of credit, or the GitHub token expired. The function log shows a short code such as `auth`. Renew the key or token and update the variable. |
+| "This is a preview copy of the site, so publishing is turned off here." | Paige is on a Netlify preview address. Use jeffandpaige.net. |
+| A change says it's live but the page looks the same | Refresh the page. If it still looks the same, check **Deploys** for a failure. |
+| A deploy failed | Open the deploy log. The line after `site check` says what it found. The previous version stays live. |
+| Locked out | Wait 15 minutes (or an hour after a site-wide lockout). |
+| The RSVP dashboard asks to sign in | Sign in at `/admin/` first, then open the dashboard. |
+| The dashboard says the Netlify token is invalid | Create a new token (step d), update `NETLIFY_RSVP_TOKEN`, trigger a deploy. |
+
+---
+
+## 8. Which file holds what
+
+Editable content is in `src/_data/`, one JSON file per page or section. The editor changes these for Paige; the form editor changes the same files.
+
+| File | Content |
+|---|---|
+| `site.json` | Couple's names, wedding date, venue and address, calendar event, contact email, footer text |
+| `theme.json` | The site's colours |
+| `nav.json` | The menu: labels and order (the page addresses are fixed) |
+| `home.json` | Home page: hero photo, welcome text, photos, quick-link cards, save-the-date text |
+| `story.json` | Our Story timeline |
+| `details.json` | Ceremony, reception, schedule of the day |
+| `party.json` | Bridesmaids and groomsmen |
+| `rsvp.json` | RSVP open/closed, reply-by date, messages, meal choices, extra questions |
+| `registry.json` | Registry message and links |
+| `travel.json` | Room block, nearby hotels, airports, local tips |
+| `afterparty.json` | After party place, time, dress code, what to expect |
+| `faq.json` | FAQ questions and answers |
+| `gallery.json` | Gallery photos and the wedding-photos note |
+| `notfound.json` | The "Page Not Found" message |
+| `guests.json` | Guest list for the RSVP name lookup, with everyone on each invitation |
+
+Most page files also hold a `labels` block (the words on buttons and small labels). Home, Details, Travel, After Party and Wedding Party hold a `section_order` list, which is how Paige can ask to move sections around.
+
+Elsewhere: pages are built by [Eleventy](https://www.11ty.dev/) from `src/*.njk`; the editor's server code is `netlify/functions/editor.mjs` and `netlify/editor/`; the editor page is `src/admin/`; the RSVP dashboard is `src/rsvp-dashboard.njk`, backed by `netlify/functions/rsvp-responses.mjs`.
