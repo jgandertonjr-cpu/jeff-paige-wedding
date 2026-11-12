@@ -365,3 +365,35 @@ test("invert: seeded property check (2,000 cases)", () => {
     }
   }
 });
+
+// Fix round 2, O4: a small change inside long text shows where it is.
+import { readFileSync } from "node:fs";
+const homeData = JSON.parse(readFileSync(new URL("../src/_data/home.json", import.meta.url), "utf8"));
+const welcomeLine = (fn) => {
+  const after = structuredClone(homeData);
+  after.welcome.text = fn(after.welcome.text);
+  return summarize(diffContent({ home: homeData }, { home: after }), schema);
+};
+
+test("O4: a change deep inside long text shows a window around it", () => {
+  const [line] = welcomeLine((t) => t.replace("wide-open dance floor", "dance floor"));
+  assert.equal(line,
+    "Home → Welcome section → Welcome message: …celebrate with good food, a wide-open dance floor, and the people… → …celebrate with good food, a dance floor, and the people who got us…");
+});
+
+test("O4: a change at the very end of long text shows the end, with no trailing cut mark", () => {
+  const [line] = welcomeLine((t) => t.replace(/without you\.$/, "without you all!"));
+  const [, values] = line.split("Welcome message: ");
+  const [b, a] = values.split(" → ");
+  assert.ok(b.startsWith("…") && a.startsWith("…"), line);
+  assert.ok(b.endsWith("without you.") && a.endsWith("without you all!"), line);
+  assert.ok(b.length <= 72 && a.length <= 72, line);
+});
+
+test("O4: a change at the very start, and short values, read as before", () => {
+  const [line] = welcomeLine((t) => t.replace(/^It started/, "It all started"));
+  const text = homeData.welcome.text;
+  const clip = (s) => `${s.slice(0, 80)}…`;
+  assert.equal(line, `Home → Welcome section → Welcome message: ${clip(text)} → ${clip(text.replace(/^It started/, "It all started"))}`);
+  assert.deepEqual(sum((c) => { c.travel.room_block.hotel_name = "New"; }), ["Travel & Hotels → Room block → Hotel name: H → New"]);
+});

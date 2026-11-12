@@ -115,6 +115,33 @@ function formatValue(v, field, role) {
   return clip(String(v));
 }
 
+// When long text changes only past the cut, both cut versions would read the
+// same. Then show each around the first difference instead: up to 30
+// characters before it and 40 after, trimmed to whole words, with "…" where cut.
+const WINDOW_BEFORE = 30;
+const WINDOW_AFTER = 40;
+function aroundChange(before, after) {
+  if (typeof before !== "string" || typeof after !== "string") return null;
+  if (before.length <= 80 && after.length <= 80) return null;
+  let d = 0;
+  while (d < before.length && d < after.length && before[d] === after[d]) d++;
+  if (d < 80) return null;
+  const win = (s) => {
+    let start = Math.max(0, d - WINDOW_BEFORE);
+    if (start > 0) {
+      const sp = s.indexOf(" ", start);
+      if (sp !== -1 && sp < d) start = sp + 1;
+    }
+    let end = Math.min(s.length, d + WINDOW_AFTER);
+    if (end < s.length) {
+      const sp = s.lastIndexOf(" ", end);
+      if (sp > d) end = sp;
+    }
+    return `${start > 0 ? "…" : ""}${s.slice(start, end)}${end < s.length ? "…" : ""}`;
+  };
+  return [win(before), win(after)];
+}
+
 // Labels for each step of a path, plus the field the path ends on.
 function describe(schema, change) {
   const file = schema.files?.[change.file];
@@ -148,6 +175,9 @@ export function summarize(changes, schema) {
     if (c.kind === "moved") return `${check}${head}: reordered`;
     if (c.kind === "added") return `${check}${head}: added “${clip(itemName(c.after, c.index))}”`;
     if (c.kind === "removed") return `${check}${head}: removed “${clip(itemName(c.before, c.index))}”`;
+    const plainText = !["image", "hidden", "date"].includes(field?.type);
+    const around = plainText ? aroundChange(c.before, c.after) : null;
+    if (around) return `${check}${head}: ${around[0]} → ${around[1]}`;
     return `${check}${head}: ${formatValue(c.before, field, "before")} → ${formatValue(c.after, field, "after")}`;
   });
 }
