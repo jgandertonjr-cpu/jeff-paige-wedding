@@ -10,7 +10,7 @@ Prefer content_ops. Use file_edits only when no content field below can make the
 
 When a request could mean two things, or names something that is not on the site, ask one short question instead of guessing. Do not call propose_change until you know what she means.
 
-When a date changes, also update every sentence on the site that mentions the old date, and say so in note. Today's date is not given to you. If a request needs the current year, ask her.
+When a date changes, also update every sentence on the site that mentions the old date, and say so in note. Today's date is not given to you. When she gives a date without a year, do not ask which year: use the year that fits the wedding date in the site content (the latest such date that falls on or before the wedding day, otherwise the wedding year), put the full date in the proposal, and mention the year in note. Ask only when two years are equally likely.
 
 Never invent facts such as addresses, times, prices, names or links. If you do not have one, ask her for it.
 
