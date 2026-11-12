@@ -1,14 +1,94 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="robots" content="noindex, nofollow">
-    <title>Edit the Website | Jeff &amp; Paige</title>
-  </head>
-  <body>
-    <!-- Sveltia CMS, pinned to an exact version. To upgrade, change the version
-         number and test at /admin before merging. -->
-    <script src="https://unpkg.com/@sveltia/cms@0.227.3/dist/sveltia-cms.js"></script>
-  </body>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+  <meta name="robots" content="noindex, nofollow">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' blob: data:; style-src 'self'; script-src 'self'; connect-src 'self'; font-src 'self'; base-uri 'none'; form-action 'self'">
+  <meta name="color-scheme" content="light">
+  <meta name="theme-color" content="#BCCAB3">
+  <title>Change the Website | Jeff &amp; Paige</title>
+  <link rel="icon" type="image/png" href="/images/favicon.png">
+  <link rel="stylesheet" href="/css/theme.css">
+  <link rel="stylesheet" href="/admin/admin.css">
+  <script src="/admin/admin.js" defer></script>
+</head>
+<body class="editor">
+  <div class="app" id="app">
+    <div class="scroller" id="scroller">
+      <header class="band">
+        <div class="band-inner">
+          <p class="monogram">Jeff <span class="amp">&amp;</span> Paige</p>
+          <h1 class="subtitle">Change the website</h1>
+          <nav class="links" id="links" aria-label="Editor" hidden>
+            <button type="button" class="link" id="recent-toggle" aria-expanded="false" aria-controls="recent">Recent changes</button>
+            <a class="link" href="/admin/guide/">How this works</a>
+            <a class="link" href="/admin/rsvps/">RSVP responses</a>
+            <button type="button" class="link" id="sign-out">Sign out</button>
+          </nav>
+        </div>
+      </header>
+
+      <main class="column" id="main">
+        <p class="waiting" id="starting">One moment.</p>
+
+        <section class="signin" id="signin" aria-labelledby="signin-title" hidden>
+          <h2 class="section-title" id="signin-title">Sign in</h2>
+          <form id="signin-form" novalidate>
+            <label class="field-label" for="password">Password</label>
+            <div class="password-row">
+              <input class="input" id="password" name="password" type="password" autocomplete="current-password" autocapitalize="off" spellcheck="false" required aria-describedby="signin-error">
+              <button type="button" class="btn btn-line btn-show" id="password-show" aria-pressed="false" aria-controls="password">Show</button>
+            </div>
+            <p class="field-error" id="signin-error" role="alert"></p>
+            <button type="submit" class="btn btn-dark btn-wide" id="signin-button">Sign in</button>
+          </form>
+        </section>
+
+        <section class="recent" id="recent" aria-labelledby="recent-title" hidden>
+          <h2 class="section-title" id="recent-title">Recent changes</h2>
+          <p class="quiet" id="recent-status"></p>
+          <ol class="recent-list" id="recent-list"></ol>
+        </section>
+
+        <section class="conversation" id="conversation" aria-label="Conversation" hidden>
+          <div class="welcome" id="welcome">
+            <h2 class="greeting">Hi Paige. What would you like to change?</h2>
+            <p class="label" id="examples-label">For example</p>
+            <ul class="examples" aria-labelledby="examples-label">
+              <li><button type="button" class="example">Change the hotel booking deadline to June 1</button></li>
+              <li><button type="button" class="example">Add a question to the FAQ about parking</button></li>
+              <li><button type="button" class="example">Swap the top photo for a new one</button></li>
+            </ul>
+          </div>
+          <div class="log" id="log" aria-live="polite"></div>
+        </section>
+      </main>
+    </div>
+
+    <form class="composer" id="composer" novalidate hidden>
+      <div class="composer-inner">
+        <div class="chip" id="chip" hidden>
+          <img class="chip-thumb" id="chip-thumb" alt="The photo you added" width="56" height="56">
+          <p class="chip-text" id="chip-text">Photo added</p>
+          <button type="button" class="btn btn-line chip-remove" id="chip-remove" aria-label="Remove photo">Remove</button>
+        </div>
+        <div class="composer-row">
+          <input class="vh" type="file" id="photo-input" accept="image/*" tabindex="-1" aria-hidden="true">
+          <button type="button" class="btn btn-line btn-icon" id="photo-button" aria-label="Add a photo">
+            <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+              <rect x="3" y="5" width="18" height="14" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/>
+              <circle cx="9" cy="10" r="1.75" fill="none" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M4 17.5l5-4.5 3.5 3 3-2.5 4.5 4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <label class="vh" for="message">What would you like to change?</label>
+          <textarea class="input message" id="message" rows="1" maxlength="2000" placeholder="Type what you'd like to change" aria-describedby="counter" autocomplete="off"></textarea>
+          <button type="submit" class="btn btn-dark btn-send" id="send">Send</button>
+        </div>
+        <p class="counter" id="counter" aria-live="polite" hidden></p>
+      </div>
+    </form>
+  </div>
+</body>
 </html>
