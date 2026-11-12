@@ -60,7 +60,13 @@ async function fetchSubmissions(netlifyToken) {
   };
 }
 
-export function createRsvpHandler({ sessionApi, env, now, fetchSubmissions: load }) {
+const SAID = {
+  notConnected: "The RSVP list isn't connected yet. Jeff can fix this — see the setup guide.",
+  cantLoad: "I can't load the responses right now. Try again in a minute.",
+};
+
+// `log(event, fields)` records the cause by name only, never a message or a value.
+export function createRsvpHandler({ sessionApi, env, now, fetchSubmissions: load, log = () => {} }) {
   return async (req) => {
     if (req.method !== "GET") return json(405, { error: "Method not allowed" });
 
@@ -70,25 +76,25 @@ export function createRsvpHandler({ sessionApi, env, now, fetchSubmissions: load
 
     const netlifyToken = env.NETLIFY_RSVP_TOKEN;
     if (!netlifyToken) {
-      return json(500, {
-        error: "The dashboard isn't connected to Netlify yet: add the NETLIFY_RSVP_TOKEN environment variable (see ADMIN-SETUP.md → RSVP dashboard).",
-        setup: true,
-      });
+      log("rsvp_setup", { missing: ["NETLIFY_RSVP_TOKEN"] });
+      return json(500, { error: SAID.notConnected, setup: true });
     }
 
     try {
       const { submissions, formId } = await load(netlifyToken);
       return json(200, { formId, fetchedAt: new Date(now()).toISOString(), submissions });
     } catch (err) {
-      const hint = err.status === 401
-        ? "The Netlify access token in NETLIFY_RSVP_TOKEN is invalid or expired. Create a new one (see ADMIN-SETUP.md)."
-        : "Couldn't load responses from Netlify. Try again in a minute.";
-      return json(502, { error: hint, setup: err.status === 401 });
+      const rejected = Boolean(err && err.status === 401); // the access key is wrong or has expired
+      log("rsvp_error", { name: (err && err.name) || "Error", ...(Number.isInteger(err && err.status) ? { status: err.status } : {}) });
+      return json(502, { error: rejected ? SAID.notConnected : SAID.cantLoad, setup: rejected });
     }
   };
 }
 
 export default async (req) =>
-  createRsvpHandler({ sessionApi, env: process.env, now: () => Date.now(), fetchSubmissions })(req);
+  createRsvpHandler({
+    sessionApi, env: process.env, now: () => Date.now(), fetchSubmissions,
+    log: (event, fields) => console.error(JSON.stringify({ event, ...fields })),
+  })(req);
 
 export const config = { path: "/api/rsvp-responses" };

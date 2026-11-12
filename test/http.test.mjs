@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import editor, { createHandler, config } from "../netlify/functions/editor.mjs";
+import editor, { createHandler, config, lazyHandler } from "../netlify/functions/editor.mjs";
 import { createRsvpHandler } from "../netlify/functions/rsvp-responses.mjs";
 import * as sessionApi from "../netlify/editor/session.mjs";
 import { memoryStore } from "../netlify/editor/store.mjs";
@@ -303,4 +303,80 @@ test("ask sends a genuine reply without retry, and never sends the failed flag i
   const cookie = await login(handle);
   const res = await handle(post("ask", { message: "Hello" }, { cookie }), ctx());
   assert.deepEqual(await res.json(), { kind: "message", text: "Which page?" });
+});
+
+// ---- Task 18 I --------------------------------------------------------------
+
+test("a failure while setting up the real handler is the generic 500, logged by name only", async () => {
+  const logs = [];
+  const boom = Object.assign(new Error("could not load ghp_secret_value from https://api.github.com"), { name: "SetupError" });
+  const handle = lazyHandler(async () => { throw boom; }, (event, fields) => logs.push({ event, ...fields }));
+  const res = await handle(get("history"), ctx());
+  assert.equal(res.status, 500);
+  const text = await res.text();
+  assert.deepEqual(JSON.parse(text), { error: "Something went wrong. Nothing changed. Try again in a minute." });
+  assert.equal(res.headers.get("cache-control"), "no-store");
+  assert.deepEqual(logs, [{ event: "error", route: "setup", name: "SetupError" }]);
+  assert.ok(!JSON.stringify(logs).includes("secret"));
+  // A later request tries again and works once the handler can be built.
+  let tries = 0;
+  const later = lazyHandler(async () => { if (tries++ === 0) throw boom; return async () => new Response("fine"); }, () => {});
+  assert.equal((await later(get("history"), ctx())).status, 500);
+  assert.equal(await (await later(get("history"), ctx())).text(), "fine");
+});
+
+test("the body limit counts bytes, not characters", async () => {
+  const { handle } = setup();
+  const cookie = await login(handle);
+  const message = "é".repeat(3_000_000); // 3,000,000 characters, 6,000,000 bytes
+  const res = await handle(post("ask", { message }, { cookie }), ctx());
+  assert.equal(res.status, 413);
+});
+
+test("only an exact application/json media type is accepted", async () => {
+  const { handle } = setup();
+  for (const type of ["application/jsonp", "application/json-patch+json", "application/json5", "text/plain; application/json"]) {
+    const res = await handle(post("login", { password: ENV.ADMIN_PASSWORD }, { type }), ctx());
+    assert.equal(res.status, 403, type);
+  }
+  for (const type of ["application/json", "Application/JSON; charset=utf-8", " application/json ;charset=UTF-8"]) {
+    const res = await handle(post("login", { password: ENV.ADMIN_PASSWORD }, { type }), ctx(`9.9.9.${type.length}`));
+    assert.equal(res.status, 200, type);
+  }
+});
+
+test("rsvp: setup and loading problems are told in plain words, with the cause logged by name only", async () => {
+  const { handle } = setup();
+  const cookie = await login(handle);
+  const logs = [];
+  const make = (env, load) => createRsvpHandler({
+    sessionApi, env, now: () => NOW, fetchSubmissions: load, log: (event, fields) => logs.push({ event, ...fields }),
+  });
+  const ask = (h) => h(new Request(`${ORIGIN}/api/rsvp-responses`, { headers: { cookie } }));
+  const plain = (text) => assert.doesNotMatch(text, /token|NETLIFY|environment|variable/i);
+
+  const env = { ...ENV };
+  delete env.NETLIFY_RSVP_TOKEN;
+  let res = await ask(make(env, async () => { throw new Error("unused"); }));
+  assert.equal(res.status, 500);
+  let body = await res.json();
+  assert.deepEqual(body, { error: "The RSVP list isn't connected yet. Jeff can fix this — see the setup guide.", setup: true });
+  plain(body.error);
+  assert.deepEqual(logs.pop(), { event: "rsvp_setup", missing: ["NETLIFY_RSVP_TOKEN"] });
+
+  const expired = Object.assign(new Error("Netlify API /sites/x/forms → 401 nfp_secret_value"), { status: 401 });
+  res = await ask(make(ENV, async () => { throw expired; }));
+  assert.equal(res.status, 502);
+  body = await res.json();
+  assert.deepEqual(body, { error: "The RSVP list isn't connected yet. Jeff can fix this — see the setup guide.", setup: true });
+  assert.deepEqual(logs.pop(), { event: "rsvp_error", name: "Error", status: 401 });
+
+  const down = Object.assign(new TypeError("fetch failed"), {});
+  res = await ask(make(ENV, async () => { throw down; }));
+  assert.equal(res.status, 502);
+  body = await res.json();
+  assert.deepEqual(body, { error: "I can't load the responses right now. Try again in a minute.", setup: false });
+  plain(body.error);
+  assert.deepEqual(logs.pop(), { event: "rsvp_error", name: "TypeError" });
+  assert.ok(!JSON.stringify(logs).includes("secret"));
 });

@@ -46,7 +46,7 @@ async function readJson(req) {
   const declared = Number(req.headers.get("content-length"));
   if (Number.isFinite(declared) && declared > MAX_BODY) throw new Reject(413, { error: SAID.tooBig });
   const text = await req.text();
-  if (text.length > MAX_BODY) throw new Reject(413, { error: SAID.tooBig });
+  if (Buffer.byteLength(text, "utf8") > MAX_BODY) throw new Reject(413, { error: SAID.tooBig });
   let body;
   try { body = JSON.parse(text); } catch { throw badRequest(); }
   if (!body || typeof body !== "object" || Array.isArray(body)) throw badRequest();
@@ -124,8 +124,8 @@ export function createHandler(deps) {
       if (!name) return json(404, { error: "Not found." });
       if (req.method !== ROUTES[name]) return json(405, { error: "That isn't allowed." }, { Allow: ROUTES[name] });
       if (req.method === "POST") {
-        const type = req.headers.get("content-type") || "";
-        if (!allowedOrigins.includes(req.headers.get("origin")) || !type.toLowerCase().startsWith("application/json")) {
+        const type = (req.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+        if (!allowedOrigins.includes(req.headers.get("origin")) || type !== "application/json") {
           return json(403, { error: SAID.rejected });
         }
       }
@@ -163,11 +163,28 @@ async function realHandler(context) {
     allowedOrigins: [env.URL, env.DEPLOY_PRIME_URL].filter(Boolean),
     secureCookie: deployContext !== "dev",
     canWrite: deployContext === "production",
-    log: (event, fields) => console.error(JSON.stringify({ event, ...fields })),
+    log: logLine,
   });
   return real;
 }
 
-export default async (req, context) => (await realHandler(context))(req, context);
+const logLine = (event, fields) => console.error(JSON.stringify({ event, ...fields }));
+
+// Builds the handler on first use. A failure while building it gets the same
+// generic answer as any other failure, and only the error's name is logged.
+export function lazyHandler(build, log) {
+  return async (req, context) => {
+    let handle;
+    try {
+      handle = await build(context);
+    } catch (err) {
+      log("error", { route: "setup", name: (err && err.name) || "Error" });
+      return json(500, { error: SAID.failed });
+    }
+    return handle(req, context);
+  };
+}
+
+export default lazyHandler(realHandler, logLine);
 
 export const config = { path: "/api/editor/*" };

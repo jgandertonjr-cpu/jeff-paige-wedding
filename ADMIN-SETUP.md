@@ -143,7 +143,8 @@ When you no longer want it: delete `src/admin/forms/` and uninstall the provider
 | A deploy failed | Open the deploy log. The line after `site check` says what it found. The previous version stays live. |
 | Locked out | Wait 15 minutes. |
 | The RSVP dashboard asks to sign in | Sign in at `/admin/` first, then open the dashboard. |
-| The dashboard says the Netlify token is invalid | Create a new token (step d), update `NETLIFY_RSVP_TOKEN`, trigger a deploy. |
+| The dashboard says "The RSVP list isn't connected yet" | `NETLIFY_RSVP_TOKEN` is missing, wrong or expired. In **Logs → Functions** the line with event `rsvp_setup` (missing) or `rsvp_error` with status `401` (rejected) says which. Create a new token (step d), update `NETLIFY_RSVP_TOKEN`, trigger a deploy. |
+| The dashboard says "I can't load the responses right now" | Netlify did not answer. Wait a minute and reload; if it keeps happening, look for event `rsvp_error` in **Logs → Functions** (it shows the error name and status only). |
 
 ---
 
@@ -179,7 +180,7 @@ Elsewhere: pages are built by [Eleventy](https://www.11ty.dev/) from `src/*.njk`
 
 **https://jeffandpaige.net/admin/rsvps/** shows live totals, meal counts, every response, and who hasn't replied yet. Sign in at `/admin/` first; the same password and sign-in cover the dashboard. It is also linked from the editor as **RSVP responses**.
 
-**Connecting it:** the dashboard reads responses from Netlify using `NETLIFY_RSVP_TOKEN`, set up in step d. If it says the token is invalid, make a new one and trigger a deploy. Guests' IP addresses and other Netlify metadata are never sent to the page.
+**Connecting it:** the dashboard reads responses from Netlify using `NETLIFY_RSVP_TOKEN`, set up in step d. If it says the RSVP list isn't connected yet, the token is missing or has expired: make a new one and trigger a deploy. Guests' IP addresses and other Netlify metadata are never sent to the page.
 
 - **Filters** (top row): Everyone / Attending / Declined / Awaiting, meal, dietary group, and a search box (names, emails, notes, songs). Every number, chart, list and the table follow the filters. Clicking a bar or a segment in any chart filters by it; click it again to undo. **Clear filters** resets everything.
 - **Totals:** people attending, declined and awaiting, plus the response rate for the guest list.
