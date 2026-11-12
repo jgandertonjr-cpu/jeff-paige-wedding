@@ -22,7 +22,7 @@ const stylesheets = (html) => [...html.matchAll(/<link\b[^>]*>/gi)]
 
 // Returns { text, problems }: the text that is fingerprinted, and differences
 // found by reading the page itself. The colour stylesheet link was added after
-// the baseline was recorded, so its line stays out of the fingerprint; instead
+// the baseline was recorded, so that element stays out of the fingerprint; instead
 // every page that links the main stylesheet must also link the colour one.
 export function normalise(name, text) {
   if (name.endsWith(".ics")) {
@@ -31,9 +31,14 @@ export function normalise(name, text) {
   const sheets = stylesheets(text);
   const has = (file) => sheets.some((h) => new RegExp(`(^|/)css/${file}(\\?|$)`).test(h));
   const problems = has("styles\\.css") && !has("theme\\.css") ? [`differs: ${name} (missing theme stylesheet)`] : [];
+  // Only the theme <link> element is taken out; a line it leaves blank goes too,
+  // and anything else on its line stays in the fingerprint.
   const out = text
     .split("\n")
-    .filter((l) => !(/<link\b/.test(l) && /css\/theme\.css/.test(l)))
+    .flatMap((l) => {
+      const kept = l.replace(/<link\b[^>]*css\/theme\.css[^>]*>/gi, "");
+      return kept !== l && kept.trim() === "" ? [] : [kept];
+    })
     .join("\n")
     .replace(/\?v=[^"'\s&)>]*/g, "")
     .replace(/>\s+</g, "> <");

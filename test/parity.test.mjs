@@ -38,3 +38,14 @@ test("pages without the main stylesheet and the calendar file are not held to it
   const ics = normalise("wedding.ics", "BEGIN:VCALENDAR\r\nDTSTAMP:20261112T000000Z\r\nEND:VCALENDAR");
   assert.deepEqual(ics, { text: "BEGIN:VCALENDAR\nEND:VCALENDAR", problems: [] });
 });
+
+test("only the theme link is left out: anything else on its line still counts", () => {
+  const a = normalise("index.html", page([`${STYLES}${THEME}<meta name="x" content="1" />`]));
+  const b = normalise("index.html", page([`${STYLES}${THEME}<meta name="x" content="2" />`]));
+  assert.deepEqual(a.problems, []);
+  assert.notEqual(a.text, b.text);
+  assert.match(a.text, /<meta name="x" content="1" \/>/);
+  assert.doesNotMatch(a.text, /theme\.css/);
+  // On a line of its own, the link still fingerprints like the page before it existed.
+  assert.equal(normalise("index.html", page([STYLES, THEME])).text, normalise("index.html", page([STYLES])).text);
+});
