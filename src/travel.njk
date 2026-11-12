@@ -32,10 +32,12 @@ headerDark: true
             <span class="info-badge">{{ block.badge }}</span>
           </div>
           <div class="stack">
+            {%- if block.hotel_details %}
             <p class="hotel-card__meta">
               {{ icon("pin", 16, true) }}
               {{ block.hotel_details }}
             </p>
+            {%- endif %}
             <p class="hotel-card__meta">
               {{ icon("calendar", 16, true) }}
               Block deadline: <strong>{{ (block.deadline | dateFormat('long')) if block.deadline else "To be announced" }}</strong>

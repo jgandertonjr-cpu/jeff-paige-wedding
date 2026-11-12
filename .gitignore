@@ -5,6 +5,9 @@ backups/
 node_modules/
 _site/
 
+# Review screenshots and check scripts from the redesign passes
+design-review/
+
 # macOS
 .DS_Store
 
