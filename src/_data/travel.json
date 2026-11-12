@@ -5,6 +5,12 @@
     "social_title": "",
     "social_description": "Everything you need to plan your trip for the wedding weekend in New Hope, PA."
   },
+  "section_order": [
+    "room_block",
+    "nearby",
+    "airports",
+    "tips"
+  ],
   "hero": {
     "label": "Plan Your Trip",
     "title": "Travel & Stay",

@@ -5,6 +5,11 @@
     "social_title": "",
     "social_description": "The night doesn't have to end. Join us for the after party — all wedding guests welcome."
   },
+  "section_order": [
+    "details",
+    "expect",
+    "cta"
+  ],
   "hero": {
     "label": "Keep the Celebration Going",
     "title": "After Party",

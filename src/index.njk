@@ -56,6 +56,100 @@ canonical: ""
   }
   </script>
 {%- endblock -%}
+{%- macro welcome(alt) %}
+    <!-- ── WELCOME ── -->
+    <section class="section{% if alt %} section--alt{% endif %}" aria-labelledby="welcome-heading">
+      <div class="container container--narrow text-center">
+        <span class="section-label reveal">{{ home.welcome.label }}</span>
+        <h2 id="welcome-heading" class="section-title reveal">{{ home.welcome.title }}</h2>
+        <p class="section-subtitle drop-cap text-left mt-6 mb-8 reveal">
+          {{ home.welcome.text }}
+        </p>
+        <a href="our-story.html" class="btn btn--ghost reveal">{{ home.labels.our_story }}</a>
+      </div>
+    </section>
+{%- endmacro %}
+{%- macro countdown() %}
+    <!-- ── COUNTDOWN — sage band, days only ── -->
+    <section class="section section--dark section--sage countdown-band" aria-label="Countdown to the wedding">
+      <div class="container container--narrow text-center">
+        <span class="section-label reveal">{{ home.countdown.label }}</span>
+        <h2 class="section-title reveal">{{ home.countdown.title }}</h2>
+        <div class="countdown reveal" data-countdown aria-live="polite" aria-atomic="true">
+          <span class="countdown__number" data-days>---</span>
+          <span class="countdown__label">{{ home.labels.days }}</span>
+        </div>
+      </div>
+    </section>
+{%- endmacro %}
+{%- macro photos(alt) %}
+    <!-- ── PHOTO TRIO ── -->
+    <section class="section{% if alt %} section--alt{% endif %}" aria-label="Photos of {{ c.partner1_first }} and {{ c.partner2_first }}">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-label reveal">{{ home.photos.label }}</span>
+          <h2 class="section-title reveal reveal--delay-1">{{ home.photos.title }}</h2>
+        </div>
+        <div class="photo-strip">
+          {%- for item in home.photos.items %}
+          {%- set size = item.image | imgSize %}
+          <figure class="photo-strip__item reveal{% if loop.index0 % 3 %} reveal--delay-{{ loop.index0 % 3 }}{% endif %}">
+            <div class="photo-strip__frame">
+              <img src="{{ item.image | relUrl }}" srcset="{{ item.image | srcset }}" sizes="(min-width: 1200px) 480px, (min-width: 700px) 42vw, 100vw" width="{{ size.width }}" height="{{ size.height }}" alt="{{ item.alt }}" loading="lazy" decoding="async"{% if item.focus and item.focus != 'center' %} class="img-focus-{{ item.focus }}"{% endif %}>
+            </div>
+            <figcaption class="photo-strip__caption">{{ item.caption }}</figcaption>
+          </figure>
+          {%- endfor %}
+        </div>
+        <div class="text-center mt-12">
+          <a href="gallery.html" class="btn btn--outline reveal">{{ home.labels.view_the_gallery }}</a>
+        </div>
+      </div>
+    </section>
+{%- endmacro %}
+{%- macro quick_links(alt) %}
+    <!-- ── EXPLORE — a printed index rather than icon tiles ── -->
+    <section class="section{% if alt %} section--alt{% endif %}" aria-labelledby="quicklinks-heading">
+      <div class="container container--narrow">
+        <div class="section-header">
+          <span class="section-label reveal">{{ home.quick_links.label }}</span>
+          <h2 id="quicklinks-heading" class="section-title reveal">{{ home.quick_links.title }}</h2>
+        </div>
+        <ul class="index-list reveal">
+          {%- for row in [
+            { "url": "our-story.html", "title": home.labels.card_our_story, "desc": home.quick_links.our_story },
+            { "url": "details.html", "title": home.labels.card_details, "desc": home.quick_links.details },
+            { "url": "rsvp.html", "title": home.labels.card_rsvp, "desc": home.quick_links.rsvp },
+            { "url": "wedding-party.html", "title": home.labels.card_wedding_party, "desc": home.quick_links.wedding_party }
+          ] %}
+          <li>
+            <a href="{{ row.url }}" class="index-list__row">
+              <span class="index-list__title">{{ row.title }}</span>
+              <span class="index-list__desc">{{ row.desc }}</span>
+            </a>
+          </li>
+          {%- endfor %}
+        </ul>
+      </div>
+    </section>
+{%- endmacro %}
+{%- macro save_the_date(alt) %}
+    <!-- ── RSVP CTA BAND ── -->
+    <section class="section{% if alt %} section--alt{% endif %}" aria-labelledby="cta-heading">
+      <div class="container container--narrow text-center">
+        <span class="section-label reveal">{{ home.save_the_date.label }}</span>
+        <h2 id="cta-heading" class="section-title reveal reveal--delay-1">{{ site.wedding_date | dateFormat('long') }}</h2>
+        <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
+        <p class="section-subtitle mb-8 reveal reveal--delay-2">
+          {{ home.save_the_date.text }}
+        </p>
+        <div class="flex flex--center reveal reveal--delay-3">
+          <a href="travel.html" class="btn btn--primary">{{ home.labels.plan_your_trip }}</a>
+          {{ addToCalendar(calendar) }}
+        </div>
+      </div>
+    </section>
+{%- endmacro %}
 {%- block main %}
 {%- set hero = home.hero -%}
 {%- set heroSize = hero.photo | imgSize %}
@@ -89,92 +183,17 @@ canonical: ""
       </div>
     </section>
 
-    <!-- ── WELCOME ── -->
-    <section class="section" aria-labelledby="welcome-heading">
-      <div class="container container--narrow text-center">
-        <span class="section-label reveal">{{ home.welcome.label }}</span>
-        <h2 id="welcome-heading" class="section-title reveal">{{ home.welcome.title }}</h2>
-        <p class="section-subtitle drop-cap text-left mt-6 mb-8 reveal">
-          {{ home.welcome.text }}
-        </p>
-        <a href="our-story.html" class="btn btn--ghost reveal">{{ home.labels.our_story }}</a>
-      </div>
-    </section>
-
-    <!-- ── COUNTDOWN — sage band, days only ── -->
-    <section class="section section--dark section--sage countdown-band" aria-label="Countdown to the wedding">
-      <div class="container container--narrow text-center">
-        <span class="section-label reveal">{{ home.countdown.label }}</span>
-        <h2 class="section-title reveal">{{ home.countdown.title }}</h2>
-        <div class="countdown reveal" data-countdown aria-live="polite" aria-atomic="true">
-          <span class="countdown__number" data-days>---</span>
-          <span class="countdown__label">{{ home.labels.days }}</span>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── PHOTO TRIO ── -->
-    <section class="section section--alt" aria-label="Photos of {{ c.partner1_first }} and {{ c.partner2_first }}">
-      <div class="container">
-        <div class="section-header">
-          <span class="section-label reveal">{{ home.photos.label }}</span>
-          <h2 class="section-title reveal reveal--delay-1">{{ home.photos.title }}</h2>
-        </div>
-        <div class="photo-strip">
-          {%- for item in home.photos.items %}
-          {%- set size = item.image | imgSize %}
-          <figure class="photo-strip__item reveal{% if loop.index0 % 3 %} reveal--delay-{{ loop.index0 % 3 }}{% endif %}">
-            <div class="photo-strip__frame">
-              <img src="{{ item.image | relUrl }}" srcset="{{ item.image | srcset }}" sizes="(min-width: 1200px) 480px, (min-width: 700px) 42vw, 100vw" width="{{ size.width }}" height="{{ size.height }}" alt="{{ item.alt }}" loading="lazy" decoding="async"{% if item.focus and item.focus != 'center' %} class="img-focus-{{ item.focus }}"{% endif %}>
-            </div>
-            <figcaption class="photo-strip__caption">{{ item.caption }}</figcaption>
-          </figure>
-          {%- endfor %}
-        </div>
-        <div class="text-center mt-12">
-          <a href="gallery.html" class="btn btn--outline reveal">{{ home.labels.view_the_gallery }}</a>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── EXPLORE — a printed index rather than icon tiles ── -->
-    <section class="section" aria-labelledby="quicklinks-heading">
-      <div class="container container--narrow">
-        <div class="section-header">
-          <span class="section-label reveal">{{ home.quick_links.label }}</span>
-          <h2 id="quicklinks-heading" class="section-title reveal">{{ home.quick_links.title }}</h2>
-        </div>
-        <ul class="index-list reveal">
-          {%- for row in [
-            { "url": "our-story.html", "title": home.labels.card_our_story, "desc": home.quick_links.our_story },
-            { "url": "details.html", "title": home.labels.card_details, "desc": home.quick_links.details },
-            { "url": "rsvp.html", "title": home.labels.card_rsvp, "desc": home.quick_links.rsvp },
-            { "url": "wedding-party.html", "title": home.labels.card_wedding_party, "desc": home.quick_links.wedding_party }
-          ] %}
-          <li>
-            <a href="{{ row.url }}" class="index-list__row">
-              <span class="index-list__title">{{ row.title }}</span>
-              <span class="index-list__desc">{{ row.desc }}</span>
-            </a>
-          </li>
-          {%- endfor %}
-        </ul>
-      </div>
-    </section>
-
-    <!-- ── RSVP CTA BAND ── -->
-    <section class="section section--alt" aria-labelledby="cta-heading">
-      <div class="container container--narrow text-center">
-        <span class="section-label reveal">{{ home.save_the_date.label }}</span>
-        <h2 id="cta-heading" class="section-title reveal reveal--delay-1">{{ site.wedding_date | dateFormat('long') }}</h2>
-        <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
-        <p class="section-subtitle mb-8 reveal reveal--delay-2">
-          {{ home.save_the_date.text }}
-        </p>
-        <div class="flex flex--center reveal reveal--delay-3">
-          <a href="travel.html" class="btn btn--primary">{{ home.labels.plan_your_trip }}</a>
-          {{ addToCalendar(calendar) }}
-        </div>
-      </div>
-    </section>
+    {%- for s in home.section_order | sectionOrder(["welcome", "countdown", "photos", "quick_links", "save_the_date"], "home", ["countdown"]) %}
+    {%- if s.name == "welcome" %}
+    {{ welcome(s.alt) }}
+    {%- elif s.name == "countdown" %}
+    {{ countdown() }}
+    {%- elif s.name == "photos" %}
+    {{ photos(s.alt) }}
+    {%- elif s.name == "quick_links" %}
+    {{ quick_links(s.alt) }}
+    {%- elif s.name == "save_the_date" %}
+    {{ save_the_date(s.alt) }}
+    {%- endif %}
+    {%- endfor %}
 {% endblock %}

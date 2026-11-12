@@ -7,18 +7,11 @@ headerDark: true
 {%- extends "layouts/base.njk" -%}
 {%- from "add-to-calendar.njk" import addToCalendar -%}
 {%- from "icons.njk" import icon -%}
-{%- block main %}
+{%- macro ceremony(alt) %}
 {%- set v = site.venue -%}
 {%- set fullAddress = v.name + ", " + v.street + ", " + v.city + ", " + v.state + " " + v.zip %}
-    <!-- ── PAGE HERO ── -->
-    <section class="page-hero" aria-label="Page header">
-      <span class="section-label">{{ details.hero.label }}</span>
-      <h1 class="page-hero__title">{{ details.hero.title }}</h1>
-      <p class="page-hero__subtitle">{{ details.hero.subtitle }}</p>
-    </section>
-
     <!-- ── CEREMONY ── -->
-    <section class="section" aria-labelledby="ceremony-heading">
+    <section class="section{% if alt %} section--alt{% endif %}" aria-labelledby="ceremony-heading">
       <div class="container">
         <div class="section-header">
           <span class="section-label reveal">{{ site.wedding_date | dateFormat('weekdayLong') }}</span>
@@ -58,9 +51,10 @@ headerDark: true
         </div>
       </div>
     </section>
-
+{%- endmacro %}
+{%- macro reception(alt) %}
     <!-- ── RECEPTION ── -->
-    <section class="section section--alt" aria-labelledby="reception-heading">
+    <section class="section{% if alt %} section--alt{% endif %}" aria-labelledby="reception-heading">
       <div class="container">
         <div class="section-header">
           <span class="section-label reveal">{{ details.reception.label }}</span>
@@ -79,9 +73,10 @@ headerDark: true
         </div>
       </div>
     </section>
-
+{%- endmacro %}
+{%- macro schedule(alt) %}
     <!-- ── SCHEDULE ── -->
-    <section class="section" aria-labelledby="schedule-heading">
+    <section class="section{% if alt %} section--alt{% endif %}" aria-labelledby="schedule-heading">
       <div class="container container--narrow">
         <div class="section-header">
           <span class="section-label reveal">{{ details.schedule.label }}</span>
@@ -109,9 +104,10 @@ headerDark: true
         </div>
       </div>
     </section>
-
+{%- endmacro %}
+{%- macro cta(alt) %}
     <!-- ── CTA ── -->
-    <section class="section section--alt text-center" aria-label="RSVP prompt">
+    <section class="section{% if alt %} section--alt{% endif %} text-center" aria-label="RSVP prompt">
       <div class="container container--narrow">
         <h2 class="section-title reveal">{{ details.cta.title }}</h2>
         <p class="section-subtitle mb-8 reveal reveal--delay-1">{{ details.cta.text }}</p>
@@ -121,4 +117,24 @@ headerDark: true
         </div>
       </div>
     </section>
+{%- endmacro %}
+{%- block main %}
+    <!-- ── PAGE HERO ── -->
+    <section class="page-hero" aria-label="Page header">
+      <span class="section-label">{{ details.hero.label }}</span>
+      <h1 class="page-hero__title">{{ details.hero.title }}</h1>
+      <p class="page-hero__subtitle">{{ details.hero.subtitle }}</p>
+    </section>
+
+    {%- for s in details.section_order | sectionOrder(["ceremony", "reception", "schedule", "cta"], "details") %}
+    {%- if s.name == "ceremony" %}
+    {{ ceremony(s.alt) }}
+    {%- elif s.name == "reception" %}
+    {{ reception(s.alt) }}
+    {%- elif s.name == "schedule" %}
+    {{ schedule(s.alt) }}
+    {%- elif s.name == "cta" %}
+    {{ cta(s.alt) }}
+    {%- endif %}
+    {%- endfor %}
 {% endblock %}

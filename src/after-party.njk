@@ -6,17 +6,10 @@ headerDark: true
 ---
 {%- extends "layouts/base.njk" -%}
 {%- from "icons.njk" import icon -%}
-{%- block main %}
+{%- macro details(alt) %}
 {%- set d = afterparty.details %}
-    <!-- ── PAGE HERO ── -->
-    <section class="page-hero" aria-label="Page header">
-      <span class="section-label">{{ afterparty.hero.label }}</span>
-      <h1 class="page-hero__title">{{ afterparty.hero.title }}</h1>
-      <p class="page-hero__subtitle">{{ afterparty.hero.subtitle }}</p>
-    </section>
-
     <!-- ── EVENT DETAILS ── -->
-    <section class="section" aria-labelledby="afterparty-details-heading">
+    <section class="section{% if alt %} section--alt{% endif %}" aria-labelledby="afterparty-details-heading">
       <div class="container">
         <div class="section-header">
           <span class="section-label reveal">{{ d.label }}</span>
@@ -75,9 +68,10 @@ headerDark: true
         </div>
       </div>
     </section>
-
+{%- endmacro %}
+{%- macro expect(alt) %}
     <!-- ── WHAT TO EXPECT ── -->
-    <section class="section section--alt" aria-labelledby="expect-heading">
+    <section class="section{% if alt %} section--alt{% endif %}" aria-labelledby="expect-heading">
       <div class="container">
         <div class="section-header">
           <span class="section-label reveal">{{ afterparty.expect.label }}</span>
@@ -100,9 +94,10 @@ headerDark: true
         </div>
       </div>
     </section>
-
+{%- endmacro %}
+{%- macro cta(alt) %}
     <!-- ── CTA ── -->
-    <section class="section text-center" aria-label="RSVP reminder">
+    <section class="section{% if alt %} section--alt{% endif %} text-center" aria-label="RSVP reminder">
       <div class="container container--narrow">
         <h2 class="section-title reveal">{{ afterparty.cta.title }}</h2>
         <p class="section-subtitle mb-8 reveal reveal--delay-1">{{ afterparty.cta.text }}</p>
@@ -111,4 +106,22 @@ headerDark: true
         </div>
       </div>
     </section>
+{%- endmacro %}
+{%- block main %}
+    <!-- ── PAGE HERO ── -->
+    <section class="page-hero" aria-label="Page header">
+      <span class="section-label">{{ afterparty.hero.label }}</span>
+      <h1 class="page-hero__title">{{ afterparty.hero.title }}</h1>
+      <p class="page-hero__subtitle">{{ afterparty.hero.subtitle }}</p>
+    </section>
+
+    {%- for s in afterparty.section_order | sectionOrder(["details", "expect", "cta"], "afterparty") %}
+    {%- if s.name == "details" %}
+    {{ details(s.alt) }}
+    {%- elif s.name == "expect" %}
+    {{ expect(s.alt) }}
+    {%- elif s.name == "cta" %}
+    {{ cta(s.alt) }}
+    {%- endif %}
+    {%- endfor %}
 {% endblock %}

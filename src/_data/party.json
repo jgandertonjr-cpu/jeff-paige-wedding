@@ -5,6 +5,11 @@
     "social_title": "",
     "social_description": "Meet the bridesmaids and groomsmen standing by our side."
   },
+  "section_order": [
+    "bridesmaids",
+    "groomsmen",
+    "cta"
+  ],
   "hero": {
     "label": "Our People",
     "title": "Wedding Party",

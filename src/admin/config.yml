@@ -129,6 +129,30 @@ collections:
           - { name: deep_evergreen, label: Text on banners, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "Text that sits on the banner green. Keep it readable against what sits behind it." }
           - { name: muted_on_sage, label: Quiet text on banners, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "Secondary text that sits on the banner green. Keep it readable against what sits behind it." }
           - { name: gold_on_sage, label: Gold text on banners, widget: string, pattern: ['^#[0-9A-Fa-f]{6}$', "Enter a colour like #BCCAB3"], hint: "Gold text that sits on the banner green. Keep it readable against what sits behind it." }
+      - name: nav
+        label: Menu
+        file: src/_data/nav.json
+        fields:
+          - name: essentials
+            label: Main menu links
+            label_singular: link
+            widget: list
+            hint: The links in the header and under the names on the home page. Change the wording only; the pages they go to stay the same.
+            allow_add: false
+            fields:
+              - { name: label, label: Link wording, widget: string }
+              - { name: url, label: Goes to, widget: hidden }
+              - { name: rsvp, label: RSVP style, widget: hidden, required: false }
+          - name: more
+            label: More links
+            label_singular: link
+            widget: list
+            hint: The extra links in the menu. Change the wording only; the pages they go to stay the same.
+            allow_add: false
+            fields:
+              - { name: label, label: Link wording, widget: string }
+              - { name: url, label: Goes to, widget: hidden }
+              - { name: rsvp, label: RSVP style, widget: hidden, required: false }
 
   # ── Pages ────────────────────────────────────────────────────────────────
   - name: pages
@@ -155,6 +179,14 @@ collections:
               - { name: description, label: Google description, widget: text, maxlength: 160, hint: "One or two sentences shown under the link in Google results. Google cuts off anything past about 160 characters." }
               - { name: social_title, label: Link preview title, widget: string, required: false, hint: "Leave empty to use the browser tab title." }
               - { name: social_description, label: Link preview description, widget: text, required: false, maxlength: 200, hint: "Shown when the link is shared in a text or on social media. Leave empty to use the Google description." }
+          - name: section_order
+            label: Order of sections
+            widget: select
+            multiple: true
+            min: 5
+            max: 5
+            hint: "The order the sections appear on the page, top to bottom. Keep every section in the list; drag to change the order. The colours alternate down the page by themselves. The countdown keeps its green band wherever it goes."
+            options: [{ label: Welcome, value: welcome }, { label: Countdown, value: countdown }, { label: Photos, value: photos }, { label: "Explore links", value: quick_links }, { label: "Save the date", value: save_the_date }]
           - name: hero
             label: Top of page
             widget: object
@@ -305,6 +337,14 @@ collections:
         fields:
           - *seo
           - *hero
+          - name: section_order
+            label: Order of sections
+            widget: select
+            multiple: true
+            min: 4
+            max: 4
+            hint: "The order the sections appear on the page, top to bottom. Keep every section in the list; drag to change the order. The colours alternate down the page by themselves."
+            options: [{ label: Ceremony, value: ceremony }, { label: Reception, value: reception }, { label: Schedule, value: schedule }, { label: "Closing message", value: cta }]
           - name: ceremony
             label: Ceremony
             widget: object
@@ -381,6 +421,14 @@ collections:
         fields:
           - *seo
           - *hero
+          - name: section_order
+            label: Order of sections
+            widget: select
+            multiple: true
+            min: 3
+            max: 3
+            hint: "The order the sections appear on the page, top to bottom. Keep every section in the list; drag to change the order. The colours alternate down the page by themselves."
+            options: [{ label: "Paige's side", value: bridesmaids }, { label: "Jeff's side", value: groomsmen }, { label: "Closing message", value: cta }]
           - name: bridesmaids
             label: "Paige's side"
             widget: object
@@ -555,6 +603,14 @@ collections:
         fields:
           - *seo
           - *hero
+          - name: section_order
+            label: Order of sections
+            widget: select
+            multiple: true
+            min: 4
+            max: 4
+            hint: "The order the sections appear on the page, top to bottom. Keep every section in the list; drag to change the order. The colours alternate down the page by themselves."
+            options: [{ label: "Room block", value: room_block }, { label: "Nearby hotels", value: nearby }, { label: Airports, value: airports }, { label: "Local tips", value: tips }]
           - name: room_block
             label: Room block
             widget: object
@@ -658,6 +714,14 @@ collections:
         fields:
           - *seo
           - *hero
+          - name: section_order
+            label: Order of sections
+            widget: select
+            multiple: true
+            min: 3
+            max: 3
+            hint: "The order the sections appear on the page, top to bottom. Keep every section in the list; drag to change the order. The colours alternate down the page by themselves."
+            options: [{ label: "Where and when", value: details }, { label: "What to expect", value: expect }, { label: "Closing message", value: cta }]
           - name: details
             label: Where & when
             widget: object

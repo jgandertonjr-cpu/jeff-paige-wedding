@@ -6,18 +6,10 @@ headerDark: true
 ---
 {%- extends "layouts/base.njk" -%}
 {%- from "icons.njk" import icon -%}
-{%- block main %}
-{%- set v = site.venue -%}
+{%- macro room_block(alt) %}
 {%- set block = travel.room_block %}
-    <!-- ── PAGE HERO ── -->
-    <section class="page-hero" aria-label="Page header">
-      <span class="section-label">{{ travel.hero.label }}</span>
-      <h1 class="page-hero__title">{{ travel.hero.title }}</h1>
-      <p class="page-hero__subtitle">{{ travel.hero.subtitle }}</p>
-    </section>
-
     <!-- ── HOTEL BLOCK ── -->
-    <section class="section" aria-labelledby="hotel-block-heading">
+    <section class="section{% if alt %} section--alt{% endif %}" aria-labelledby="hotel-block-heading">
       <div class="container">
         <div class="section-header">
           <span class="section-label reveal">{{ block.label }}</span>
@@ -58,9 +50,10 @@ headerDark: true
         </div>
       </div>
     </section>
-
+{%- endmacro %}
+{%- macro nearby(alt) %}
     <!-- ── NEARBY HOTELS ── -->
-    <section class="section section--alt" aria-labelledby="nearby-hotels-heading">
+    <section class="section{% if alt %} section--alt{% endif %}" aria-labelledby="nearby-hotels-heading">
       <div class="container">
         <div class="section-header">
           <span class="section-label reveal">{{ travel.nearby.label }}</span>
@@ -101,9 +94,11 @@ headerDark: true
         {%- endif %}
       </div>
     </section>
-
+{%- endmacro %}
+{%- macro airports(alt) %}
+{%- set v = site.venue %}
     <!-- ── AIRPORT INFO ── -->
-    <section class="section" aria-labelledby="airport-heading">
+    <section class="section{% if alt %} section--alt{% endif %}" aria-labelledby="airport-heading">
       <div class="container container--narrow">
         <div class="section-header">
           <span class="section-label reveal">{{ travel.airports.label }}</span>
@@ -124,9 +119,10 @@ headerDark: true
         </div>
       </div>
     </section>
-
+{%- endmacro %}
+{%- macro tips(alt) %}
     <!-- ── LOCAL TIPS ── -->
-    <section class="section section--alt" aria-labelledby="tips-heading">
+    <section class="section{% if alt %} section--alt{% endif %}" aria-labelledby="tips-heading">
       <div class="container container--narrow">
         <div class="section-header">
           <span class="section-label reveal">{{ travel.tips.label }}</span>
@@ -148,4 +144,24 @@ headerDark: true
         </div>
       </div>
     </section>
+{%- endmacro %}
+{%- block main %}
+    <!-- ── PAGE HERO ── -->
+    <section class="page-hero" aria-label="Page header">
+      <span class="section-label">{{ travel.hero.label }}</span>
+      <h1 class="page-hero__title">{{ travel.hero.title }}</h1>
+      <p class="page-hero__subtitle">{{ travel.hero.subtitle }}</p>
+    </section>
+
+    {%- for s in travel.section_order | sectionOrder(["room_block", "nearby", "airports", "tips"], "travel") %}
+    {%- if s.name == "room_block" %}
+    {{ room_block(s.alt) }}
+    {%- elif s.name == "nearby" %}
+    {{ nearby(s.alt) }}
+    {%- elif s.name == "airports" %}
+    {{ airports(s.alt) }}
+    {%- elif s.name == "tips" %}
+    {{ tips(s.alt) }}
+    {%- endif %}
+    {%- endfor %}
 {% endblock %}
