@@ -484,6 +484,14 @@ test("rsvp: setup and loading problems are told in plain words, with the cause l
   assert.deepEqual(body, { error: "The RSVP list isn't connected yet. Jeff can fix this — see the setup guide.", setup: true });
   assert.deepEqual(logs.pop(), { event: "rsvp_error", name: "Error", status: 401 });
 
+  // 403: the access value cannot see this site. Retrying cannot fix it, so it is the setup answer too.
+  const forbidden = Object.assign(new Error("Netlify API /sites/x/forms → 403"), { status: 403 });
+  res = await ask(make(ENV, async () => { throw forbidden; }));
+  assert.equal(res.status, 502);
+  body = await res.json();
+  assert.deepEqual(body, { error: "The RSVP list isn't connected yet. Jeff can fix this — see the setup guide.", setup: true });
+  assert.deepEqual(logs.pop(), { event: "rsvp_error", name: "Error", status: 403 });
+
   const down = Object.assign(new TypeError("fetch failed"), {});
   res = await ask(make(ENV, async () => { throw down; }));
   assert.equal(res.status, 502);

@@ -85,7 +85,9 @@ export function createRsvpHandler({ sessionApi, env, now, fetchSubmissions: load
       const { submissions, formId } = await load(netlifyToken);
       return json(200, { formId, fetchedAt: new Date(now()).toISOString(), submissions });
     } catch (err) {
-      const rejected = Boolean(err && err.status === 401); // the access key is wrong or has expired
+      // 401: the access key is wrong or has expired; 403: it cannot see this site.
+      // Neither is fixed by trying again, so both get the setup answer.
+      const rejected = Boolean(err && (err.status === 401 || err.status === 403));
       log("rsvp_error", { name: (err && err.name) || "Error", ...(Number.isInteger(err && err.status) ? { status: err.status } : {}) });
       return json(502, { error: rejected ? SAID.notConnected : SAID.cantLoad, setup: rejected });
     }
