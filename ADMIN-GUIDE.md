@@ -44,4 +44,5 @@ Right after a change goes live you'll see **It's live**, with **Undo this**. For
 - The website stays as it was unless you tapped **Publish**. Closing the page, cancelling, or an error message never changes it.
 - Published something you don't like? Tap **Undo this**.
 - If a message says to try again, wait a minute and send it again. There is a daily limit on requests; it resets the next day.
-- Still stuck or confused? Tell Jeff. Nothing you do here can break the website.
+- If a change you publish doesn't work on the website, the website keeps showing the last good version, and I take the change back by myself: straight away while this page is open, or the next time anyone uses it.
+- Still stuck or confused? Tell Jeff.

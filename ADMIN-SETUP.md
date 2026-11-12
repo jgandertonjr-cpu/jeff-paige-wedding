@@ -126,7 +126,7 @@ Why: while the repo is public, the guest list file and every edit Paige makes (e
 
 **Site check:** every build ends with `scripts/check-site.mjs`. It fails if a page is missing, a link or image is broken, a private page loses its `noindex`, or a protected file has changed. A failed check fails the preview, so Publish never appears; on `main`, Netlify keeps the previous version live.
 
-**Automatic put-back:** if a publish reaches `main` but the live build fails, the editor undoes it and tells Paige nothing changed.
+**Automatic put-back:** if a publish reaches `main` but the live build fails (Netlify keeps the previous version live meanwhile), the editor undoes the edit. It does this while Paige's page is open and checking on the change, which tells her so; if she has closed the page, it happens the next time anyone uses the editor (asking, publishing or opening **Recent changes**), and her next reply starts with a line saying an earlier change was put back. A change whose live result is still unknown after 30 minutes is no longer checked (logged as `unconfirmed_dropped`); check **Deploys** if you see that.
 
 **For developers**
 

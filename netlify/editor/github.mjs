@@ -86,13 +86,24 @@ export function createGitHub({ token, repo, fetch }) {
     return Buffer.from(content, "base64").toString("utf8");
   }
 
+  // Reads up to READ_AT_ONCE files at a time. The result lists the files in the
+  // order asked, leaving out any that are not there.
+  const READ_AT_ONCE = 8;
   async function readFiles(paths, ref) {
     paths.forEach(assertRelativePath);
+    const texts = new Array(paths.length);
+    let next = 0;
+    const worker = async () => {
+      while (next < paths.length) {
+        const i = next++;
+        texts[i] = await readOne(paths[i], ref);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(READ_AT_ONCE, paths.length) }, worker));
     const out = {};
-    for (const p of paths) {
-      const text = await readOne(p, ref);
-      if (text !== undefined) out[p] = text;
-    }
+    paths.forEach((p, i) => {
+      if (texts[i] !== undefined) out[p] = texts[i];
+    });
     return out;
   }
 

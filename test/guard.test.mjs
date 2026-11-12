@@ -312,3 +312,14 @@ test("front matter: an ordinary body edit on a real template passes, and stylesh
   assert.deepEqual(checkLayoutEdit({ path: NJK, before: realDetails, after }), []);
   assert.ok(!checkLayoutEdit({ path: CSS, before, after: `---\n${before}` }).includes(SETUP));
 });
+
+// Final review, item 7a: the front-matter parser also accepts a space before the language word.
+test("front matter: '--- js' (a space before the word) is refused at the top and lower down", () => {
+  const spaced = INJECT.replace(/^---js/, "--- js");
+  const body = realDetails.replace(/^---[\s\S]*?\n---\n/, "");
+  assert.ok(checkLayoutEdit({ path: NJK, before: body, after: spaced + body }).includes(SETUP));
+  assert.ok(checkLayoutEdit({ path: NJK, before: realDetails, after: realDetails.replace(/^---\n/, "--- js\n") }).includes(SETUP));
+  assert.ok(checkLayoutEdit({ path: NJK, before: realDetails, after: realDetails.replace(/^---\n/, "---\t json \n") }).includes(SETUP));
+  for (const line of ["--- js", "---  yaml ", "--- \t"]) assert.ok(flagged(NJK, line), line);
+  assert.ok(!flagged(NJK, "--- not a setup line"));
+});

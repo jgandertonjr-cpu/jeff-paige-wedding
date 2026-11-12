@@ -297,3 +297,27 @@ test("the token never appears in an error from a failing write", async () => {
     },
   );
 });
+
+// Final review, item 7e: files are read at the same time (at most 8 at once).
+test("readFiles reads files concurrently, at most 8 at once, whatever order they answer in", async () => {
+  let inFlight = 0;
+  let most = 0;
+  const paths = Array.from({ length: 20 }, (_, i) => `src/f${i}.json`);
+  const { repo } = gh([["GET", /\/contents\/src\/f(\d+)\.json/, async (_b, u) => {
+    const i = Number(/f(\d+)\.json/.exec(u.pathname)[1]);
+    inFlight++;
+    most = Math.max(most, inFlight);
+    // Later files answer first; every third one is missing.
+    await new Promise((r) => setTimeout(r, (20 - i) * 2));
+    inFlight--;
+    return i % 3 === 0 ? { status: 404 } : { json: { content: b64(`file ${i}`), sha: `s${i}` } };
+  }]]);
+  const out = await repo.readFiles(paths, "main");
+  assert.ok(most > 1, `read one at a time (${most})`);
+  assert.ok(most <= 8, `more than 8 at once (${most})`);
+  const expected = {};
+  for (let i = 0; i < 20; i++) if (i % 3 !== 0) expected[`src/f${i}.json`] = `file ${i}`;
+  assert.deepEqual(out, expected);
+  assert.equal(Object.hasOwn(out, "src/f0.json"), false);
+  assert.deepEqual(Object.keys(out), paths.filter((_, i) => i % 3 !== 0)); // same order as asked
+});

@@ -6,7 +6,7 @@
   "scripts": {
     "build": "eleventy && node scripts/check-site.mjs",
     "start": "eleventy --serve",
-    "test": "node --test",
+    "test": "node --test \"test/**/*.test.mjs\"",
     "parity:record": "node scripts/parity.mjs --record",
     "parity": "node scripts/parity.mjs",
     "schema": "node scripts/build-editor-schema.mjs",
@@ -14,7 +14,7 @@
     "editor:dev": "node scripts/editor-dev.mjs"
   },
   "engines": {
-    "node": ">=20.9"
+    "node": ">=22.12"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "1.8.0",

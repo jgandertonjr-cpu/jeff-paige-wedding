@@ -69,10 +69,11 @@ const RULES = [
 
 // Front matter: the setup lines at the top of a template, which Eleventy reads
 // (and, as ---js, runs) during the build. A file starts one with a first line of
-// "---" plus an optional language word; it runs through the next line that is
-// exactly "---" (to the end if there is none). Empty when the file has none.
+// "---" plus an optional language word, with or without spaces around it
+// ("--- js" too); it runs through the next line that is exactly "---" (to the
+// end if there is none). Empty when the file has none.
 const SETUP_PROBLEM = "That would change the page's setup lines, which I can't do.";
-const SETUP_OPEN = /^---[A-Za-z]*[ \t]*\r?$/;
+const SETUP_OPEN = /^---[ \t]*[A-Za-z]*[ \t]*\r?$/;
 function frontMatter(text) {
   const lines = text.split("\n");
   if (!SETUP_OPEN.test(lines[0])) return "";
@@ -203,7 +204,7 @@ export function checkLayoutEdit({ path: filePath, before, after } = {}) {
     { text: block.replace(/\s+/g, ""), loose: true },
   ];
   const seen = new Set();
-  if (kind === "njk" && (frontMatter(before) !== frontMatter(after) || added.some((l) => /^---[A-Za-z]*$/.test(l)))) {
+  if (kind === "njk" && (frontMatter(before) !== frontMatter(after) || added.some((l) => SETUP_OPEN.test(l)))) {
     seen.add(SETUP_PROBLEM);
     problems.push(SETUP_PROBLEM);
   }
