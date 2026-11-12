@@ -24,7 +24,7 @@ function load() {
 test("sending changes for review gets 75 seconds; everything else 30", () => {
   const { d } = load();
   assert.equal(d.deadlineFor("propose"), 75_000);
-  for (const route of ["ask", "content", "preview", "publish", "cancel", "undo", "history", "session", "login", "logout", "status?id=abc"]) {
+  for (const route of ["content", "preview", "publish", "cancel", "undo", "history", "session", "login", "logout", "status?id=abc"]) {
     assert.equal(d.deadlineFor(route), 30_000, route);
   }
 });

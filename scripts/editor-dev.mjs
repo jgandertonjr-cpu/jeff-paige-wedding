@@ -1,4 +1,4 @@
-// A local server for testing the plain-English editor end to end, with no GitHub
+// A local server for testing the website editor end to end, with no GitHub
 // and no Netlify.   npm run editor:dev   (then open http://localhost:8081/admin/)
 //   node scripts/editor-dev.mjs --reset   starts again from a fresh copy of the site
 //

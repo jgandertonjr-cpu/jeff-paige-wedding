@@ -1,5 +1,5 @@
 /* =============================================================
-   The plain-English editor (/admin/) and its guide (/admin/guide/).
+   The website editor (/admin/) and its guide (/admin/guide/).
    Every value comes from DESIGN.md. Colours read the site's own
    tokens from /css/theme.css (loaded first); each falls back to
    DESIGN.md's value if that file is missing.

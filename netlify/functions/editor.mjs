@@ -1,4 +1,4 @@
-// The plain-English editor's HTTP face: /api/editor/*. This is the only file
+// The website editor's HTTP face: /api/editor/*. This is the only file
 // that reads process.env and builds the real collaborators; createHandler is
 // pure wiring over injected dependencies, which is what the tests exercise.
 import crypto from "node:crypto";
