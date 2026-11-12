@@ -24,7 +24,10 @@ for (const [from, to] of [
   ["new", "building"], ["enqueued", "building"], ["building", "building"], ["uploading", "building"],
   ["processing", "building"], ["preparing", "building"], ["ready", "ready"], ["error", "failed"],
   // Final states that never become ready.
-  ["rejected", "failed"], ["canceled", "failed"], ["cancelled", "failed"], ["skipped", "failed"],
+  ["rejected", "failed"],
+  // Stopped by Netlify, usually because newer edits arrived: still under way,
+  // unless a later build is found (see below).
+  ["canceled", "building"], ["cancelled", "building"], ["skipped", "building"],
 ]) {
   test(`state ${from} maps to ${to}`, async () => {
     const { nl } = client(200, [deploy(from, "abc")]);
@@ -86,4 +89,54 @@ test("a non-2xx response throws a bare status message", async () => {
     assert.equal(e.message, "Netlify request failed (401)");
     return true;
   });
+});
+
+// F2: a build Netlify cancelled or skipped is not a failure. Her edit is in the
+// later production build of the site, so that one's result counts.
+const prod = (state, sha, at, extra = {}) =>
+  deploy(state, sha, { context: "production", branch: "main", created_at: at, deploy_ssl_url: `https://${sha}.example`, ...extra });
+
+for (const stopped of ["canceled", "cancelled", "skipped"]) {
+  test(`a ${stopped} build is ready once a later production build is ready, with that build's address`, async () => {
+    const { nl } = client(200, [
+      prod("ready", "later", "2026-01-01T00:05:00Z"),
+      prod(stopped, "abc", "2026-01-01T00:01:00Z"),
+      prod("ready", "older", "2026-01-01T00:00:00Z"),
+    ]);
+    assert.deepEqual(await nl.deployFor("abc"), { state: "ready", url: "https://later.example" });
+  });
+}
+
+test("a cancelled build with a later production build still under way is building", async () => {
+  const { nl } = client(200, [
+    prod("building", "later", "2026-01-01T00:05:00Z"),
+    prod("canceled", "abc", "2026-01-01T00:01:00Z"),
+  ]);
+  assert.deepEqual(await nl.deployFor("abc"), { state: "building" });
+});
+
+test("a cancelled build with no later production build is building; older, preview and failed builds do not count", async () => {
+  const { nl } = client(200, [
+    prod("ready", "pr", "2026-01-01T00:06:00Z", { context: "deploy-preview", branch: "editor-preview-x" }),
+    prod("error", "broken", "2026-01-01T00:05:00Z"),
+    prod("skipped", "abc", "2026-01-01T00:01:00Z"),
+    prod("ready", "older", "2026-01-01T00:00:00Z"),
+  ]);
+  assert.deepEqual(await nl.deployFor("abc"), { state: "building" });
+});
+
+test("a cancelled preview build does not take a production build's result", async () => {
+  const { nl } = client(200, [
+    prod("ready", "later", "2026-01-01T00:05:00Z"),
+    prod("canceled", "abc", "2026-01-01T00:01:00Z", { context: "deploy-preview", branch: "editor-preview-x" }),
+  ]);
+  assert.deepEqual(await nl.deployFor("abc"), { state: "building" });
+});
+
+test("a later production build on page 1 counts when the cancelled one is on page 2", async () => {
+  const pages = [[prod("ready", "later", "2026-01-01T00:05:00Z")], [prod("cancelled", "abc", "2026-01-01T00:01:00Z")]];
+  let n = 0;
+  const fetch = async () => ({ ok: true, status: 200, json: async () => pages[n++] ?? [] });
+  const nl = createNetlify({ token: TOKEN, siteId: "site-1", fetch });
+  assert.deepEqual(await nl.deployFor("abc"), { state: "ready", url: "https://later.example" });
 });
