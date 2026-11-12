@@ -1,8 +1,9 @@
 // The same interface as github.mjs, over a plain folder, for local
 // end-to-end testing. The change log lives in <root>/.editor-local/log.json.
 //
-// readFiles(paths, ref) reads the working files; ref is ignored because a
-// plain folder has no history to read from.
+// readFiles(paths, ref) reads the files as they were at `ref` when it is a
+// change in the log (or "local-base", before the first change), by walking the
+// log back from the working files. Any other ref reads the working files.
 
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -59,11 +60,20 @@ export function createLocalRepo({ root }) {
     return log.length ? log[log.length - 1].sha : BASE;
   }
 
-  async function readFiles(paths) {
+  const asText = (v) => (v !== null && typeof v === "object" ? Buffer.from(v.base64, "base64").toString("utf8") : v);
+
+  async function readFiles(paths, ref) {
+    const files = paths.map(safe);
+    const log = ref === undefined ? [] : await readLog();
+    const at = ref === BASE ? -1 : log.findIndex((e) => e.sha === ref);
+    const later = ref === BASE || at >= 0 ? log.slice(at + 1).reverse() : [];
     const out = {};
-    for (const p of paths) {
-      const text = await readText(safe(p));
-      if (text !== null) out[p] = text;
+    for (let i = 0; i < paths.length; i++) {
+      let text = await readText(files[i]);
+      for (const entry of later) {
+        if (entry.paths.includes(paths[i])) text = asText(entry.before[paths[i]]);
+      }
+      if (text !== null) out[paths[i]] = text;
     }
     return out;
   }

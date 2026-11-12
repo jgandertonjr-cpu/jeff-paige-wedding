@@ -138,3 +138,36 @@ test("paths that escape the root are rejected", async () => {
   await assert.rejects(repo.write({ branch: "main", baseSha: base, message: "m", files: { "../evil": "x" } }));
   await assert.rejects(repo.readFiles(["/etc/passwd"], "main"));
 });
+
+test("readFiles honours a ref from the log, and local-base means before the first change", async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "localrepo-ref-"));
+  try {
+    await fs.writeFile(path.join(dir, "a.txt"), "a0");
+    const r = createLocalRepo({ root: dir });
+    const s1 = await r.write({ branch: "main", baseSha: "local-base", message: "m1", files: { "a.txt": "a1", "b.txt": "b1" } });
+    const s2 = await r.write({ branch: "main", baseSha: s1, message: "m2", files: { "a.txt": "a2" } });
+    const s3 = await r.write({ branch: "main", baseSha: s2, message: "m3", files: { "b.txt": null } });
+    const read = (ref) => r.readFiles(["a.txt", "b.txt"], ref);
+    assert.deepEqual(await read("local-base"), { "a.txt": "a0" });
+    assert.deepEqual(await read(s1), { "a.txt": "a1", "b.txt": "b1" });
+    assert.deepEqual(await read(s2), { "a.txt": "a2", "b.txt": "b1" });
+    assert.deepEqual(await read(s3), { "a.txt": "a2" });
+    // An unknown ref (for example "main") reads the working files.
+    assert.deepEqual(await read("main"), { "a.txt": "a2" });
+    assert.deepEqual(await read(undefined), { "a.txt": "a2" });
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
+
+test("readFiles at a ref turns a recorded binary file back into text", async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), "localrepo-ref-bin-"));
+  try {
+    await fs.writeFile(path.join(dir, "bin.dat"), Buffer.from([0xff, 0x41]));
+    const r = createLocalRepo({ root: dir });
+    await r.write({ branch: "main", baseSha: "local-base", message: "m", files: { "bin.dat": "text" } });
+    assert.deepEqual(await r.readFiles(["bin.dat"], "local-base"), { "bin.dat": Buffer.from([0xff, 0x41]).toString("utf8") });
+  } finally {
+    await fs.rm(dir, { recursive: true, force: true });
+  }
+});
