@@ -722,3 +722,22 @@ test("pollStep: ready and failed end it; a publish seen while previewing is foll
   // A late answer past the limit still counts when it is a real result.
   assert.deepEqual(pollStep({ stage: "publish", state: "ready" }, w({ elapsedMs: 999_999 })), { step: "live" });
 });
+
+// F5: a move the site already has (it was published, then the page reloaded) is
+// dropped quietly, like the other changes the site already has, and never moves the item again.
+test("pruneTray: a move the site already has is dropped quietly", () => {
+  const n = content.faq.questions.length;
+  for (const [from, to] of [[3, 2], [3, 0], [0, 4], [1, -1]]) {
+    let tray = add([], { op: "move", file: "faq", path: `/questions/${from}`, to });
+    tray = add(tray, setOp("rsvp", "/rsvp_open", !content.rsvp.rsvp_open));
+    const published = applyLocal(content, [tray[0].op]);
+    const r = pruneTray(published, tray);
+    assert.equal(r.dropped, 0, `${from}→${to}`);
+    assert.deepEqual(r.tray.map((t) => t.op), [tray[1].op], `${from}→${to}`);
+    assert.deepEqual(applyLocal(published, r.tray.map((t) => t.op)).faq, published.faq, `${from}→${to}: not moved again`);
+  }
+  // A move the site does not have yet is kept.
+  const tray = add([], { op: "move", file: "faq", path: "/questions/3", to: 2 });
+  assert.deepEqual(pruneTray(content, tray), { tray, dropped: 0 });
+  assert.ok(n > 4);
+});

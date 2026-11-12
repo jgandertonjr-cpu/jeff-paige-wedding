@@ -762,8 +762,10 @@ export function removeEntries(tray, ids) {
 }
 
 // Is this change already in the content (it was published)? A setting that
-// already has its value, an item already where it would be added, or an item
-// to remove that is no longer there.
+// already has its value, an item already where it would be added, an item
+// to remove that is no longer there, or an item already where it would be moved
+// (for a move, `t.op.path` must be where its item was found now; replaying the
+// move would change nothing).
 // `later` are the tray's changes after this one: an added item may have been
 // edited after it was added, and is compared as those edits leave it.
 function alreadyThere(content, t, later = []) {
@@ -795,6 +797,12 @@ function alreadyThere(content, t, later = []) {
     const list = listPath === null ? null : valueAt(content, op.file, listPath);
     return Array.isArray(list) && !list.some((x) => stable(x) === own.item);
   }
+  if (op.op === "move") {
+    const list = valueAt(content, op.file, parentOf(op.path));
+    if (!Array.isArray(list) || !list.length) return false;
+    const target = op.to === -1 ? list.length - 1 : Math.min(op.to, list.length - 1);
+    return lastIndex(op.path) === target;
+  }
   return false;
 }
 
@@ -817,7 +825,8 @@ export function pruneTray(content, tray) {
     const later = tray.slice(n + 1);
     const path = relocate(copy, op.file, op.path, t.marks);
     if (path === null) {
-      if (alreadyThere(copy, t, later)) moved = true;
+      // A move whose item can't be found is not "already there", whatever sits at its old spot.
+      if (op.op !== "move" && alreadyThere(copy, t, later)) moved = true;
       else gone.push(t.op);
       return;
     }
