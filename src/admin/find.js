@@ -978,7 +978,7 @@ export function checkLabel(schema, file, path) {
 
 // Card states in which the reviewed changes are no longer on their way.
 // "moved": the site changed under the card (it was thrown away).
-const SETTLED = new Set(["live", "cancelled", "failed", "undone", "stopped", "moved"]);
+const SETTLED = new Set(["live", "cancelled", "failed", "undone", "moved"]);
 
 // The tray stays as it was reviewed from the moment Review is tapped (while the
 // answer is on its way) until the card is live, cancelled or has failed.
@@ -996,3 +996,23 @@ export const photosBudget = () => Math.floor(((MAX_REQUEST_CHARS - CHANGES_RESER
 
 // What is left of that budget once `usedBytes` of photos are in the tray.
 export const photoRoom = (usedBytes) => Math.max(0, photosBudget() - usedBytes);
+
+// ---- one status poll ----------------------------------------------------------
+
+// What one answer to a status poll means for a card waiting on the site.
+// `answer` is the server's reply, or null when none came. Only a real "ready" or
+// "failed" ends the wait; an error reply or no answer is a blip, asked again
+// until `limitMs` has passed, and then the card says it is taking a while.
+//   → { step: "live" } | { step: "previewReady", url } | { step: "failed", text }
+//   | { step: "followPublish" } (published from elsewhere while previewing)
+//   | { step: "slow" } | { step: "wait" }
+export function pollStep(answer, { waitingFor, elapsedMs, limitMs }) {
+  const real = answer && typeof answer === "object" && !answer.error ? answer : null;
+  if (real && real.state === "failed") return { step: "failed", text: typeof real.text === "string" ? real.text : "" };
+  if (real && real.state === "ready") {
+    if (real.stage === "publish") return { step: "live" };
+    if (waitingFor === "preview") return { step: "previewReady", url: typeof real.url === "string" ? real.url : "" };
+  }
+  if (real && real.stage === "publish" && waitingFor === "preview") return { step: "followPublish" };
+  return elapsedMs > limitMs ? { step: "slow" } : { step: "wait" };
+}

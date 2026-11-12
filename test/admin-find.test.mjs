@@ -12,7 +12,7 @@ import {
   PAGE_ORDER, fileOrder, buildIndex, search, opFor, applyLocal, checkLocal, describe, formatDate, formatTime,
   emptyItem, itemName, locate, controlFor, optionLabels, addChange, dropChange, pruneTray, numberPhotos,
   photoRefs, checkLabel, describeOp, isShown, canAdd, remark, removeEntries, toStorage, fromStorage, currentSpots,
-  marksOf, relocate, trayLocked, MAX_REQUEST_CHARS, photosBudget, photoRoom,
+  marksOf, relocate, trayLocked, MAX_REQUEST_CHARS, photosBudget, photoRoom, pollStep,
 } from "../src/admin/find.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -654,7 +654,7 @@ test("trayLocked: while a review is on its way, and while a card is not settled"
   for (const state of ["review", "previewing", "previewReady", "publishing", "slow", "unreachable"]) {
     assert.equal(trayLocked({ pending: false, card: { state } }), true, state);
   }
-  for (const state of ["live", "cancelled", "failed", "undone", "stopped", "moved"]) {
+  for (const state of ["live", "cancelled", "failed", "undone", "moved"]) {
     assert.equal(trayLocked({ pending: false, card: { state } }), false, state);
     assert.equal(trayLocked({ pending: true, card: { state } }), true, state);
   }
@@ -696,4 +696,29 @@ test("a new item uses a select or yes/no default only when it is valid", () => {
   assert.deepEqual(emptyItem(list([{ name: "y", type: "boolean", default: "yes" }])), { y: false });
   const photo = emptyItem(field("home", "/photos/items"), []);
   assert.equal(photo.focus, "center");
+});
+
+// F1: what one status poll means for the card. Only a real "ready" or "failed"
+// ends it; an error or no answer is a blip until the time limit.
+test("pollStep: errors and blips keep polling until the time limit, then it is slow", () => {
+  const w = (extra) => ({ waitingFor: "publish", elapsedMs: 1000, limitMs: 300_000, ...extra });
+  assert.deepEqual(pollStep(null, w()), { step: "wait" });
+  assert.deepEqual(pollStep({ error: "Something went wrong. Nothing changed. Try again in a minute." }, w()), { step: "wait" });
+  assert.deepEqual(pollStep({ error: "x" }, w({ waitingFor: "preview" })), { step: "wait" });
+  assert.deepEqual(pollStep({ stage: "publish", state: "building" }, w()), { step: "wait" });
+  assert.deepEqual(pollStep({ error: "x" }, w({ elapsedMs: 300_001 })), { step: "slow" });
+  assert.deepEqual(pollStep(null, w({ elapsedMs: 300_001 })), { step: "slow" });
+});
+
+test("pollStep: ready and failed end it; a publish seen while previewing is followed", () => {
+  const w = (extra) => ({ waitingFor: "publish", elapsedMs: 1000, limitMs: 300_000, ...extra });
+  assert.deepEqual(pollStep({ stage: "publish", state: "ready", url: "u" }, w()), { step: "live" });
+  assert.deepEqual(pollStep({ stage: "publish", state: "failed", text: "Put back." }, w()), { step: "failed", text: "Put back." });
+  assert.deepEqual(pollStep({ stage: "publish", state: "failed" }, w()), { step: "failed", text: "" });
+  assert.deepEqual(pollStep({ stage: "preview", state: "ready", url: "u" }, w({ waitingFor: "preview" })), { step: "previewReady", url: "u" });
+  assert.deepEqual(pollStep({ stage: "preview", state: "ready" }, w({ waitingFor: "preview" })), { step: "previewReady", url: "" });
+  assert.deepEqual(pollStep({ stage: "publish", state: "building" }, w({ waitingFor: "preview" })), { step: "followPublish" });
+  assert.deepEqual(pollStep({ stage: "publish", state: "ready" }, w({ waitingFor: "preview" })), { step: "live" });
+  // A late answer past the limit still counts when it is a real result.
+  assert.deepEqual(pollStep({ stage: "publish", state: "ready" }, w({ elapsedMs: 999_999 })), { step: "live" });
 });

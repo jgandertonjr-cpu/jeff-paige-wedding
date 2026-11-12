@@ -8,7 +8,7 @@ import {
   fileOrder, buildIndex, search, locate, controlFor, describe, isShown, canAdd, itemName, isPhonePhoto, optionLabels,
   opFor, applyLocal, checkLocal, emptyItem, addChange, dropChange, pruneTray, numberPhotos, photoRefs, checkLabel,
   remark, removeEntries, toStorage, fromStorage, currentSpots, marksOf, relocate, trayLocked,
-  MAX_REQUEST_CHARS, photoRoom,
+  MAX_REQUEST_CHARS, photoRoom, pollStep,
 } from "./find.js";
 
 const API = "/api/editor/";
@@ -26,6 +26,7 @@ const QUIET_MS = 400; // after a tap that redraws a list, taps are ignored this 
 const SAY = {
   cantReach: "I can't reach the site right now. Try again in a minute.",
   wentWrong: "Something went wrong. Nothing changed. Try again in a minute.",
+  publishFailed: "Something went wrong with that change. Please check the site.",
   loading: "Loading the site…",
   previewing: "Getting a preview ready. This takes about a minute.",
   publishing: "Publishing. Live in about a minute.",
@@ -1694,7 +1695,7 @@ class ProposalCard {
       this.said = SAY.cantReach;
     } else if (data.state === "failed") {
       this.stopPolling();
-      this.said = data.text || SAY.wentWrong;
+      this.said = data.text || (data.stage === "publish" ? SAY.publishFailed : this.failedText());
       this.state = "failed";
     } else if (data.stage === "publish") {
       // It went through; the site says which edit it made.
@@ -1866,50 +1867,47 @@ class ProposalCard {
       data = null; // a blip: try again on the next round
     }
     if (!polling.has(this)) return;
-    if (data && data.stage === "publish" && typeof data.sha === "string" && !this.sha) this.sha = data.sha;
-    if (data && data.error) {
-      this.stopPolling();
-      this.said = data.error;
-      this.state = "stopped";
-      this.render(true);
-      return;
-    }
-    if (data && data.state === "failed") {
-      this.stopPolling();
-      this.said = data.text || SAY.wentWrong;
-      this.state = "failed";
-      this.render(true);
-      return;
-    }
-    if (data && data.state === "ready") {
-      if (data.stage === "publish") {
+    if (data && !data.error && data.stage === "publish" && typeof data.sha === "string" && !this.sha) this.sha = data.sha;
+    // An error reply is a blip like no reply: only a real "ready" or "failed" ends the wait.
+    const next = pollStep(data, { waitingFor: this.waitingFor, elapsedMs: Date.now() - this.pollStarted, limitMs: POLL_LIMIT_MS });
+    switch (next.step) {
+      case "failed":
+        this.stopPolling();
+        this.said = next.text || this.failedText();
+        this.state = "failed";
+        this.render(true);
+        return;
+      case "live":
         this.stopPolling();
         this.state = "live";
         this.render(true);
         return;
-      }
-      if (this.waitingFor === "preview") {
+      case "previewReady":
         this.stopPolling();
-        this.previewUrl = data.url || "";
+        this.previewUrl = next.url;
         this.state = "previewReady";
         this.render(true);
         return;
-      }
-    }
-    if (data && data.stage === "publish" && this.waitingFor === "preview") {
-      // Published from somewhere else meanwhile: follow that instead.
-      this.waitingFor = "publish";
-      this.state = "publishing";
-      onPublished(this);
-      this.render(true);
-    }
-    if (Date.now() - this.pollStarted > POLL_LIMIT_MS) {
-      this.pause();
-      this.state = "slow";
-      this.render(true);
-      return;
+      case "followPublish":
+        // Published from somewhere else meanwhile: follow that instead.
+        this.waitingFor = "publish";
+        this.state = "publishing";
+        onPublished(this);
+        this.render(true);
+        break;
+      case "slow":
+        this.pause();
+        this.state = "slow";
+        this.render(true);
+        return;
     }
     this.schedule();
+  }
+
+  // The sentence for a failure the site gave no words for. Once the publish was
+  // accepted, "Nothing changed" would not be true.
+  failedText() {
+    return this.published ? SAY.publishFailed : SAY.wentWrong;
   }
 
   // -- drawing --
@@ -1986,10 +1984,6 @@ class ProposalCard {
         parts.push(...undoResult(this.undone));
         break;
       case "failed": // only the server's sentence, no buttons
-        break;
-      case "stopped":
-        title("Here's what will change");
-        body();
         break;
       case "slow":
         title("Here's what will change");

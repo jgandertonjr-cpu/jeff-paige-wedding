@@ -37,6 +37,9 @@
 //       url only when state is "ready"; text with "failed" (thrown away, expired, put back or not).
 //       sha and title (the published edit's) on a published change that has not failed.
 //       While another poll is putting the site back: { stage: "publish", state: "building" }.
+//       When Netlify or the store fails while checking a change that exists, it
+//       is reported as still under way ("building", with sha and title when
+//       published) and logged by name; never thrown.
 //   publish(deps, id)   → { ok: true, title, sha } | { ok: false, text } | { ok: false, text, reload: true }
 //     reload: as for preview; nothing is written and the publishing claim is released.
 //     sha is the edit it wrote, the one undo takes; title is one line.
@@ -500,22 +503,35 @@ export async function status(deps, { id } = {}) {
   const p = await loadProposal(deps, id);
   if (!p) return { stage: "preview", state: "failed", text: TEXT.expired };
 
+  // The change exists: a failure asking Netlify or the store about it is not an
+  // answer, so the page is told it is still under way and asks again.
   if (p.published) {
-    const d = await deps.netlify.deployFor(p.published.sha);
     // The sha and title let the page offer "Undo this" even if it lost the publish answer.
-    if (d.state === "ready") await forgetUnconfirmed(deps, id);
-    if (d.state !== "failed") return { ...report("publish", d), sha: p.published.sha, title: p.published.title };
-    const { justPutBack, ...answer } = await putSiteBack(deps, id, p.published.sha);
-    return answer;
+    const mine = { sha: p.published.sha, title: p.published.title };
+    try {
+      const d = await deps.netlify.deployFor(p.published.sha);
+      if (d.state === "ready") await forgetUnconfirmed(deps, id);
+      if (d.state !== "failed") return { ...report("publish", d), ...mine };
+      const { justPutBack, ...answer } = await putSiteBack(deps, id, p.published.sha);
+      return answer;
+    } catch (err) {
+      logEvent(deps, "status_failed", { name: err?.name || "Error" });
+      return { stage: "publish", state: "building", ...mine };
+    }
   }
 
   if (!p.preview) return { stage: "preview", state: "waiting" };
-  const d = await deps.netlify.deployFor(p.preview.sha);
-  if (d.state === "failed") {
-    await discard(deps, id, p.preview);
-    return { stage: "preview", state: "failed", text: TEXT.thrownAway };
+  try {
+    const d = await deps.netlify.deployFor(p.preview.sha);
+    if (d.state === "failed") {
+      await discard(deps, id, p.preview);
+      return { stage: "preview", state: "failed", text: TEXT.thrownAway };
+    }
+    return report("preview", d);
+  } catch (err) {
+    logEvent(deps, "status_failed", { name: err?.name || "Error" });
+    return { stage: "preview", state: "building" };
   }
-  return report("preview", d);
 }
 
 // The live site failed to update with this edit, so undo it: one poll at a

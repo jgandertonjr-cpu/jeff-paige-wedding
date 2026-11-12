@@ -1543,3 +1543,41 @@ test("settling never throws, even when the clock or the logger does", async () =
     await t.cleanup();
   }
 });
+
+// F1: a Netlify or store failure while checking a change that exists is "still under way", never thrown.
+test("status: a failure asking Netlify about a published change says it is still under way, logged by name only", async () => {
+  const t = await setup();
+  const logs = [];
+  t.deps.log = (event, fields) => logs.push({ event, ...fields });
+  try {
+    const { id, sha } = await publishAndLeave(t);
+    const { title } = (await t.repo.edits(1))[0];
+    t.netlify.deployFor = async () => { throw new TypeError("secret detail https://api.netlify.com"); };
+    assert.deepEqual(await status(t.deps, { id }), { stage: "publish", state: "building", sha, title });
+    assert.deepEqual(logs, [{ event: "status_failed", name: "TypeError" }]);
+    assert.deepEqual(await unconfirmedIds(t), [id], "still waiting for the live result");
+    // A store failure while noting the live result is survived the same way.
+    t.deps.netlify = { deployFor: async () => ({ state: "ready", url: "https://example.test/x" }) };
+    t.deps.store = { ...t.store, get: (k) => t.store.get(k), update: async () => { throw new RangeError("x"); } };
+    assert.deepEqual(await status(t.deps, { id }), { stage: "publish", state: "building", sha, title });
+    assert.deepEqual(logs.at(-1), { event: "status_failed", name: "RangeError" });
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("status: a failure asking Netlify about a preview says it is still under way", async () => {
+  const t = await setup();
+  const logs = [];
+  t.deps.log = (event, fields) => logs.push({ event, ...fields });
+  try {
+    const r = await propose(t.deps, { ops: [DEADLINE] });
+    await preview(t.deps, r.id);
+    t.netlify.deployFor = async () => { throw new Error("down"); };
+    assert.deepEqual(await status(t.deps, { id: r.id }), { stage: "preview", state: "building" });
+    assert.deepEqual(logs, [{ event: "status_failed", name: "Error" }]);
+    assert.ok(await t.store.get(`proposal:${r.id}`), "the change is kept");
+  } finally {
+    await t.cleanup();
+  }
+});
