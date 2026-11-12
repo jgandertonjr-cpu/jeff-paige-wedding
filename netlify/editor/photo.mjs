@@ -28,6 +28,22 @@ function kindOf(b) {
   return null;
 }
 
+const IEND = Buffer.from([0, 0, 0, 0, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82]);
+const MARKUP = /<script|<html|<svg|<\?php/i;
+
+// Cheap structural check that the file ends where its type says it should,
+// so a valid header can't front for arbitrary content.
+function wellFormed(b, ext) {
+  if (ext === "jpg") {
+    let end = b.length;
+    while (end > 0 && b.length - end < 2 && [0x00, 0x09, 0x0a, 0x0d, 0x20].includes(b[end - 1])) end--;
+    return end >= 2 && b[end - 2] === 0xff && b[end - 1] === 0xd9;
+  }
+  if (ext === "png") return b.length >= 20 && b.subarray(b.length - 12).equals(IEND);
+  const size = b.readUInt32LE(4);
+  return size === b.length - 8 || (size % 2 === 1 && size + 1 === b.length - 8);
+}
+
 export function checkPhoto(base64) {
   if (typeof base64 !== "string") return refuse(NOT_A_PHOTO);
   const text = base64.replace(/^data:image\/[a-z0-9.+-]+;base64,/i, "");
@@ -42,6 +58,8 @@ export function checkPhoto(base64) {
 
   const kind = kindOf(bytes);
   if (!kind) return refuse(NOT_A_PHOTO);
+
+  if (!wellFormed(bytes, kind.ext) || MARKUP.test(bytes.toString("latin1"))) return refuse(NOT_A_PHOTO);
 
   let size;
   try {

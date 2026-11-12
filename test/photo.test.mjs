@@ -1,23 +1,35 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
+import zlib from "node:zlib";
 import { checkPhoto, photoName } from "../netlify/editor/photo.mjs";
 
 const BANNED = /commit|deploy|json|branch|repository|merge|build|token|base64|bytes|mime|signature/i;
 const b64 = (buf) => Buffer.from(buf).toString("base64");
 
-// Minimal PNG: signature + IHDR (readers of dimensions do not need pixel data).
+// Structurally complete PNG: signature, IHDR, IDAT (blank pixels), optional filler chunk, IEND, all with real CRCs.
+function chunk(type, data) {
+  const body = Buffer.concat([Buffer.from(type, "ascii"), data]);
+  const out = Buffer.alloc(body.length + 8);
+  out.writeUInt32BE(data.length, 0);
+  body.copy(out, 4);
+  out.writeUInt32BE(zlib.crc32(body), body.length + 4);
+  return out;
+}
 function png(w, h, padTo = 0) {
   const sig = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-  const ihdr = Buffer.alloc(25);
-  ihdr.writeUInt32BE(13, 0);
-  ihdr.write("IHDR", 4, "ascii");
-  ihdr.writeUInt32BE(w, 8);
-  ihdr.writeUInt32BE(h, 12);
-  ihdr[16] = 8;
-  ihdr[17] = 2;
-  const out = Buffer.concat([sig, ihdr]);
-  return padTo > out.length ? Buffer.concat([out, Buffer.alloc(padTo - out.length)]) : out;
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(w, 0);
+  ihdr.writeUInt32BE(h, 4);
+  ihdr[8] = 8;
+  ihdr[9] = 0; // greyscale
+  const idat = zlib.deflateSync(Buffer.alloc((w + 1) * h));
+  const parts = [sig, chunk("IHDR", ihdr), chunk("IDAT", idat)];
+  const iend = chunk("IEND", Buffer.alloc(0));
+  const have = parts.reduce((n, p) => n + p.length, 0) + iend.length;
+  if (padTo > have + 12) parts.push(chunk("prVt", Buffer.alloc(padTo - have - 12)));
+  parts.push(iend);
+  return Buffer.concat(parts);
 }
 
 function assertRefusal(r) {
@@ -130,4 +142,59 @@ test("photoName throws on a programming mistake", () => {
   assert.throws(() => photoName(ms, "a1b2c3d", "jpg"), Error);
   assert.throws(() => photoName(ms, "a1b2c3", "gif"), Error);
   assert.throws(() => photoName(NaN, "a1b2c3", "jpg"), Error);
+});
+
+// A JPEG skeleton: SOI, APP0, SOF0 declaring w x h, then the given tail.
+function fakeJpeg(w, h, tail) {
+  const sof = Buffer.from([0xff, 0xc0, 0x00, 0x0b, 0x08, h >> 8, h & 255, w >> 8, w & 255, 0x01, 0x01, 0x11, 0x00]);
+  const app0 = Buffer.from([0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0]);
+  return Buffer.concat([Buffer.from([0xff, 0xd8]), app0, sof, Buffer.from(tail, "latin1")]);
+}
+
+test("a JPEG header followed by page markup is refused", () => {
+  assertRefusal(checkPhoto(b64(fakeJpeg(800, 800, "<html><body>hi</body></html>"))));
+});
+
+test("a JPEG without a proper ending, or with junk after it, is refused", () => {
+  assertRefusal(checkPhoto(b64(fakeJpeg(800, 800, "\x00\x01\x02"))));
+  const real = fs.readFileSync("src/images/gallery1.jpg");
+  assert.equal(checkPhoto(b64(Buffer.concat([real, Buffer.from("junk")]))).ok, false);
+  assert.equal(checkPhoto(b64(Buffer.concat([real, Buffer.from([0, 0])]))).ok, true);
+  assert.equal(checkPhoto(b64(Buffer.concat([real, Buffer.from([0, 0, 0])]))).ok, false);
+});
+
+test("a PNG without its ending or with trailing bytes is refused", () => {
+  const whole = png(800, 600);
+  assertRefusal(checkPhoto(b64(whole.subarray(0, whole.length - 12))));
+  assertRefusal(checkPhoto(b64(Buffer.concat([whole, Buffer.from("tail")]))));
+});
+
+test("a WebP whose size field is wrong is refused", () => {
+  const real = Buffer.from(fs.readFileSync("src/images/119277072_unknown.webp"));
+  const bad = Buffer.from(real);
+  bad.writeUInt32LE(real.length + 50, 4);
+  assertRefusal(checkPhoto(b64(bad)));
+  assertRefusal(checkPhoto(b64(Buffer.concat([real, Buffer.from("junk")]))));
+});
+
+test("script, page or markup text anywhere in the file is refused", () => {
+  for (const marker of ["<script", "<HTML", "<Svg", "<?php"]) {
+    const whole = png(800, 600);
+    const withText = Buffer.concat([whole.subarray(0, whole.length - 12), chunk("tEXt", Buffer.from("k\0" + marker)), whole.subarray(whole.length - 12)]);
+    assertRefusal(checkPhoto(b64(withText)));
+  }
+});
+
+test("every real photo on the site that fits the limits is still accepted", () => {
+  let checked = 0;
+  for (const f of fs.readdirSync("src/images")) {
+    if (!/\.(jpe?g|png|webp)$/i.test(f)) continue;
+    const buf = fs.readFileSync("src/images/" + f);
+    if (buf.length > 3 * 1024 * 1024) continue;
+    const r = checkPhoto(b64(buf));
+    if (!r.ok && /small|large/.test(r.reason)) continue; // icons and the like
+    assert.equal(r.ok, true, f + ": " + r.reason);
+    checked++;
+  }
+  assert.ok(checked >= 5);
 });
