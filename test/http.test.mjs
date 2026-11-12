@@ -9,7 +9,6 @@ const ORIGIN = "https://jeffandpaige.net";
 const ENV = {
   ADMIN_PASSWORD: "correct horse",
   SESSION_SECRET: "s".repeat(40),
-  ANTHROPIC_API_KEY: "sk-ant-secret-value",
   GITHUB_TOKEN: "ghp_secret_value",
   NETLIFY_RSVP_TOKEN: "nfp_secret_value",
 };
@@ -21,7 +20,6 @@ function setup(over = {}) {
   const logs = [];
   const rec = (name, result) => async (...a) => { calls.push([name, ...a.slice(1)]); return typeof result === "function" ? result(...a) : result; };
   const service = {
-    ask: rec("ask", { kind: "message", text: "Hi", error: "timeout", failed: true }),
     preview: rec("preview", { ok: true }),
     status: rec("status", { stage: "preview", state: "building" }),
     publish: rec("publish", { ok: false, text: "Nope" }),
@@ -70,8 +68,8 @@ test("every response is JSON, uncached and noindex", async () => {
 test("every route but login and session is 401 without a session", async () => {
   const { handle, calls } = setup();
   for (const p of ["status?id=" + ID, "history"]) assert.equal((await handle(get(p), ctx())).status, 401, p);
-  for (const p of ["ask", "preview", "publish", "cancel", "undo"]) {
-    const res = await handle(post(p, { message: "x", id: ID, sha: "abc1234" }), ctx());
+  for (const p of ["preview", "publish", "cancel", "undo"]) {
+    const res = await handle(post(p, { id: ID, sha: "abc1234" }), ctx());
     assert.equal(res.status, 401, p);
   }
   assert.deepEqual(calls, []);
@@ -91,7 +89,7 @@ test("POST with foreign/missing origin or non-JSON type is 403 before anything e
     post("login", { password: "x" }, { origin: null }),
     post("login", { password: "x" }, { type: "text/plain" }),
     post("login", { password: "x" }, { type: null }),
-    post("ask", { message: "x" }, { origin: "https://evil.example" }),
+    post("publish", { id: ID }, { origin: "https://evil.example" }),
   ];
   for (const req of bad) {
     const res = await handle(req, ctx());
@@ -149,33 +147,13 @@ test("unknown route is 404, wrong method is 405, both JSON", async () => {
   assert.equal(res.status, 404);
   await res.json();
   res = await handle(get("ask"), ctx());
+  assert.equal(res.status, 404);
+  await res.json();
+  res = await handle(get("publish"), ctx());
   assert.equal(res.status, 405);
   await res.json();
   res = await handle(post("history", {}), ctx());
   assert.equal(res.status, 405);
-});
-
-test("ask passes validated input, strips the error code and logs it, and marks a failure for retry", async () => {
-  const { handle, calls, logs } = setup();
-  const cookie = await login(handle);
-  const history = [{ role: "user", text: "a" }, { role: "robot", text: "b" }, { role: "assistant", text: 5 }, { role: "assistant", text: "c" }];
-  const res = await handle(post("ask", { message: "Hello", history, photo: "AAAA" }, { cookie }), ctx());
-  assert.equal(res.status, 200);
-  assert.deepEqual(await res.json(), { kind: "message", text: "Hi", retry: true });
-  assert.deepEqual(calls[0], ["ask", { message: "Hello", history: [{ role: "user", text: "a" }, { role: "assistant", text: "c" }], photo: "AAAA" }]);
-  assert.deepEqual(logs.find((l) => l.event === "ask_failed"), { event: "ask_failed", code: "timeout" });
-});
-
-test("ask caps history at 12 and rejects wrong field types", async () => {
-  const { handle, calls } = setup();
-  const cookie = await login(handle);
-  const history = Array.from({ length: 20 }, (_, i) => ({ role: "user", text: "m" + i }));
-  await handle(post("ask", { message: "x", history }, { cookie }), ctx());
-  assert.equal(calls[0][1].history.length, 12);
-  for (const body of [{ message: 5 }, {}, { message: "x", photo: 5 }, { message: "x", history: "no" }]) {
-    const res = await handle(post("ask", body, { cookie }), ctx());
-    assert.equal(res.status, 400, JSON.stringify(body));
-  }
 });
 
 test("preview, publish, cancel, undo, status, history map to the service", async () => {
@@ -212,12 +190,12 @@ test("bad id or sha is 400 and never reaches the service", async () => {
 test("oversize body is 413, malformed JSON is 400", async () => {
   const { handle } = setup();
   const cookie = await login(handle);
-  let res = await handle(post("ask", "x".repeat(6_000_001), { cookie }), ctx());
+  let res = await handle(post("publish", "x".repeat(6_000_001), { cookie }), ctx());
   assert.equal(res.status, 413);
   assert.deepEqual(await res.json(), { error: "That is too big to send." });
-  res = await handle(post("ask", "{nope", { cookie }), ctx());
+  res = await handle(post("publish", "{nope", { cookie }), ctx());
   assert.equal(res.status, 400);
-  res = await handle(post("ask", { message: "x" }, { cookie, headers: { "content-length": "7000000" } }), ctx());
+  res = await handle(post("publish", { id: ID }, { cookie, headers: { "content-length": "7000000" } }), ctx());
   assert.equal(res.status, 413);
 });
 
@@ -230,7 +208,6 @@ test("preview, publish and undo are refused on a preview copy; the rest work", a
     assert.deepEqual(await res.json(), { error: "This is a preview copy of the site, so publishing is turned off here." });
   }
   assert.deepEqual(calls, []);
-  assert.equal((await handle(post("ask", { message: "x" }, { cookie }), ctx())).status, 200);
   assert.equal((await handle(post("cancel", { id: ID }, { cookie }), ctx())).status, 200);
   assert.equal((await handle(get("history", cookie), ctx())).status, 200);
 });
@@ -251,7 +228,6 @@ test("a thrown error is 500 with the generic sentence and nothing else", async (
 test("missing env: 500 'not set up', names only in the log, session still works", async () => {
   const env = { ...ENV };
   delete env.GITHUB_TOKEN;
-  delete env.ANTHROPIC_API_KEY;
   const { handle, logs } = setup({ env });
   // Final review, item 5: signing in needs only the password and the secret.
   const cookie = await login(handle);
@@ -259,12 +235,12 @@ test("missing env: 500 'not set up', names only in the log, session still works"
   assert.equal(res.status, 500);
   const text = await res.text();
   assert.deepEqual(JSON.parse(text), { error: "The editor isn't set up yet." });
-  assert.ok(!/GITHUB|ANTHROPIC/.test(text));
+  assert.ok(!/GITHUB/.test(text));
   assert.deepEqual(logs.find((l) => l.event === "setup"), { event: "setup", missing: ["GITHUB_TOKEN"] });
   assert.ok(!JSON.stringify(logs).includes("secret"));
-  res = await handle(post("ask", { message: "hi" }, { cookie }), ctx());
+  res = await handle(post("cancel", { id: ID }, { cookie }), ctx());
   assert.equal(res.status, 500);
-  assert.deepEqual(logs.at(-1), { event: "setup", missing: ["ANTHROPIC_API_KEY", "GITHUB_TOKEN"] });
+  assert.deepEqual(logs.at(-1), { event: "setup", missing: ["GITHUB_TOKEN"] });
   res = await handle(get("session", cookie), ctx());
   assert.deepEqual(await res.json(), { signedIn: true });
 });
@@ -272,7 +248,7 @@ test("missing env: 500 'not set up', names only in the log, session still works"
 // Final review, item 5: each route checks only the variables it uses.
 test("each route needs only its own variables", async () => {
   const NEEDS = {
-    login: [], logout: [], ask: ["ANTHROPIC_API_KEY", "GITHUB_TOKEN"],
+    login: [], logout: [],
     preview: ["GITHUB_TOKEN"], publish: ["GITHUB_TOKEN"], undo: ["GITHUB_TOKEN"], cancel: ["GITHUB_TOKEN"], history: ["GITHUB_TOKEN"],
     status: ["GITHUB_TOKEN", "NETLIFY_RSVP_TOKEN"],
   };
@@ -280,9 +256,9 @@ test("each route needs only its own variables", async () => {
     if (route === "history") return handle(get("history", cookie), ctx());
     if (route === "status") return handle(get(`status?id=${ID}`, cookie), ctx());
     if (route === "login") return handle(post("login", { password: ENV.ADMIN_PASSWORD }), ctx());
-    return handle(post(route, { message: "x", id: ID, sha: "abc1234" }, { cookie }), ctx());
+    return handle(post(route, { id: ID, sha: "abc1234" }, { cookie }), ctx());
   };
-  for (const gone of ["ANTHROPIC_API_KEY", "GITHUB_TOKEN", "NETLIFY_RSVP_TOKEN"]) {
+  for (const gone of ["GITHUB_TOKEN", "NETLIFY_RSVP_TOKEN"]) {
     const env = { ...ENV };
     delete env[gone];
     const { handle, logs, calls } = setup({ env });
@@ -315,14 +291,14 @@ test("each route needs only its own variables", async () => {
   }
 });
 
-test("the real wiring builds the model client only when its key is set", async () => {
+test("the real wiring builds no model client, with or without any variable set", async () => {
   const { realServiceDeps } = await import("../netlify/functions/editor.mjs");
   const env = { ADMIN_PASSWORD: ENV.ADMIN_PASSWORD, SESSION_SECRET: ENV.SESSION_SECRET };
-  const bare = await realServiceDeps(env, { fetch: async () => { throw new Error("no network in tests"); }, store: memoryStore() });
-  assert.equal(bare.client, null);
-  assert.equal(typeof bare.repo.head, "function");
-  const full = await realServiceDeps(ENV, { fetch: async () => { throw new Error("no network in tests"); }, store: memoryStore() });
-  assert.equal(typeof full.client.beta.messages.create, "function");
+  for (const e of [env, ENV]) {
+    const deps = await realServiceDeps(e, { fetch: async () => { throw new Error("no network in tests"); }, store: memoryStore() });
+    assert.equal("client" in deps, false);
+    assert.equal(typeof deps.repo.head, "function");
+  }
 });
 
 test("short password or secret counts as missing", async () => {
@@ -357,13 +333,6 @@ test("rsvp: 401 without a session, 200 with one, no viewer field", async () => {
   assert.equal(res.status, 405);
 });
 
-test("ask sends a genuine reply without retry, and never sends the failed flag itself", async () => {
-  const { handle } = setup({ service: { ask: async () => ({ kind: "message", text: "Which page?" }) } });
-  const cookie = await login(handle);
-  const res = await handle(post("ask", { message: "Hello" }, { cookie }), ctx());
-  assert.deepEqual(await res.json(), { kind: "message", text: "Which page?" });
-});
-
 // ---- Task 18 I --------------------------------------------------------------
 
 test("a failure while setting up the real handler is the generic 500, logged by name only", async () => {
@@ -387,8 +356,8 @@ test("a failure while setting up the real handler is the generic 500, logged by 
 test("the body limit counts bytes, not characters", async () => {
   const { handle } = setup();
   const cookie = await login(handle);
-  const message = "é".repeat(3_000_000); // 3,000,000 characters, 6,000,000 bytes
-  const res = await handle(post("ask", { message }, { cookie }), ctx());
+  const pad = "é".repeat(3_000_000); // 3,000,000 characters, 6,000,000 bytes
+  const res = await handle(post("publish", { id: ID, pad }, { cookie }), ctx());
   assert.equal(res.status, 413);
 });
 
@@ -466,20 +435,6 @@ test("the site's fallback id is written in one shared place", async () => {
     const src = fs.readFileSync(new URL(`../${f}`, import.meta.url), "utf8");
     assert.ok(!src.includes(DEFAULT_SITE_ID), f);
     assert.match(src, /from "\.\.\/editor\/site\.mjs"/, f);
-  }
-});
-
-// Final review, item 6: the put-back notice reaches the page with the answer.
-test("ask passes a notice through, with a reply or a failure", async () => {
-  const NOTICE = "An earlier change didn't work on the site, so I put the site back as it was.";
-  for (const [answer, expected] of [
-    [{ kind: "message", text: "Which page?", notice: NOTICE }, { kind: "message", text: "Which page?", notice: NOTICE }],
-    [{ kind: "message", text: "Too long.", failed: true, notice: NOTICE }, { kind: "message", text: "Too long.", notice: NOTICE, retry: true }],
-  ]) {
-    const { handle } = setup({ service: { ask: async () => answer } });
-    const cookie = await login(handle);
-    const res = await handle(post("ask", { message: "x" }, { cookie }), ctx());
-    assert.deepEqual(await res.json(), expected);
   }
 });
 

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { applyOps, applyFileEdits, OpError } from "../netlify/editor/ops.mjs";
+import { applyOps, OpError } from "../netlify/editor/ops.mjs";
 
 const BANNED = /\b(commit|deploy|json|branch|repository|merge|build|token|wcag)\b/i;
 const base = () => ({
@@ -95,22 +95,6 @@ test("special text round-trips exactly", () => {
   assert.equal(out.travel.room_block.title, text);
 });
 
-test("applyFileEdits replaces exactly one match", () => {
-  const files = { "src/a.html": "hello $& world", "src/b.html": "x" };
-  const out = applyFileEdits(files, [{ path: "src/a.html", find: "hello", replace: "bye $1" }]);
-  assert.equal(out["src/a.html"], "bye $1 $& world");
-  assert.equal(files["src/a.html"], "hello $& world");
-  assert.equal(out["src/b.html"], "x");
-});
-
-test("applyFileEdits throws unless find occurs exactly once", () => {
-  const files = { "a.html": "one two two" };
-  for (const find of ["three", "two", ""]) {
-    assert.throws(() => applyFileEdits(files, [{ path: "a.html", find, replace: "x" }]), (e) => e instanceof OpError && !BANNED.test(e.message));
-  }
-  assert.throws(() => applyFileEdits(files, [{ path: "missing.html", find: "one", replace: "x" }]), OpError);
-});
-
 test("unset removes an existing key and refuses list items or missing parents", () => {
   const out = applyOps(base(), [{ op: "unset", file: "travel", path: "/room_block/deadline" }]);
   assert.equal(Object.hasOwn(out.travel.room_block, "deadline"), false);
@@ -147,9 +131,4 @@ test("error messages say which step failed and never echo the op's own text", ()
     }
   }
   assert.throws(() => applyOps(base(), ops), /^OpError: Step 2 /);
-  assert.throws(() => applyFileEdits({ [evil]: "x" }, [{ path: evil, find: "q", replace: "" }]), (e) => !e.message.includes(evil));
-});
-
-test("applyFileEdits refuses overlapping matches", () => {
-  assert.throws(() => applyFileEdits({ "a.html": "aaa" }, [{ path: "a.html", find: "aa", replace: "x" }]), OpError);
 });

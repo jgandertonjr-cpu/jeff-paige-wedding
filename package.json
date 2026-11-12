@@ -17,7 +17,6 @@
     "node": ">=22.12"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "1.8.0",
     "@netlify/blobs": "11.1.9",
     "image-size": "2.0.4",
     "markdown-it": "14.3.2"

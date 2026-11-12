@@ -115,24 +115,3 @@ export function applyOps(content, ops) {
   ops.forEach((op, i) => applyOne(copy, op, i + 1));
   return copy;
 }
-
-// files: { [path]: text }; edit: { path, find, replace }. `find` must occur exactly once.
-export function applyFileEdits(files, edits) {
-  const out = { ...files };
-  edits.forEach((edit, n) => {
-    const step = `Edit ${n + 1}`;
-    if (!edit || typeof edit.path !== "string" || !Object.hasOwn(out, edit.path)) {
-      throw new OpError(`${step} names a page the editor cannot change.`, edit);
-    }
-    const text = out[edit.path];
-    const find = edit.find;
-    if (typeof find !== "string" || find === "") throw new OpError(`${step} does not say which text to replace.`, edit);
-    const first = text.indexOf(find);
-    if (first === -1) throw new OpError(`${step} looks for text that could not be found on the page.`, edit);
-    if (text.indexOf(find, first + 1) !== -1) {
-      throw new OpError(`${step} looks for text that appears more than once, so it is not clear which one to change.`, edit);
-    }
-    out[edit.path] = text.slice(0, first) + String(edit.replace ?? "") + text.slice(first + find.length);
-  });
-  return out;
-}

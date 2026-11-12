@@ -9,9 +9,7 @@
 //                          served site when the check passes
 //   a staged preview    -> builds a second copy with the staged files applied into
 //                          .editor-local/previews-built/<id>/, served at /__preview/<id>/
-// Sign in with the password "local-test-password". Set ANTHROPIC_API_KEY (or put
-// ANTHROPIC_API_KEY=... in .editor-local/env, which is never committed) to talk to
-// the real model; without it every question gets the ordinary "can't reach" reply.
+// Sign in with the password "local-test-password". No key or outside service is needed.
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import { statSync } from "node:fs";
@@ -244,39 +242,13 @@ async function sendFile(res, method, found) {
   res.end(method === "HEAD" ? undefined : body);
 }
 
-// Reads the optional .editor-local/env file: KEY=value lines, "#" comments, values
-// trimmed and taken as written. Only ANTHROPIC_API_KEY is honoured; anything else is
-// ignored. Returns {} when there is nothing usable.
-export function parseLocalEnv(text) {
-  const out = {};
-  for (const raw of String(text ?? "").split(/\r?\n/)) {
-    const line = raw.trim();
-    if (!line || line.startsWith("#")) continue;
-    const eq = line.indexOf("=");
-    if (eq < 0) continue;
-    const name = line.slice(0, eq).trim();
-    const value = line.slice(eq + 1).trim();
-    if (name === "ANTHROPIC_API_KEY" && value) out.ANTHROPIC_API_KEY = value;
-  }
-  return out;
-}
-
-async function readLocalEnv(localDir) {
-  try {
-    return parseLocalEnv(await fs.readFile(path.join(localDir, "env"), "utf8"));
-  } catch {
-    return {};
-  }
-}
-
 async function main() {
   const localDir = path.join(ROOT, ".editor-local");
   const workDir = path.join(localDir, "work");
   const siteDir = path.join(workDir, "_site");
   const builtRoot = path.join(localDir, "previews-built");
 
-  const [{ default: Anthropic }, service, sessionApi, { memoryStore }, { createLocalRepo }, { createHandler }, { createRsvpHandler }, { default: schema }] = await Promise.all([
-    import("@anthropic-ai/sdk"),
+  const [service, sessionApi, { memoryStore }, { createLocalRepo }, { createHandler }, { createRsvpHandler }, { default: schema }] = await Promise.all([
     import("../netlify/editor/service.mjs"),
     import("../netlify/editor/session.mjs"),
     import("../netlify/editor/store.mjs"),
@@ -303,26 +275,16 @@ async function main() {
     check: (dir) => checkSite(dir, { protectedFile: path.join(ROOT, "scripts/protected-files.json") }),
   });
 
-  const key = process.env.ANTHROPIC_API_KEY || (await readLocalEnv(localDir)).ANTHROPIC_API_KEY || ""; // never printed
-  let client;
-  if (key) {
-    client = new Anthropic({ apiKey: key });
-  } else {
-    console.log("editor-dev: ANTHROPIC_API_KEY is not set, so the editor will answer \"can't reach\" to every question. Put ANTHROPIC_API_KEY=… in .editor-local/env to use the real model.");
-    client = { beta: { messages: { create: async () => { throw new Anthropic.APIConnectionError({ message: "no key" }); } } } };
-  }
-
   const env = {
     ADMIN_PASSWORD: "local-test-password",
     SESSION_SECRET: "0123456789abcdef".repeat(4),
-    ANTHROPIC_API_KEY: key || "not-set", // the handler refuses to run with this empty; the stub client below never uses it
     GITHUB_TOKEN: "local",
     NETLIFY_RSVP_TOKEN: "local",
   };
   const store = memoryStore();
   const serviceDeps = {
     repo: netlify.wrapRepo(createLocalRepo({ root: workDir })),
-    netlify, store, client, schema, env,
+    netlify, store, schema, env,
     now: Date.now,
     random: (n) => crypto.randomBytes(n).toString("hex"),
   };

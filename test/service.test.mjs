@@ -5,16 +5,16 @@ import os from "node:os";
 import path from "node:path";
 import zlib from "node:zlib";
 import schema from "../netlify/editor/schema.gen.mjs";
-import { READABLE_LAYOUT_FILES } from "../netlify/editor/guard.mjs";
 import { createLocalRepo } from "../netlify/editor/localrepo.mjs";
 import { memoryStore } from "../netlify/editor/store.mjs";
 import { StaleError } from "../netlify/editor/github.mjs";
-import { ask, preview, status, publish, cancel, history, undo } from "../netlify/editor/service.mjs";
+import { propose, preview, status, publish, cancel, history, undo, settleUnconfirmed } from "../netlify/editor/service.mjs";
 
 const SAFE_FAIL = "I couldn't make that change safely. Nothing changed.";
 const NO_FIT = "The site changed since you asked, so that change no longer fits. Please ask again.";
 const EXPIRED = "That change has expired. Please ask again.";
-const LIMIT = "That's the limit for today. It resets tomorrow.";
+const CANT = "That change can't be made.";
+const NO_CHANGE = "That wouldn't change anything on the site, so there is nothing to publish.";
 const PUT_BACK = "Something went wrong and I've put the site back.";
 const THROWN_AWAY = "That change didn't work on the site, so I've thrown it away.";
 const NOTHING_TO_UNDO = "Everything in that change has been changed again since, so there is nothing to undo.";
@@ -47,45 +47,6 @@ function png(w, h) {
 }
 const PHOTO = png(300, 300).toString("base64");
 
-// A scripted stand-in for the SDK client. Each item is a response, or a
-// function of the request that returns one.
-function fakeClient() {
-  const queue = [];
-  const calls = [];
-  return {
-    calls,
-    queue: (...items) => queue.push(...items),
-    beta: {
-      messages: {
-        async create(request) {
-          calls.push(structuredClone(request));
-          const next = queue.shift();
-          if (!next) throw new Error("script ran out");
-          return typeof next === "function" ? next(request) : next;
-        },
-      },
-    },
-  };
-}
-
-const propose = (ops, edits = [], note = "Here is the change.") => ({
-  stop_reason: "tool_use",
-  content: [{
-    type: "tool_use",
-    id: "toolu_1",
-    name: "propose_change",
-    input: {
-      note,
-      content_ops: ops.map((o) => ({
-        op: o.op, file: o.file, path: o.path,
-        value_json: o.value === undefined ? null : JSON.stringify(o.value),
-        index: o.index ?? null, to: o.to ?? null,
-      })),
-      file_edits: edits,
-    },
-  }],
-});
-const say = (text) => ({ stop_reason: "end_turn", content: [{ type: "text", text }] });
 const set = (file, p, value) => ({ op: "set", file, path: p, value });
 
 // Records which keys were ever given a value, so "stores nothing" can be checked.
@@ -119,7 +80,7 @@ async function makeSite() {
     await fs.copyFile(p, path.join(root, p));
   };
   for (const f of Object.values(schema.files)) await copy(f.path);
-  for (const p of READABLE_LAYOUT_FILES) await copy(p);
+  await copy("src/css/styles.css");
   await copy("DESIGN.md");
   // Empty stand-ins: only the names matter to the editor.
   await fs.mkdir(path.join(root, "src/images"), { recursive: true });
@@ -173,12 +134,11 @@ async function setup({ repoWrap, store: makeStore } = {}) {
   const local = createLocalRepo({ root });
   const repo = repoWrap ? repoWrap(local) : local;
   const store = makeStore ? makeStore() : recordingStore();
-  const client = fakeClient();
   const netlify = fakeNetlify();
   let clock = START;
   let n = 0;
   const deps = {
-    repo, netlify, store, client, schema, env: {},
+    repo, netlify, store, schema, env: {},
     now: () => clock,
     random: (bytes) => (++n).toString(16).padStart(bytes * 2, "0").slice(-bytes * 2),
   };
@@ -186,7 +146,7 @@ async function setup({ repoWrap, store: makeStore } = {}) {
   const readData = async (p) => JSON.parse(await read(p));
   const texts = [];
   return {
-    root, local, repo, store, client, netlify, deps, read, readData, texts,
+    root, local, repo, store, netlify, deps, read, readData, texts,
     advance: (ms) => { clock += ms; },
     cleanup: () => fs.rm(root, { recursive: true, force: true }),
   };
@@ -197,24 +157,23 @@ const allTexts = [];
 const seen = (r) => {
   for (const k of ["text", "title", "note"]) if (typeof r?.[k] === "string") allTexts.push(r[k]);
   for (const k of ["summary", "restored", "skipped"]) if (Array.isArray(r?.[k])) allTexts.push(...r[k]);
+  if (Array.isArray(r?.problems)) for (const p of r.problems) allTexts.push(p.label, p.message);
   return r;
 };
 
 const DEADLINE = set("travel", "/room_block/deadline", "2028-06-01");
 const proposalKeys = (store) => [...store.written].filter((k) => k.startsWith("proposal:"));
 
-// ---- ask ------------------------------------------------------------------
+// ---- propose ----------------------------------------------------------------
 
-test("a content request returns a summary and stores a proposal; nothing is written to the site", async () => {
+test("valid ops return a summary and store a proposal; nothing is written to the site", async () => {
   const t = await setup();
   try {
     const before = await t.read("src/_data/travel.json");
-    t.client.queue(propose([DEADLINE], [], "Set the hotel deadline."));
-    const r = seen(await ask(t.deps, { message: "change the hotel block deadline to June 1 2028", history: [] }));
+    const r = seen(await propose(t.deps, { ops: [DEADLINE] }));
+    assert.deepEqual(Object.keys(r).sort(), ["id", "kind", "summary"]);
     assert.equal(r.kind, "proposal");
     assert.match(r.id, /^[0-9a-f]{16}$/);
-    assert.equal(r.needsPreview, false);
-    assert.equal(r.note, "Set the hotel deadline.");
     assert.equal(r.summary.length, 1);
     assert.match(r.summary[0], /June 1, 2028/);
     const stored = await t.store.get(`proposal:${r.id}`);
@@ -222,140 +181,73 @@ test("a content request returns a summary and stores a proposal; nothing is writ
     assert.equal(stored.baseSha, "local-base");
     assert.equal(stored.createdAt, START);
     assert.deepEqual(stored.summary, r.summary);
+    assert.deepEqual(stored.contentOps, [DEADLINE]);
+    for (const gone of ["needsPreview", "fileEdits", "note", "photos"]) assert.equal(gone in stored, false, gone);
     assert.equal(await t.repo.head(), "local-base");
     assert.equal(await t.read("src/_data/travel.json"), before);
-    assert.equal(t.client.calls.length, 1);
   } finally {
     await t.cleanup();
   }
 });
 
-test("invalid ops: Claude is asked once more with the problems; a second failure stores nothing", async () => {
+test("ops the editor cannot take are refused with one sentence, and nothing is stored", async () => {
   const t = await setup();
   try {
-    t.client.queue(
-      propose([set("travel", "/room_block/nope/deep", "x")]),
-      propose([set("travel", "/room_block/deadline", "2028-13-45")]),
-    );
-    const r = seen(await ask(t.deps, { message: "change the deadline" }));
-    assert.deepEqual(r, { kind: "message", text: SAFE_FAIL, failed: true });
-    assert.equal(t.client.calls.length, 2);
-    const last = t.client.calls[1].messages.at(-1).content.at(-1).text;
-    assert.match(last, /Your previous proposal could not be used: Step 1 points at something that is not on the site\./);
-    assert.deepEqual(proposalKeys(t.store), []);
-  } finally {
-    await t.cleanup();
-  }
-});
-
-test("a first failure that is fixed on the second try becomes a proposal", async () => {
-  const t = await setup();
-  try {
-    t.client.queue(propose([set("travel", "/room_block/deadline", "June 1")]), propose([DEADLINE]));
-    const r = await ask(t.deps, { message: "change the deadline" });
-    assert.equal(r.kind, "proposal");
-    const feedback = t.client.calls[1].messages.at(-1).content.at(-1).text;
-    assert.match(feedback, /real date/);
-  } finally {
-    await t.cleanup();
-  }
-});
-
-test("file edits to a refused path, a content file, or with forbidden text are invalid in the same way", async () => {
-  const cases = [
-    [{ path: "src/rsvp.njk", find: "a", replace: "b" }],
-    [{ path: "src/_data/site.json", find: "Jeff", replace: "Jeffrey" }],
-    [{ path: "src/_includes/layouts/base.njk", find: "<head>", replace: "<head><meta>" }],
-    [{ path: "src/css/styles.css", find: "max-width: 640px", replace: "max-width: 640px; background: url(https://evil.example/x.png)" }],
-    [{ path: "src/travel.njk", find: "pageKey: travel", replace: "pageKey: travel\n<script>alert(1)</script>" }],
-  ];
-  for (const edits of cases) {
-    const t = await setup();
-    try {
-      t.client.queue(propose([], edits), propose([], edits));
-      const r = seen(await ask(t.deps, { message: "change the layout" }));
-      assert.deepEqual(r, { kind: "message", text: SAFE_FAIL, failed: true }, edits[0].path);
-      assert.equal(t.client.calls.length, 2);
-      assert.deepEqual(proposalKeys(t.store), []);
-    } finally {
-      await t.cleanup();
+    const bad = [
+      undefined, null, "set", {}, [null], ["x"],
+      [set("nope", "/a", "b")], [set("__proto__", "/a", "b")], [set("toString", "/a", "b")],
+      [{ op: "unset", file: "travel", path: "/room_block/deadline" }],
+      [{ op: "replace", file: "travel", path: "/room_block/deadline", value: "x" }],
+      [{ op: "set", file: "travel", path: 5, value: "x" }],
+      [{ ...DEADLINE, extra: 1 }],
+      Array.from({ length: 51 }, () => DEADLINE),
+    ];
+    for (const ops of bad) {
+      assert.deepEqual(seen(await propose(t.deps, { ops })), { ok: false, text: CANT }, JSON.stringify(ops)?.slice(0, 80));
     }
+    assert.deepEqual(await propose(t.deps), { ok: false, text: CANT });
+    for (const photos of ["AAAA", [PHOTO, PHOTO, PHOTO, PHOTO]]) {
+      assert.deepEqual(await propose(t.deps, { ops: [DEADLINE], photos }), { ok: false, text: CANT });
+    }
+    assert.deepEqual(proposalKeys(t.store), []);
+    // Fifty is fine.
+    assert.equal((await propose(t.deps, { ops: Array.from({ length: 50 }, () => DEADLINE) })).kind, "proposal");
+  } finally {
+    await t.cleanup();
   }
 });
 
-test("a proposal that would change nothing is not stored", async () => {
+test("a path that is not on the site is a problem named by its section, and nothing is stored", async () => {
   const t = await setup();
   try {
-    t.client.queue(propose([set("travel", "/room_block/deadline", "")]));
-    const r = seen(await ask(t.deps, { message: "clear the deadline" }));
-    assert.equal(r.kind, "message");
-    assert.match(r.text, /nothing/i);
-    assert.equal(r.failed, true);
+    const r = seen(await propose(t.deps, { ops: [set("travel", "/room_block/nope/deep", "x")] }));
+    assert.deepEqual(r, { ok: false, problems: [{ label: "Travel & Hotels", message: "Step 1 points at something that is not on the site." }] });
     assert.deepEqual(proposalKeys(t.store), []);
   } finally {
     await t.cleanup();
   }
 });
 
-test("a message from Claude, and a failure code, are passed through", async () => {
+test("a value the checks refuse is a problem named by its field, and nothing is stored", async () => {
   const t = await setup();
   try {
-    t.client.queue(say("Which hotel do you mean?"));
-    assert.deepEqual(await ask(t.deps, { message: "update the hotel" }), { kind: "message", text: "Which hotel do you mean?" });
-    t.client.queue({ stop_reason: "refusal", content: [] });
-    const r = await ask(t.deps, { message: "something" });
-    assert.equal(r.kind, "message");
-    assert.equal(r.error, "refused");
-    assert.equal(r.failed, true); // a failure: the browser offers the request again
+    const r = seen(await propose(t.deps, { ops: [set("travel", "/room_block/deadline", "2028-13-45")] }));
+    assert.deepEqual(r, {
+      ok: false,
+      problems: [{ label: "Travel & Hotels → Room block → Booking deadline", message: "Booking deadline must be a real date written like 2028-06-01." }],
+    });
     assert.deepEqual(proposalKeys(t.store), []);
   } finally {
     await t.cleanup();
   }
 });
 
-test("the daily limit: the 151st request is refused before any model call", async () => {
+test("ops that would change nothing say so and store nothing", async () => {
   const t = await setup();
   try {
-    await t.store.set("usage:2026-11-12", { count: 149 });
-    t.client.queue(say("ok"));
-    assert.equal((await ask(t.deps, { message: "hello" })).text, "ok");
-    const r = seen(await ask(t.deps, { message: "hello again" }));
-    assert.deepEqual(r, { kind: "message", text: LIMIT, failed: true });
-    assert.equal(t.client.calls.length, 1);
-    // A new UTC day starts a new count.
-    t.advance(DAY);
-    t.client.queue(say("ok"));
-    assert.equal((await ask(t.deps, { message: "hello" })).text, "ok");
-    assert.deepEqual(await t.store.get("usage:2026-11-13"), { count: 1 });
-  } finally {
-    await t.cleanup();
-  }
-});
-
-test("parallel requests cannot outrun the daily limit", async () => {
-  const t = await setup();
-  try {
-    await t.store.set("usage:2026-11-12", { count: 148 });
-    for (let i = 0; i < 5; i++) t.client.queue(say("ok"));
-    const results = await Promise.all([1, 2, 3, 4, 5].map(() => ask(t.deps, { message: "hi" })));
-    assert.equal(results.filter((r) => r.text === LIMIT).length, 3);
-    assert.equal(t.client.calls.length, 2);
-  } finally {
-    await t.cleanup();
-  }
-});
-
-test("a 2,001-character message is refused without a model call and is not counted", async () => {
-  const t = await setup();
-  try {
-    const r = seen(await ask(t.deps, { message: "x".repeat(2001) }));
-    assert.equal(r.kind, "message");
-    assert.match(r.text, /2,000/);
-    assert.equal(r.failed, true);
-    assert.equal(t.client.calls.length, 0);
-    assert.equal(await t.store.get("usage:2026-11-12"), null);
-    t.client.queue(say("ok"));
-    assert.equal((await ask(t.deps, { message: "x".repeat(2000) })).text, "ok");
+    assert.deepEqual(seen(await propose(t.deps, { ops: [set("travel", "/room_block/deadline", "")] })), { ok: false, text: NO_CHANGE });
+    assert.deepEqual(await propose(t.deps, { ops: [] }), { ok: false, text: NO_CHANGE });
+    assert.deepEqual(proposalKeys(t.store), []);
   } finally {
     await t.cleanup();
   }
@@ -364,35 +256,58 @@ test("a 2,001-character message is refused without a model call and is not count
 test("a bad photo returns the photo check's reason and stores nothing", async () => {
   const t = await setup();
   try {
-    const r = seen(await ask(t.deps, { message: "use this photo", photo: Buffer.from("hello").toString("base64") }));
-    assert.deepEqual(r, { kind: "message", text: "That file isn't a photo I can use.", failed: true });
-    assert.equal(t.client.calls.length, 0);
+    const r = seen(await propose(t.deps, { ops: [DEADLINE], photos: [PHOTO, Buffer.from("hello").toString("base64")] }));
+    assert.deepEqual(r, { ok: false, text: "That file isn't a photo I can use." });
     assert.deepEqual([...t.store.written], []);
   } finally {
     await t.cleanup();
   }
 });
 
-// Uses the exact photo value the editor told Claude to use.
-const usePhoto = (request) => {
-  const text = request.messages.at(-1).content.at(-1).text;
-  const value = /set the photo field to exactly (\S+)\)/.exec(text)[1];
-  return propose([set("home", "/hero/photo", value)], [], "Replaced the top photo.");
-};
+const usePhoto = (n = 1) => [set("home", "/hero/photo", `@photo:${n}`)];
 
-test("a photo is checked, named and offered to Claude, and is validated as an image that will exist", async () => {
+test("@photo:n becomes the new photo's address; the photo is named, kept, and checked as one that will exist", async () => {
   const t = await setup();
   try {
-    t.client.queue(usePhoto);
-    const r = await ask(t.deps, { message: "replace the top photo", photo: PHOTO });
-    assert.equal(r.kind, "proposal");
-    const req = t.client.calls[0];
-    const image = req.messages.at(-1).content.find((b) => b.type === "image");
-    assert.equal(image.source.media_type, "image/png");
-    assert.equal(image.source.data, PHOTO);
+    const r = await propose(t.deps, { ops: usePhoto(1), photos: [PHOTO] });
+    assert.equal(r.kind, "proposal", JSON.stringify(r));
     const stored = await t.store.get(`proposal:${r.id}`);
-    assert.match(stored.photo.name, /^photo-20261112-[0-9a-f]{6}\.png$/);
-    assert.equal(stored.photo.value, `/images/${stored.photo.name}`);
+    assert.equal(stored.photos.length, 1);
+    assert.match(stored.photos[0].name, /^photo-20261112-[0-9a-f]{6}\.png$/);
+    assert.equal(stored.photos[0].value, `/images/${stored.photos[0].name}`);
+    assert.deepEqual(stored.contentOps, [set("home", "/hero/photo", stored.photos[0].value)]);
+    assert.deepEqual(r.summary, ["Home → Top of page → Main photo: current photo → new photo"]);
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("@photo:n inside a new list item is replaced too; a photo no step uses is dropped", async () => {
+  const t = await setup();
+  try {
+    const item = { image: "@photo:2", alt: "Us at the lake" };
+    const r = await propose(t.deps, { ops: [{ op: "insert", file: "gallery", path: "/photos", index: 0, value: item }], photos: [PHOTO, PHOTO] });
+    assert.equal(r.kind, "proposal", JSON.stringify(r));
+    const stored = await t.store.get(`proposal:${r.id}`);
+    assert.equal(stored.photos.length, 1);
+    assert.equal(stored.contentOps[0].value.image, stored.photos[0].value);
+    assert.equal(stored.contentOps[0].value.alt, "Us at the lake");
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("a step that uses a photo that was not sent is a problem", async () => {
+  const t = await setup();
+  try {
+    for (const photos of [undefined, [PHOTO]]) {
+      const r = seen(await propose(t.deps, { ops: usePhoto(2), photos }));
+      assert.equal(r.ok, false);
+      assert.equal(r.problems.length, 1);
+      assert.equal(r.problems[0].label, "Home");
+      assert.match(r.problems[0].message, /photo/);
+    }
+    assert.deepEqual(proposalKeys(t.store), []);
   } finally {
     await t.cleanup();
   }
@@ -403,9 +318,8 @@ test("a photo is checked, named and offered to Claude, and is validated as an im
 test("publish writes the content and the photo in one change with the right message; a second publish writes nothing", async () => {
   const t = await setup();
   try {
-    t.client.queue(usePhoto);
-    const r = await ask(t.deps, { message: "replace the top photo", photo: PHOTO });
-    const name = (await t.store.get(`proposal:${r.id}`)).photo.name;
+    const r = await propose(t.deps, { ops: usePhoto(1), photos: [PHOTO] });
+    const name = (await t.store.get(`proposal:${r.id}`)).photos[0].name;
     const p = seen(await publish(t.deps, r.id));
     assert.equal(p.ok, true);
     assert.equal(p.title, r.summary[0].slice(0, 72));
@@ -429,8 +343,7 @@ test("publish writes the content and the photo in one change with the right mess
 test("a double tap publishing at the same moment writes once", async () => {
   const t = await setup();
   try {
-    t.client.queue(propose([DEADLINE]));
-    const r = await ask(t.deps, { message: "deadline" });
+    const r = await propose(t.deps, { ops: [DEADLINE] });
     const results = await Promise.all([publish(t.deps, r.id), publish(t.deps, r.id)]);
     assert.equal(results.filter((x) => x.ok).length, 1);
     assert.deepEqual(results.find((x) => !x.ok), { ok: false, text: "That is already being published." });
@@ -443,9 +356,8 @@ test("a double tap publishing at the same moment writes once", async () => {
 test("a photo that the change never uses is dropped", async () => {
   const t = await setup();
   try {
-    t.client.queue(propose([DEADLINE]));
-    const r = await ask(t.deps, { message: "deadline", photo: PHOTO });
-    assert.equal((await t.store.get(`proposal:${r.id}`)).photo, undefined);
+    const r = await propose(t.deps, { ops: [DEADLINE], photos: [PHOTO] });
+    assert.equal((await t.store.get(`proposal:${r.id}`)).photos, undefined);
     await publish(t.deps, r.id);
     const { paths } = await t.repo.changeOf((await t.repo.edits(1))[0].sha);
     assert.deepEqual(paths, ["src/_data/travel.json"]);
@@ -458,8 +370,7 @@ test("a photo that the change never uses is dropped", async () => {
 test("a long title drops leading steps, not the end; publish and the saved title match", async () => {
   const t = await setup();
   try {
-    t.client.queue(propose([set("details", "/ceremony/items/0/value", "4:30 PM")]));
-    const r = await ask(t.deps, { message: "the ceremony starts at 4:30 now" });
+    const r = await propose(t.deps, { ops: [set("details", "/ceremony/items/0/value", "4:30 PM")] });
     assert.equal(r.summary[0], "Details (ceremony, reception, schedule) → Ceremony → Ceremony details → “Time” → Value: Will be provided soon → 4:30 PM");
     const p = seen(await publish(t.deps, r.id));
     assert.equal(p.title, "… → Ceremony details → “Time” → Value: Will be provided soon → 4:30 PM");
@@ -473,15 +384,13 @@ test("a long title drops leading steps, not the end; publish and the saved title
 test("a short title is unchanged, and a too-long last step is cut at its end", async () => {
   const t = await setup();
   try {
-    t.client.queue(propose([DEADLINE]));
-    let r = await ask(t.deps, { message: "deadline" });
+    let r = await propose(t.deps, { ops: [DEADLINE] });
     let p = await publish(t.deps, r.id);
     assert.equal(p.title, r.summary[0]);
     assert.ok(r.summary[0].length <= 72);
 
     const long = "Yes. ".repeat(40).trim();
-    t.client.queue(propose([set("faq", "/questions/0/answer", long)]));
-    r = await ask(t.deps, { message: "long answer" });
+    r = await propose(t.deps, { ops: [set("faq", "/questions/0/answer", long)] });
     assert.ok(r.summary[0].split(" → ").at(-1).length > 72);
     p = await publish(t.deps, r.id);
     assert.equal(p.title.length, 72);
@@ -496,8 +405,7 @@ test("a short title is unchanged, and a too-long last step is cut at its end", a
 test("the title drops the Please check prefix and is cut to 72 characters", async () => {
   const t = await setup();
   try {
-    t.client.queue(propose([set("rsvp", "/rsvp_open", true)]));
-    const r = await ask(t.deps, { message: "open rsvps" });
+    const r = await propose(t.deps, { ops: [set("rsvp", "/rsvp_open", true)] });
     assert.match(r.summary[0], /^Please check: /);
     const p = await publish(t.deps, r.id);
     assert.equal(p.title, r.summary[0].replace(/^Please check: /, "").slice(0, 72));
@@ -510,10 +418,8 @@ test("the title drops the Please check prefix and is cut to 72 characters", asyn
 test("publish B after A: B's ops apply on top of A's content", async () => {
   const t = await setup();
   try {
-    t.client.queue(propose([DEADLINE]));
-    const a = await ask(t.deps, { message: "deadline" });
-    t.client.queue(propose([{ op: "insert", file: "faq", path: "/questions", index: 0, value: { question: "Are kids invited?", answer: "Yes." } }]));
-    const b = await ask(t.deps, { message: "faq" });
+    const a = await propose(t.deps, { ops: [DEADLINE] });
+    const b = await propose(t.deps, { ops: [{ op: "insert", file: "faq", path: "/questions", index: 0, value: { question: "Are kids invited?", answer: "Yes." } }] });
     assert.equal((await publish(t.deps, a.id)).ok, true);
     assert.equal((await publish(t.deps, b.id)).ok, true);
     assert.equal((await t.readData("src/_data/travel.json")).room_block.deadline, "2028-06-01");
@@ -543,8 +449,7 @@ test("a StaleError on the first write is retried once on fresh content", async (
     }),
   });
   try {
-    t.client.queue(propose([DEADLINE]));
-    const r = await ask(t.deps, { message: "deadline" });
+    const r = await propose(t.deps, { ops: [DEADLINE] });
     assert.equal((await publish(t.deps, r.id)).ok, true);
     assert.equal((await t.readData("src/_data/faq.json")).hero.title, "Questions");
     assert.equal((await t.readData("src/_data/travel.json")).room_block.deadline, "2028-06-01");
@@ -559,8 +464,7 @@ test("two StaleErrors in a row publish nothing and free the change to try again"
     repoWrap: (local) => ({ ...local, async write(args) { if (failures-- > 0) throw new StaleError(); return local.write(args); } }),
   });
   try {
-    t.client.queue(propose([DEADLINE]));
-    const r = await ask(t.deps, { message: "deadline" });
+    const r = await propose(t.deps, { ops: [DEADLINE] });
     const p = seen(await publish(t.deps, r.id));
     assert.equal(p.ok, false);
     assert.equal((await t.repo.edits(10)).length, 0);
@@ -573,8 +477,7 @@ test("two StaleErrors in a row publish nothing and free the change to try again"
 test("publish refuses a change that no longer fits the site and releases it", async () => {
   const t = await setup();
   try {
-    t.client.queue(propose([{ op: "remove", file: "faq", path: "/questions/0" }]));
-    const a = await ask(t.deps, { message: "remove first faq" });
+    const a = await propose(t.deps, { ops: [{ op: "remove", file: "faq", path: "/questions/0" }] });
     // The list empties meanwhile, so removing item 1 no longer applies.
     const faq = await t.readData("src/_data/faq.json");
     faq.questions = [];
@@ -592,8 +495,7 @@ test("publish refuses a change that no longer fits the site and releases it", as
 test("a theme colour change also replaces the matching colour in DESIGN.md", async () => {
   const t = await setup();
   try {
-    t.client.queue(propose([set("theme", "/rosette", "#E2A99C")]));
-    const r = await ask(t.deps, { message: "slightly different pink" });
+    const r = await propose(t.deps, { ops: [set("theme", "/rosette", "#E2A99C")] });
     assert.equal((await publish(t.deps, r.id)).ok, true);
     const design = await t.read("DESIGN.md");
     assert.ok(!/#E0AA9E/i.test(design));
@@ -610,8 +512,7 @@ test("DESIGN.md keeps a colour that another theme setting still uses", async () 
   const t = await setup();
   try {
     const original = await t.read("DESIGN.md");
-    t.client.queue(propose([set("theme", "/gold", "#C9A04B"), set("theme", "/hairline", "#C9A04A")]));
-    const r = await ask(t.deps, { message: "gold tweak" });
+    const r = await propose(t.deps, { ops: [set("theme", "/gold", "#C9A04B"), set("theme", "/hairline", "#C9A04A")] });
     assert.equal((await publish(t.deps, r.id)).ok, true);
     const design = await t.read("DESIGN.md");
     // Gold's old value is still used by the hairline, so it stays; the old hairline colour is replaced.
@@ -625,9 +526,7 @@ test("DESIGN.md keeps a colour that another theme setting still uses", async () 
 
 // ---- preview ----------------------------------------------------------------
 
-const CSS_EDIT = { path: "src/css/styles.css", find: "line-height: 1.5; max-width: 640px", replace: "line-height: 1.5; max-width: 660px" };
-
-test("a look-and-layout change needs a ready preview before it can be published", async () => {
+test("any change can be previewed first, then published", async () => {
   let opened = 0;
   let closed = 0;
   const t = await setup({
@@ -638,27 +537,22 @@ test("a look-and-layout change needs a ready preview before it can be published"
     }),
   });
   try {
-    t.client.queue(propose([], [CSS_EDIT], "Made the column a little wider."));
-    const r = seen(await ask(t.deps, { message: "wider" }));
-    assert.equal(r.needsPreview, true);
+    const r = seen(await propose(t.deps, { ops: [DEADLINE] }));
     assert.equal(r.summary.length, 1);
 
     const s0 = await status(t.deps, { id: r.id });
     assert.deepEqual(s0, { stage: "preview", state: "waiting" });
-    const refused = seen(await publish(t.deps, r.id));
-    assert.equal(refused.ok, false);
 
     assert.deepEqual(await preview(t.deps, r.id), { ok: true });
     assert.deepEqual(await preview(t.deps, r.id), { ok: true });
     assert.equal(opened, 1);
     const stored = await t.store.get(`proposal:${r.id}`);
     assert.equal(stored.preview.number, 0);
-    const staged = await fs.readFile(path.join(t.root, ".editor-local/previews", r.id, "src/css/styles.css"), "utf8");
-    assert.match(staged, /line-height: 1\.5; max-width: 660px/);
+    const staged = await fs.readFile(path.join(t.root, ".editor-local/previews", r.id, "src/_data/travel.json"), "utf8");
+    assert.equal(JSON.parse(staged).room_block.deadline, "2028-06-01");
 
     t.netlify.states.set(stored.preview.sha, "building");
     assert.deepEqual(await status(t.deps, { id: r.id }), { stage: "preview", state: "building" });
-    assert.equal((await publish(t.deps, r.id)).ok, false);
 
     t.netlify.states.set(stored.preview.sha, "ready");
     const s = await status(t.deps, { id: r.id });
@@ -667,7 +561,7 @@ test("a look-and-layout change needs a ready preview before it can be published"
     assert.ok(s.url);
     const p = await publish(t.deps, r.id);
     assert.equal(p.ok, true);
-    assert.match(await t.read("src/css/styles.css"), /line-height: 1\.5; max-width: 660px/);
+    assert.equal((await t.readData("src/_data/travel.json")).room_block.deadline, "2028-06-01");
     assert.equal(closed, 1);
     await assert.rejects(fs.access(path.join(t.root, ".editor-local/previews", r.id)));
   } finally {
@@ -678,8 +572,7 @@ test("a look-and-layout change needs a ready preview before it can be published"
 test("a failure to close the preview does not fail the publish", async () => {
   const t = await setup({ repoWrap: (local) => ({ ...local, closePreview: async () => { throw new Error("nope"); } }) });
   try {
-    t.client.queue(propose([DEADLINE]));
-    const r = await ask(t.deps, { message: "deadline" });
+    const r = await propose(t.deps, { ops: [DEADLINE] });
     await preview(t.deps, r.id);
     assert.equal((await publish(t.deps, r.id)).ok, true);
   } finally {
@@ -690,8 +583,7 @@ test("a failure to close the preview does not fail the publish", async () => {
 test("a failed preview throws the change away", async () => {
   const t = await setup();
   try {
-    t.client.queue(propose([], [CSS_EDIT]));
-    const r = await ask(t.deps, { message: "wider" });
+    const r = await propose(t.deps, { ops: [DEADLINE] });
     await preview(t.deps, r.id);
     const { sha } = (await t.store.get(`proposal:${r.id}`)).preview;
     t.netlify.states.set(sha, "failed");
@@ -708,8 +600,7 @@ test("a failed preview throws the change away", async () => {
 test("cancel closes the preview, marks the change cancelled, and succeeds when it is already gone", async () => {
   const t = await setup();
   try {
-    t.client.queue(propose([DEADLINE]));
-    const r = await ask(t.deps, { message: "deadline" });
+    const r = await propose(t.deps, { ops: [DEADLINE] });
     await preview(t.deps, r.id);
     assert.deepEqual(await cancel(t.deps, r.id), { ok: true });
     // Fix round 2 (N): the record is kept as a light "cancelled" marker, never deleted outright.
@@ -731,8 +622,7 @@ test("cancel and publish at the same moment: never both cancelled and written", 
     for (let delay = 0; delay < 12; delay++) {
       const t = await setup();
       try {
-        t.client.queue(propose([DEADLINE]));
-        const r = await ask(t.deps, { message: "deadline" });
+        const r = await propose(t.deps, { ops: [DEADLINE] });
         const first = cancelFirst ? () => cancel(t.deps, r.id) : () => publish(t.deps, r.id);
         const second = cancelFirst ? () => publish(t.deps, r.id) : () => cancel(t.deps, r.id);
         const [a, b] = await Promise.all([first(), ticks(delay).then(second)]);
@@ -761,8 +651,7 @@ test("cancel and publish racing, 200 times on the lost-swap store and 200 on a c
       const store = kind === "cas" ? casStore : () => recordingStore({ lose: i % 2 === 0 });
       const t = await setup({ store });
       try {
-        t.client.queue(propose([DEADLINE]));
-        const r = await ask(t.deps, { message: "deadline" });
+        const r = await propose(t.deps, { ops: [DEADLINE] });
         const cancelFirst = i % 4 < 2;
         const delay = Math.floor(i / 4) % 25;
         const first = cancelFirst ? () => cancel(t.deps, r.id) : () => publish(t.deps, r.id);
@@ -791,8 +680,7 @@ test("cancel and publish racing, 200 times on the lost-swap store and 200 on a c
 test("a cancelled change cannot be previewed, published or checked, and its marker expires after a day", async () => {
   const t = await setup();
   try {
-    t.client.queue(propose([DEADLINE]));
-    const r = await ask(t.deps, { message: "deadline", photo: PHOTO });
+    const r = await propose(t.deps, { ops: [DEADLINE], photos: [PHOTO] });
     assert.deepEqual(await cancel(t.deps, r.id), { ok: true });
     assert.deepEqual(seen(await publish(t.deps, r.id)), { ok: false, text: EXPIRED });
     assert.deepEqual(seen(await preview(t.deps, r.id)), { ok: false, text: EXPIRED });
@@ -821,8 +709,7 @@ test("publish does not bring back a change that vanished while it was publishing
   });
   let current;
   try {
-    t.client.queue(propose([DEADLINE]));
-    const r = await ask(t.deps, { message: "deadline" });
+    const r = await propose(t.deps, { ops: [DEADLINE] });
     current = r.id;
     const res = await publish(t.deps, r.id);
     assert.equal(res.ok, true);
@@ -835,8 +722,7 @@ test("publish does not bring back a change that vanished while it was publishing
 test("a change expires 24 hours after it was made", async () => {
   const t = await setup();
   try {
-    t.client.queue(propose([DEADLINE]));
-    const r = await ask(t.deps, { message: "deadline" });
+    const r = await propose(t.deps, { ops: [DEADLINE] });
     t.advance(DAY + 1);
     assert.deepEqual(seen(await publish(t.deps, r.id)), { ok: false, text: EXPIRED });
     assert.equal(await t.store.get(`proposal:${r.id}`), null);
@@ -851,8 +737,7 @@ test("a change expires 24 hours after it was made", async () => {
 test("status after publish reports the live site; a failure is undone once and says so", async () => {
   const t = await setup();
   try {
-    t.client.queue(propose([DEADLINE]));
-    const r = await ask(t.deps, { message: "deadline" });
+    const r = await propose(t.deps, { ops: [DEADLINE] });
     await publish(t.deps, r.id);
     const { sha, title } = (await t.repo.edits(1))[0];
     assert.deepEqual(await status(t.deps, { id: r.id }), { stage: "publish", state: "waiting", sha, title });
@@ -880,8 +765,7 @@ test("status after publish reports the live site; a failure is undone once and s
 test("status reports ready with the address once the site is live", async () => {
   const t = await setup();
   try {
-    t.client.queue(propose([DEADLINE]));
-    const r = await ask(t.deps, { message: "deadline" });
+    const r = await propose(t.deps, { ops: [DEADLINE] });
     await publish(t.deps, r.id);
     const { sha, title } = (await t.repo.edits(1))[0];
     t.netlify.states.set(sha, "ready");
@@ -893,14 +777,9 @@ test("status reports ready with the address once the site is live", async () => 
 
 // ---- history and undo ---------------------------------------------------------
 
-async function publishOps(t, ops, edits = []) {
-  t.client.queue(propose(ops, edits));
-  const r = await ask(t.deps, { message: "change" });
+async function publishOps(t, ops) {
+  const r = await propose(t.deps, { ops });
   assert.equal(r.kind, "proposal", JSON.stringify(r));
-  if (r.needsPreview) {
-    await preview(t.deps, r.id);
-    t.netlify.states.set((await t.store.get(`proposal:${r.id}`)).preview.sha, "ready");
-  }
   const p = await publish(t.deps, r.id);
   assert.equal(p.ok, true, JSON.stringify(p));
   return (await t.repo.edits(1))[0].sha;
@@ -943,9 +822,8 @@ test("undo restores what still matches and names what it skipped", async () => {
 test("undo leaves added photos in place", async () => {
   const t = await setup();
   try {
-    t.client.queue(usePhoto);
-    const r = await ask(t.deps, { message: "photo", photo: PHOTO });
-    const name = (await t.store.get(`proposal:${r.id}`)).photo.name;
+    const r = await propose(t.deps, { ops: usePhoto(1), photos: [PHOTO] });
+    const name = (await t.store.get(`proposal:${r.id}`)).photos[0].name;
     await publish(t.deps, r.id);
     const u = await undo(t.deps, (await t.repo.edits(1))[0].sha);
     assert.equal(u.ok, true);
@@ -970,21 +848,30 @@ test("undo refuses a change that is not a recent website edit", async () => {
   }
 });
 
-test("undo puts back a layout file only if it has not changed since", async () => {
+test("undo leaves alone a stylesheet an old edit changed, and says so", async () => {
   const t = await setup();
   try {
-    const original = await t.read("src/css/styles.css");
-    const first = await publishOps(t, [], [CSS_EDIT]);
-    const second = await publishOps(t, [], [{ path: "src/css/styles.css", find: "line-height: 1.5; max-width: 660px", replace: "line-height: 1.5; max-width: 680px" }]);
-    assert.deepEqual(seen(await undo(t.deps, first)), { ok: false, text: NOTHING_TO_UNDO });
-    const u = seen(await undo(t.deps, second));
+    const css = await t.read("src/css/styles.css");
+    const faq = await t.readData("src/_data/faq.json");
+    faq.hero.title = "Questions";
+    await t.repo.write({
+      branch: "main", baseSha: await t.repo.head(), message: "Website edit: Wider column",
+      files: { "src/css/styles.css": css.replace("max-width: 640px", "max-width: 660px"), "src/_data/faq.json": JSON.stringify(faq, null, 2) + "\n" },
+    });
+    const u = seen(await undo(t.deps, (await t.repo.edits(1))[0].sha));
     assert.equal(u.ok, true);
-    assert.deepEqual(u.skipped, []);
     assert.equal(u.restored.length, 1);
-    assert.match(await t.read("src/css/styles.css"), /line-height: 1\.5; max-width: 660px/);
-    // Now the first edit's text is back, so it can be undone too.
-    assert.equal((await undo(t.deps, first)).ok, true);
-    assert.equal(await t.read("src/css/styles.css"), original);
+    assert.match(u.restored[0], /FAQ/);
+    assert.deepEqual(u.skipped, ["The look of the whole site was left as it is, because the editor no longer changes it."]);
+    assert.match(await t.read("src/css/styles.css"), /max-width: 660px/);
+
+    // An edit that changed only the stylesheet has nothing to undo.
+    await t.repo.write({
+      branch: "main", baseSha: await t.repo.head(), message: "Website edit: Wider still",
+      files: { "src/css/styles.css": css.replace("max-width: 640px", "max-width: 680px") },
+    });
+    assert.deepEqual(seen(await undo(t.deps, (await t.repo.edits(1))[0].sha)), { ok: false, text: NOTHING_TO_UNDO });
+    assert.match(await t.read("src/css/styles.css"), /max-width: 680px/);
   } finally {
     await t.cleanup();
   }
@@ -1027,8 +914,7 @@ test("two previews at the same moment open only one", async () => {
   let opened = 0;
   const t = await setup({ repoWrap: (local) => ({ ...local, openPreview: async (a) => { opened++; return local.openPreview(a); } }) });
   try {
-    t.client.queue(propose([], [CSS_EDIT]));
-    const r = await ask(t.deps, { message: "wider" });
+    const r = await propose(t.deps, { ops: [DEADLINE] });
     const results = await Promise.all([preview(t.deps, r.id), preview(t.deps, r.id)]);
     assert.deepEqual(results, [{ ok: true }, { ok: true }]);
     assert.equal(opened, 1);
@@ -1038,8 +924,7 @@ test("two previews at the same moment open only one", async () => {
 });
 
 async function failedLiveUpdate(t) {
-  t.client.queue(propose([DEADLINE]));
-  const r = await ask(t.deps, { message: "deadline" });
+  const r = await propose(t.deps, { ops: [DEADLINE] });
   await publish(t.deps, r.id);
   t.netlify.states.set((await t.repo.edits(1))[0].sha, "failed");
   return r.id;
@@ -1082,8 +967,7 @@ test("an automatic undo is tried at most twice, then stops", async () => {
 test("a failed preview is thrown away even if closing it fails", async () => {
   const t = await setup({ repoWrap: (local) => ({ ...local, closePreview: async () => { throw new Error("nope"); } }) });
   try {
-    t.client.queue(propose([], [CSS_EDIT]));
-    const r = await ask(t.deps, { message: "wider" });
+    const r = await propose(t.deps, { ops: [DEADLINE] });
     await preview(t.deps, r.id);
     t.netlify.states.set((await t.store.get(`proposal:${r.id}`)).preview.sha, "failed");
     assert.deepEqual(await status(t.deps, { id: r.id }), { stage: "preview", state: "failed", text: THROWN_AWAY });
@@ -1097,14 +981,16 @@ test("a change that expires during publish has its preview closed", async () => 
   let closed = 0;
   const t = await setup({ repoWrap: (local) => ({ ...local, closePreview: async (a) => { closed++; return local.closePreview(a); } }) });
   try {
-    t.client.queue(propose([], [CSS_EDIT]));
-    const r = await ask(t.deps, { message: "wider" });
+    const r = await propose(t.deps, { ops: [DEADLINE] });
     await preview(t.deps, r.id);
     const sha = (await t.store.get(`proposal:${r.id}`)).preview.sha;
     t.netlify.states.set(sha, "ready");
-    // The day runs out while the preview is being checked.
-    const deployFor = t.netlify.deployFor;
-    t.netlify.deployFor = async (s) => { t.advance(DAY); return deployFor(s); };
+    // The day runs out just as publish claims the change.
+    let expired = false;
+    t.deps.store = { ...t.store, update: (k, fn) => {
+      if (!expired && k.startsWith("proposal:")) { expired = true; t.advance(DAY); }
+      return t.store.update(k, fn);
+    } };
     assert.deepEqual(await publish(t.deps, r.id), { ok: false, text: EXPIRED });
     assert.equal(closed, 1);
     assert.equal(await t.store.get(`proposal:${r.id}`), null);
@@ -1117,21 +1003,19 @@ test("a photo name that is already taken is drawn again", async () => {
   const t = await setup();
   try {
     await fs.writeFile(path.join(t.root, "src/images/photo-20261112-000001.png"), "");
-    t.client.queue(usePhoto);
-    const r = await ask(t.deps, { message: "photo", photo: PHOTO });
-    assert.equal((await t.store.get(`proposal:${r.id}`)).photo.name, "photo-20261112-000002.png");
+    const r = await propose(t.deps, { ops: usePhoto(1), photos: [PHOTO] });
+    assert.equal((await t.store.get(`proposal:${r.id}`)).photos[0].name, "photo-20261112-000002.png");
   } finally {
     await t.cleanup();
   }
 });
 
-test("when no free photo name is found, nothing is asked or stored", async () => {
+test("when no free photo name is found, nothing is stored", async () => {
   const t = await setup();
   try {
     for (let i = 1; i <= 5; i++) await fs.writeFile(path.join(t.root, `src/images/photo-20261112-00000${i}.png`), "");
-    const r = seen(await ask(t.deps, { message: "photo", photo: PHOTO }));
-    assert.deepEqual(r, { kind: "message", text: SAFE_FAIL, failed: true });
-    assert.equal(t.client.calls.length, 0);
+    const r = seen(await propose(t.deps, { ops: usePhoto(1), photos: [PHOTO] }));
+    assert.deepEqual(r, { ok: false, text: SAFE_FAIL });
     assert.deepEqual(proposalKeys(t.store), []);
   } finally {
     await t.cleanup();
@@ -1151,7 +1035,7 @@ test("undo names a page file it cannot put back because it had no earlier versio
     assert.equal(u.ok, true);
     assert.equal(u.restored.length, 1);
     assert.match(u.restored[0], /FAQ/);
-    assert.deepEqual(u.skipped, ["A part shared by several pages"]);
+    assert.deepEqual(u.skipped, ["A part shared by several pages was left as it is, because the editor no longer changes it."]);
     assert.equal(await t.read("src/_includes/new-bit.njk"), "<p>hi</p>\n");
   } finally {
     await t.cleanup();
@@ -1161,8 +1045,7 @@ test("undo names a page file it cannot put back because it had no earlier versio
 test("DESIGN.md keeps its upper-case colour style when the new colour is typed in lower case", async () => {
   const t = await setup();
   try {
-    t.client.queue(propose([set("theme", "/rosette", "#e2a99c")]));
-    const r = await ask(t.deps, { message: "pink" });
+    const r = await propose(t.deps, { ops: [set("theme", "/rosette", "#e2a99c")] });
     assert.equal((await publish(t.deps, r.id)).ok, true);
     const design = await t.read("DESIGN.md");
     assert.match(design, /Rosette #E2A99C/);
@@ -1179,19 +1062,6 @@ test("no sentence shown to Paige uses a banned word or names a collaborator erro
   for (const s of allTexts) {
     assert.ok(!BANNED.test(s), s);
     assert.ok(!/Error|undefined|null|\{|\}/.test(s), s);
-  }
-});
-
-test("an empty message is a failure; a reply from the model is not", async () => {
-  const t = await setup();
-  try {
-    assert.equal((await ask(t.deps, { message: "  " })).failed, true);
-    t.client.queue(say("Which page do you mean?"));
-    const r = await ask(t.deps, { message: "change the photo" });
-    assert.deepEqual(r, { kind: "message", text: "Which page do you mean?" });
-    assert.equal("failed" in r, false);
-  } finally {
-    await t.cleanup();
   }
 });
 
@@ -1220,8 +1090,7 @@ const clockDatedRepo = (getT) => (local) => {
 async function strandedPublish({ landed }) {
   let t;
   t = await setup({ repoWrap: clockDatedRepo(() => t) });
-  t.client.queue(propose([DEADLINE]));
-  const r = await ask(t.deps, { message: "deadline" });
+  const r = await propose(t.deps, { ops: [DEADLINE] });
   const claimedAt = t.deps.now();
   await t.store.update(`proposal:${r.id}`, (cur) => ({ ...cur, publishing: claimedAt }));
   let sha = null;
@@ -1239,8 +1108,7 @@ async function strandedPublish({ landed }) {
 test("cancel after a completed publish refuses and leaves the record published", async () => {
   const t = await setup();
   try {
-    t.client.queue(propose([DEADLINE]));
-    const r = await ask(t.deps, { message: "deadline" });
+    const r = await propose(t.deps, { ops: [DEADLINE] });
     const p = await publish(t.deps, r.id);
     assert.equal(p.ok, true);
     assert.deepEqual(seen(await cancel(t.deps, r.id)), { ok: false, text: ON_SITE });
@@ -1256,8 +1124,7 @@ test("cancel after a completed publish refuses and leaves the record published",
 test("cancel on a fresh publishing claim is still refused as busy", async () => {
   const t = await setup();
   try {
-    t.client.queue(propose([DEADLINE]));
-    const r = await ask(t.deps, { message: "deadline" });
+    const r = await propose(t.deps, { ops: [DEADLINE] });
     await t.store.update(`proposal:${r.id}`, (cur) => ({ ...cur, publishing: t.deps.now() }));
     t.advance(30 * 1000);
     assert.deepEqual(await cancel(t.deps, r.id), { ok: false, text: "That is already being published." });
@@ -1297,8 +1164,7 @@ test("an edit with the same title from before the claim does not count as landed
   let t;
   t = await setup({ repoWrap: clockDatedRepo(() => t) });
   try {
-    t.client.queue(propose([DEADLINE]));
-    const r = await ask(t.deps, { message: "deadline" });
+    const r = await propose(t.deps, { ops: [DEADLINE] });
     await t.repo.write({ branch: "main", baseSha: await t.repo.head(), message: `Website edit: ${r.summary[0]}`, files: { "src/_data/faq.json": (await t.read("src/_data/faq.json")) + "\n" } });
     t.advance(60 * 1000);
     await t.store.update(`proposal:${r.id}`, (cur) => ({ ...cur, publishing: t.deps.now() }));
@@ -1314,8 +1180,7 @@ test("an edit with the same title from before the claim does not count as landed
 test("a multi-paragraph answer gives a one-line title, the same in the history and the publish answer", async () => {
   const t = await setup();
   try {
-    t.client.queue(propose([set("faq", "/questions/0/answer", "Yes, kids are welcome.\n\nPlease list them\twhen you reply.")]));
-    const r = await ask(t.deps, { message: "kids answer" });
+    const r = await propose(t.deps, { ops: [set("faq", "/questions/0/answer", "Yes, kids are welcome.\n\nPlease list them\twhen you reply.")] });
     assert.doesNotMatch(r.summary[0], /[\n\t]|\s\s/);
     const p = seen(await publish(t.deps, r.id));
     assert.doesNotMatch(p.title, /[\n\t]|\s\s/);
@@ -1330,8 +1195,7 @@ test("a multi-paragraph answer gives a one-line title, the same in the history a
 test("publish answers with the sha it wrote, again on a second publish, and status carries it", async () => {
   const t = await setup();
   try {
-    t.client.queue(propose([DEADLINE]));
-    const r = await ask(t.deps, { message: "deadline" });
+    const r = await propose(t.deps, { ops: [DEADLINE] });
     const p = await publish(t.deps, r.id);
     const [edit] = await t.repo.edits(10);
     assert.deepEqual(p, { ok: true, title: edit.title, sha: edit.sha });
@@ -1363,30 +1227,30 @@ const NOTICE = "An earlier change didn't work on the site, so I put the site bac
 const unconfirmedIds = async (t) => ((await t.store.get("unconfirmed"))?.entries || []).map((e) => e.id);
 
 async function publishAndLeave(t) {
-  t.client.queue(propose([DEADLINE]));
-  const r = await ask(t.deps, { message: "deadline" });
+  const r = await propose(t.deps, { ops: [DEADLINE] });
   const p = await publish(t.deps, r.id);
   assert.equal(p.ok, true);
   return { id: r.id, sha: p.sha };
 }
 
-test("publish, never poll, the live update fails: the next ask puts the site back and says so", async () => {
+const FAQ_TITLE = set("faq", "/hero/title", "Questions");
+
+test("publish, never poll, the live update fails: the next proposal puts the site back and says so", async () => {
   const t = await setup();
   try {
     const { id, sha } = await publishAndLeave(t);
     assert.deepEqual(await unconfirmedIds(t), [id]);
     t.netlify.states.set(sha, "failed");
-    t.client.queue(say("Which page?"));
-    const r = seen(await ask(t.deps, { message: "change something" }));
-    assert.deepEqual(r, { kind: "message", text: "Which page?", notice: NOTICE });
+    const r = seen(await propose(t.deps, { ops: [FAQ_TITLE] }));
+    assert.equal(r.kind, "proposal");
+    assert.equal(r.notice, NOTICE);
     assert.ok(!/\b(commit|deploy|json|branch|repository|merge|build|token)/i.test(r.notice));
     assert.equal((await t.readData("src/_data/travel.json")).room_block.deadline, "");
     assert.match((await t.repo.edits(1))[0].title, /^Undo — /);
     assert.deepEqual(await unconfirmedIds(t), []);
     // Her page, polling later, hears the same outcome; nothing is undone twice.
     assert.deepEqual(await status(t.deps, { id }), { stage: "publish", state: "failed", text: PUT_BACK });
-    t.client.queue(say("ok"));
-    assert.deepEqual(await ask(t.deps, { message: "hi" }), { kind: "message", text: "ok" });
+    assert.equal("notice" in (await propose(t.deps, { ops: [FAQ_TITLE] })), false);
     assert.equal((await t.repo.edits(10)).length, 2);
   } finally {
     await t.cleanup();
@@ -1398,8 +1262,7 @@ test("a live update that went fine is taken off the list, with no notice", async
   try {
     const { sha } = await publishAndLeave(t);
     t.netlify.states.set(sha, "ready");
-    t.client.queue(say("ok"));
-    assert.deepEqual(await ask(t.deps, { message: "hi" }), { kind: "message", text: "ok" });
+    assert.equal("notice" in (await propose(t.deps, { ops: [FAQ_TITLE] })), false);
     assert.deepEqual(await unconfirmedIds(t), []);
     assert.equal((await t.repo.edits(10)).length, 1);
   } finally {
@@ -1431,21 +1294,19 @@ test("status completing a put-back takes the change off the list", async () => {
   }
 });
 
-test("a collaborator error while settling never stops ask, and is logged by name only", async () => {
+test("a collaborator error while settling never stops a proposal, and is logged by name only", async () => {
   const t = await setup();
   const logs = [];
   t.deps.log = (event, fields) => logs.push({ event, ...fields });
   try {
     const { id } = await publishAndLeave(t);
     t.netlify.deployFor = async () => { throw new TypeError("secret detail https://api.netlify.com"); };
-    t.client.queue(say("Still here."));
-    assert.deepEqual(await ask(t.deps, { message: "hi" }), { kind: "message", text: "Still here." });
+    assert.equal((await propose(t.deps, { ops: [FAQ_TITLE] })).kind, "proposal");
     assert.deepEqual(logs, [{ event: "settle_failed", name: "TypeError" }]);
     assert.deepEqual(await unconfirmedIds(t), [id]);
     // A broken store is survived too.
     t.deps.store = { ...t.store, get: async () => { throw new RangeError("x"); } };
-    t.client.queue(say("Still here."));
-    assert.equal((await ask(t.deps, { message: "hi" })).text, "Still here.");
+    assert.equal((await propose(t.deps, { ops: [FAQ_TITLE] })).kind, "proposal");
   } finally {
     await t.cleanup();
   }
@@ -1481,12 +1342,40 @@ test("history and publish settle the list too, and at most five are checked at a
     await t.store.set("unconfirmed", { entries: Array.from({ length: 7 }, (_, i) => ({ id: `00000000000000a${i}`, sha: `s${i}`, at: t.deps.now() })) });
     for (let i = 0; i < 7; i++) t.netlify.states.set(`s${i}`, "ready");
     t.netlify.calls.length = 0;
-    t.client.queue(propose([set("faq", "/hero/title", "Questions")]));
-    const r = await ask(t.deps, { message: "faq title" });
+    const r = await propose(t.deps, { ops: [FAQ_TITLE] });
     assert.equal(t.netlify.calls.length, 5);
     assert.deepEqual(await unconfirmedIds(t), ["00000000000000a5", "00000000000000a6"]);
     await publish(t.deps, r.id);
     assert.deepEqual(await unconfirmedIds(t), [r.id]);
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("settling stops starting new checks after 8 seconds; the rest wait for the next call", async () => {
+  const t = await setup();
+  try {
+    await t.store.set("unconfirmed", { entries: Array.from({ length: 5 }, (_, i) => ({ id: `00000000000000b${i}`, sha: `s${i}`, at: t.deps.now() })) });
+    for (let i = 0; i < 5; i++) t.netlify.states.set(`s${i}`, "ready");
+    const deployFor = t.netlify.deployFor;
+    t.netlify.deployFor = async (sha) => { t.advance(3000); return deployFor(sha); };
+    assert.deepEqual(await settleUnconfirmed(t.deps), { putBack: false });
+    // Checks start at 0, 3 and 6 seconds; at 9 seconds no new one starts.
+    assert.equal(t.netlify.calls.length, 3);
+    assert.deepEqual(await unconfirmedIds(t), ["00000000000000b3", "00000000000000b4"]);
+    assert.equal((await history(t.deps)).length, 0);
+    assert.deepEqual(await unconfirmedIds(t), []);
+  } finally {
+    await t.cleanup();
+  }
+});
+
+test("settling never throws, even when the clock or the logger does", async () => {
+  const t = await setup();
+  try {
+    await t.store.set("unconfirmed", { entries: [{ id: "00000000000000c0", sha: "s0", at: START }] });
+    const deps = { ...t.deps, now: () => { throw new Error("no clock"); }, log: () => { throw new Error("no log"); } };
+    assert.deepEqual(await settleUnconfirmed(deps), { putBack: false });
   } finally {
     await t.cleanup();
   }

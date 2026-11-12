@@ -1,12 +1,25 @@
 // Undo of an earlier website edit, piece by piece: each piece goes back only if
 // it still has the value that edit gave it. Content files are matched field by
-// field (list items by content); page files and the stylesheet only as a whole,
-// and only if unchanged since. Added photos are left in place.
+// field (list items by content). Added photos are left in place. Page files and
+// the stylesheet, which older edits could change, are left alone and named in
+// `skipped`: the editor no longer writes them.
 import { applyOps } from "./ops.mjs";
 import { diffContent, summarize, invertChanges } from "./diff.mjs";
 import { validateContent } from "./validate.mjs";
-import { classifyPath } from "./guard.mjs";
-import { TEXT, refuse, retryOnStale, loadBase, contentFiles, layoutLabel } from "./service.mjs";
+import { TEXT, refuse, retryOnStale, loadBase, contentFiles } from "./service.mjs";
+
+const PAGE_NAMES = {
+  index: "Home", "our-story": "Our Story", details: "Details", "wedding-party": "Wedding Party", registry: "Registry",
+  travel: "Travel", "after-party": "After Party", faq: "FAQ", gallery: "Gallery", 404: "Page Not Found",
+};
+function layoutLabel(p) {
+  if (p === "src/css/styles.css") return "The look of the whole site";
+  const page = /^src\/([a-z0-9-]+)\.njk$/.exec(p);
+  if (page && PAGE_NAMES[page[1]]) return `The page layout for ${PAGE_NAMES[page[1]]}`;
+  return "A part shared by several pages";
+}
+const LAYOUT_FILE = /^src\/.+\.(njk|css)$/;
+const leftAlone = (p) => `${layoutLabel(p)} was left as it is, because the editor no longer changes it.`;
 
 // The same change seen from the other side, so its summary reads as putting things back.
 const reverse = (changes) => changes.map((c) => ({
@@ -25,8 +38,8 @@ export async function undoEdit(deps, sha) {
 
   const keyOf = new Map(Object.entries(schema.files).map(([k, f]) => [f.path, k]));
   const keys = paths.filter((p) => keyOf.has(p)).map((p) => keyOf.get(p));
-  const layoutPaths = paths.filter((p) => classifyPath(p) === "layout");
-  const filePaths = [...layoutPaths, ...(paths.includes("DESIGN.md") ? ["DESIGN.md"] : [])];
+  const layoutPaths = paths.filter((p) => LAYOUT_FILE.test(p));
+  const filePaths = paths.includes("DESIGN.md") ? ["DESIGN.md"] : [];
   const wanted = [...keys.map((k) => schema.files[k].path), ...filePaths];
 
   // What the edit changed, read once: the files just before it and just after it.
@@ -49,18 +62,10 @@ export async function undoEdit(deps, sha) {
     const left = summarize(reverse(skipped), schema);
     const files = contentFiles(schema, base.content, next);
 
-    const now = filePaths.length ? await repo.readFiles(filePaths, base.sha) : {};
-    for (const p of layoutPaths) {
-      if (atParent[p] === atEdit[p]) continue;
-      if (typeof atParent[p] === "string" && now[p] === atEdit[p]) {
-        files[p] = atParent[p];
-        restored.push(layoutLabel(p));
-      } else {
-        left.push(layoutLabel(p));
-      }
-    }
+    left.push(...layoutPaths.map(leftAlone));
     if (!restored.length || !Object.keys(files).length) return { problem: TEXT.nothingToUndo };
     // DESIGN.md follows the colours: put back only when every colour piece was, and only if untouched since.
+    const now = filePaths.length ? await repo.readFiles(filePaths, base.sha) : {};
     const d = "DESIGN.md";
     const coloursBack = !skipped.some((c) => c.file === "theme");
     if (coloursBack && filePaths.includes(d) && typeof atParent[d] === "string" && now[d] === atEdit[d] && now[d] !== atParent[d]) {

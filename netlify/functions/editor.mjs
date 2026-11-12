@@ -16,13 +16,12 @@ const MAX_BODY = 6_000_000;
 const SIGN_IN_VARS = ["ADMIN_PASSWORD", "SESSION_SECRET"];
 const ROUTE_VARS = {
   login: [], logout: [], session: [],
-  ask: ["ANTHROPIC_API_KEY", "GITHUB_TOKEN"],
   preview: ["GITHUB_TOKEN"], publish: ["GITHUB_TOKEN"], undo: ["GITHUB_TOKEN"], cancel: ["GITHUB_TOKEN"], history: ["GITHUB_TOKEN"],
   status: ["GITHUB_TOKEN", "NETLIFY_RSVP_TOKEN"],
 };
 const WRITE_ROUTES = new Set(["preview", "publish", "undo"]);
 const ROUTES = {
-  login: "POST", logout: "POST", session: "GET", ask: "POST", preview: "POST",
+  login: "POST", logout: "POST", session: "GET", preview: "POST",
   status: "GET", publish: "POST", cancel: "POST", history: "GET", undo: "POST",
 };
 const SAID = {
@@ -61,12 +60,6 @@ async function readJson(req) {
   if (!body || typeof body !== "object" || Array.isArray(body)) throw badRequest();
   return body;
 }
-
-const cleanHistory = (h) =>
-  (Array.isArray(h) ? h : [])
-    .filter((m) => m && typeof m === "object" && (m.role === "user" || m.role === "assistant") && typeof m.text === "string")
-    .map((m) => ({ role: m.role, text: m.text }))
-    .slice(-12);
 
 function pick(value, pattern) {
   if (typeof value !== "string" || !pattern.test(value)) throw badRequest();
@@ -110,16 +103,6 @@ export function createHandler(deps) {
     }
 
     const body = await readJson(req);
-    if (name === "ask") {
-      if (typeof body.message !== "string") throw badRequest();
-      if (body.photo !== undefined && body.photo !== null && typeof body.photo !== "string") throw badRequest();
-      if (body.history !== undefined && !Array.isArray(body.history)) throw badRequest();
-      const input = { message: body.message, history: cleanHistory(body.history) };
-      if (typeof body.photo === "string") input.photo = body.photo;
-      const { error, failed, ...answer } = await svc.ask(serviceDeps, input);
-      if (error) log("ask_failed", { code: error });
-      return json(200, failed ? { ...answer, retry: true } : answer);
-    }
     if (name === "undo") return json(200, await svc.undo(serviceDeps, pick(body.sha, SHA)));
     // preview, publish, cancel
     return json(200, await svc[name](serviceDeps, pick(body.id, ID)));
@@ -154,16 +137,10 @@ export function createHandler(deps) {
 // A missing variable leaves its collaborator unusable, never a failure here:
 // each route checks the variables it needs before it runs.
 export async function realServiceDeps(env, { fetch: fetchImpl = fetch, store }) {
-  let client = null;
-  if (env.ANTHROPIC_API_KEY) {
-    const { default: Anthropic } = await import("@anthropic-ai/sdk");
-    client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
-  }
   return {
     repo: createGitHub({ token: env.GITHUB_TOKEN, repo: env.EDITOR_REPO || "jgandertonjr-cpu/jeff-paige-wedding", fetch: fetchImpl }),
     netlify: createNetlify({ token: env.NETLIFY_RSVP_TOKEN, siteId: siteIdFrom(env), fetch: fetchImpl }),
     store,
-    client,
     schema,
     now: () => Date.now(),
     random: (n) => crypto.randomBytes(n).toString("hex"),

@@ -1,21 +1,26 @@
-// The editor's ask → preview → publish → undo flow. Wires the pure modules to
-// the site's files (repo), the hosting status (netlify), the small store and
-// the model client, all passed in as `deps`:
-//   { repo, netlify, store, client, schema, now() → ms, random(nBytes) → hex, env, log?(event, fields) }
+// The editor's propose → preview → publish → undo flow. Wires the pure modules
+// to the site's files (repo), the hosting status (netlify) and the small store,
+// all passed in as `deps`:
+//   { repo, netlify, store, schema, now() → ms, random(nBytes) → hex, env, log?(event, fields) }
 // Every sentence returned for Paige is fixed here; no collaborator's error
 // text is ever passed on (their errors are thrown for the HTTP layer).
 //
 // Result shapes, exactly as implemented:
-//   ask(deps, { message, history?, photo? })
-//     photo: a base64 string (a "data:image/...;base64," prefix is fine) or { base64 }
-//     → { kind: "proposal", id, summary: string[], note, needsPreview: boolean, notice? }
-//     | { kind: "message", text, error?, failed?, notice? }
+//   propose(deps, { ops, photos? })
+//     ops: 0–50 of { op: "set" | "insert" | "remove" | "move", file, path, value?, index?, to? },
+//       file one of the schema's files. A string anywhere in a value that is exactly
+//       "@photo:<n>" stands for the n-th photo (1-based).
+//     photos: up to 3 base64 strings (a "data:image/...;base64," prefix is fine).
+//     → { kind: "proposal", id, summary: string[], notice? }
+//     | { ok: false, problems: { label, message }[], notice? }
+//         the ops did not apply (label: the section's name) or the checks refused
+//         a value (label: the field's name), or a step used a photo that was not sent.
+//     | { ok: false, text, notice? }
+//         ops or photos not in the shape above, a refused photo (the photo
+//         check's reason), no free photo name, or nothing would change.
 //       notice: a sentence to show before the answer, when an earlier change failed
 //       on the live site and was put back just now (see settleUnconfirmed).
-//       error: askClaude's failure code, when it gives one. failed: true when the
-//       message reports a failure (empty or too long, refused photo, daily limit,
-//       the model call failed, couldn't make it safely, nothing would change), so
-//       the request can be tried again; a genuine reply from the model has no flag.
+//     Nothing is stored unless the answer is a proposal.
 //   preview(deps, id)   → { ok: true } | { ok: false, text }
 //   status(deps, { id })
 //     → { stage: "preview" | "publish", state: "waiting" | "building" | "ready" | "failed", url?, text?, sha?, title? }
@@ -32,37 +37,32 @@
 //
 // Every store.update callback may run more than once (the production store
 // retries after a lost compare-and-swap), so each one resets any flag it sets.
-import crypto from "node:crypto";
-import { applyOps, applyFileEdits, OpError } from "./ops.mjs";
+import { applyOps, OpError } from "./ops.mjs";
 import { diffContent, summarize } from "./diff.mjs";
 import { validateContent } from "./validate.mjs";
-import { classifyPath, checkLayoutEdit, READABLE_LAYOUT_FILES } from "./guard.mjs";
+import { classifyPath } from "./guard.mjs";
 import { checkPhoto, photoName } from "./photo.mjs";
-import { askClaude } from "./claude.mjs";
 import { StaleError } from "./github.mjs";
 import { undoEdit } from "./undo.mjs";
 
-const MAX_MESSAGE_CHARS = 2000;
-const DAILY_LIMIT = 150;
+const MAX_OPS = 50;
+const MAX_PHOTOS = 3;
 const LIFETIME_MS = 24 * 60 * 60 * 1000;
 const CLAIM_MS = 60 * 1000;
 const MAX_REVERT_TRIES = 2;
 const PHOTO_NAME_TRIES = 5;
-const BUDGET_MS = 50 * 1000;
 const PREFIX = "Website edit: ";
 const ID = /^[0-9a-f]{16}$/;
 const HEX = /^#[0-9A-Fa-f]{6}$/;
 
 export const TEXT = {
-  empty: "Please type what you'd like to change.",
-  tooLong: "That message is too long. Please keep it under 2,000 characters.",
-  limit: "That's the limit for today. It resets tomorrow.",
+  cantMake: "That change can't be made.",
+  photoNotSent: "That uses a photo that wasn't added.",
   unsafe: "I couldn't make that change safely. Nothing changed.",
   noChange: "That wouldn't change anything on the site, so there is nothing to publish.",
   expired: "That change has expired. Please ask again.",
   busy: "That is already being published.",
   onSite: "That change is already on the site. Use Undo this to put it back.",
-  previewFirst: "This is a bigger change, so please wait until its preview is ready.",
   noFit: "The site changed since you asked, so that change no longer fits. Please ask again.",
   already: "That change is already on the site, so there is nothing to publish.",
   movedPublish: "The site changed while I was saving, so nothing was published. Please try again.",
@@ -77,9 +77,6 @@ export const TEXT = {
   movedUndo: "The site changed while I was saving, so nothing was undone. Please try again.",
 };
 
-const message = (text) => ({ kind: "message", text });
-// A message that reports a failure: nothing was proposed, so the request can be tried again.
-const failure = (text) => ({ kind: "message", text, failed: true });
 export const refuse = (text) => ({ ok: false, text });
 const key = (id) => `proposal:${id}`;
 
@@ -117,7 +114,7 @@ export async function loadBase({ repo, schema }) {
 }
 
 // Files to write for every content section that differs. The path always comes
-// from the schema, never from the model.
+// from the schema, never from the request.
 export function contentFiles(schema, before, after) {
   const files = {};
   for (const k of Object.keys(schema.files)) {
@@ -129,63 +126,31 @@ export function contentFiles(schema, before, after) {
   return files;
 }
 
-const PAGE_NAMES = {
-  index: "Home", "our-story": "Our Story", details: "Details", "wedding-party": "Wedding Party", registry: "Registry",
-  travel: "Travel", "after-party": "After Party", faq: "FAQ", gallery: "Gallery", 404: "Page Not Found",
-};
-export function layoutLabel(p) {
-  if (p === "src/css/styles.css") return "The look of the whole site";
-  const page = /^src\/([a-z0-9-]+)\.njk$/.exec(p);
-  if (page && PAGE_NAMES[page[1]]) return `The page layout for ${PAGE_NAMES[page[1]]}`;
-  return "A part shared by several pages";
-}
-
 // ---- checking a proposal ------------------------------------------------------
 
-// Applies a proposal to `base` and collects every problem in plain words.
-// Returns { problems, content, changes, layout: { [path]: { before, after } } }.
-async function tryProposal(deps, base, { contentOps, fileEdits }, photoValue) {
-  const { repo, schema } = deps;
+// Applies content ops to `base` and collects every problem in plain words.
+// `photoValues` are the addresses of new photos that will exist once published.
+// Returns { problems: { label, message }[], content, changes }.
+function tryProposal({ schema }, base, contentOps, photoValues = []) {
   const problems = [];
   let content = null;
   if (contentOps.some((op) => typeof op?.file !== "string" || !Object.hasOwn(schema.files, op.file))) {
-    problems.push("A step names a section the editor cannot change.");
+    problems.push({ label: "", message: "A step names a section the editor cannot change." });
   } else {
     try {
       content = applyOps(base.content, contentOps);
     } catch (e) {
       if (!(e instanceof OpError)) throw e;
-      problems.push(e.message);
+      problems.push({ label: schema.files[e.op?.file]?.label ?? "", message: e.message });
     }
   }
   if (content) {
-    const images = new Set(base.images);
-    if (photoValue) images.add(photoValue);
+    const images = new Set([...base.images, ...photoValues]);
     for (const issue of validateContent(content, { schema, images, previous: base.content })) {
-      problems.push(`${issue.label}: ${issue.message}`);
+      problems.push({ label: issue.label, message: issue.message });
     }
   }
-
-  const layout = {};
-  const refused = fileEdits.findIndex((e) => classifyPath(e?.path) !== "layout");
-  if (refused >= 0) {
-    problems.push(`Edit ${refused + 1} names a file the editor cannot change.`);
-  } else if (fileEdits.length) {
-    const texts = await repo.readFiles([...new Set(fileEdits.map((e) => e.path))], base.sha);
-    let after = null;
-    try {
-      after = applyFileEdits(texts, fileEdits);
-    } catch (e) {
-      if (!(e instanceof OpError)) throw e;
-      problems.push(e.message);
-    }
-    for (const p of Object.keys(after || {})) {
-      if (after[p] === texts[p]) continue;
-      problems.push(...checkLayoutEdit({ path: p, before: texts[p], after: after[p] }));
-      layout[p] = { before: texts[p], after: after[p] };
-    }
-  }
-  return { problems, content, changes: content ? diffContent(base.content, content) : [], layout };
+  return { problems, content, changes: content ? diffContent(base.content, content) : [] };
 }
 
 // When a theme colour changes, the same colour in DESIGN.md changes with it,
@@ -214,21 +179,17 @@ async function designUpdate({ repo }, base, next) {
 // Returns { sha, files } or { problem }.
 async function buildFiles(deps, p) {
   const base = await loadBase(deps);
-  const tried = await tryProposal(deps, base, p, p.photo?.value);
+  const photos = Array.isArray(p.photos) ? p.photos : [];
+  const tried = tryProposal(deps, base, p.contentOps, photos.map((pic) => pic.value));
   if (tried.problems.length) return { problem: TEXT.noFit };
   const files = contentFiles(deps.schema, base.content, tried.content);
-  for (const [path, { after }] of Object.entries(tried.layout)) files[path] = after;
   if (!Object.keys(files).length) return { problem: TEXT.already };
   const design = await designUpdate(deps, base, tried.content);
   if (design !== null) files["DESIGN.md"] = design;
-  if (p.photo) files[`src/images/${p.photo.name}`] = { base64: p.photo.base64 };
+  for (const pic of photos) files[`src/images/${pic.name}`] = { base64: pic.base64 };
   if (Object.keys(files).some((path) => classifyPath(path) === null)) throw new Error("Refused a file the editor may not write");
   return { sha: base.sha, files };
 }
-
-const hashFiles = (files) => crypto.createHash("sha256")
-  .update(JSON.stringify(Object.keys(files).sort().map((p) => [p, files[p]])))
-  .digest("hex");
 
 // The first summary line, on one line and at most 72 characters. The end says
 // what changed, so a long line loses its leading steps ("… → " stands in for
@@ -280,26 +241,17 @@ const clearField = (deps, id, field) =>
     return rest;
   });
 
-// Check-and-count in one step, so parallel requests cannot pass the limit.
-async function takeDailyAllowance({ store, now }) {
-  let allowed = false;
-  await store.update(`usage:${new Date(now()).toISOString().slice(0, 10)}`, (cur) => {
-    const count = Number.isInteger(cur?.count) ? cur.count : 0;
-    allowed = count < DAILY_LIMIT;
-    return allowed ? { count: count + 1 } : cur;
-  });
-  return allowed;
-}
-
 // ---- published changes whose live result has not been seen --------------------
 // A publish is put back if the live site fails to update with it. While her page
 // is open, its status polls do that. So that it also happens after she closes
 // the page, each publish is listed under UNCONFIRMED until the live result is
-// seen (ready) or handled (put back, or given up on), and ask, history and
+// seen (ready) or handled (put back, or given up on), and propose, history and
 // publish settle the list first. Entries: { id, sha, at } in the order published.
 
 const UNCONFIRMED = "unconfirmed";
 const SETTLE_MAX = 5;
+// No new check starts once this long has passed; the rest wait for the next call.
+const SETTLE_BUDGET_MS = 8 * 1000;
 const UNCONFIRMED_MAX_MS = 30 * 60 * 1000;
 
 async function rememberUnconfirmed(deps, id, sha) {
@@ -320,14 +272,16 @@ const logEvent = (deps, event, fields) => {
   try { deps.log?.(event, fields); } catch {}
 };
 
-// Checks the oldest few listed changes. Returns { putBack: true } when this call
-// put the site back. Never throws: a failure is logged by name and the caller
-// carries on.
+// Checks the oldest few listed changes, for at most SETTLE_BUDGET_MS. Returns
+// { putBack: true } when this call put the site back. Never throws: a failure
+// is logged by name and the caller carries on.
 export async function settleUnconfirmed(deps) {
   let putBack = false;
   try {
+    const started = deps.now();
     const entries = (await deps.store.get(UNCONFIRMED))?.entries;
     for (const e of (Array.isArray(entries) ? entries : []).slice(0, SETTLE_MAX)) {
+      if (deps.now() - started >= SETTLE_BUDGET_MS) break;
       try {
         const d = await deps.netlify.deployFor(e.sha);
         if (d.state === "ready") {
@@ -352,70 +306,85 @@ export async function settleUnconfirmed(deps) {
 
 // ---- the flow -----------------------------------------------------------------
 
-export async function ask(deps, input) {
+export async function propose(deps, input) {
   const { putBack } = await settleUnconfirmed(deps);
-  const answer = await answerRequest(deps, input);
+  const answer = await proposeChange(deps, input);
   return putBack ? { ...answer, notice: TEXT.earlierPutBack } : answer;
 }
 
-async function answerRequest(deps, { message: text, history = [], photo } = {}) {
-  if (typeof text !== "string" || text.trim() === "") return failure(TEXT.empty);
-  if (text.length > MAX_MESSAGE_CHARS) return failure(TEXT.tooLong);
+const OP_KINDS = new Set(["set", "insert", "remove", "move"]);
+const OP_KEYS = new Set(["op", "file", "path", "value", "index", "to"]);
+const isPlainObject = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
+const wellFormedOp = (schema, op) =>
+  isPlainObject(op) && OP_KINDS.has(op.op) && typeof op.file === "string" && Object.hasOwn(schema.files, op.file) &&
+  typeof op.path === "string" && Object.keys(op).every((k) => OP_KEYS.has(k));
 
-  let checked = null;
-  if (photo !== undefined && photo !== null) {
-    checked = checkPhoto(typeof photo === "string" ? photo : photo?.base64);
-    if (!checked.ok) return failure(checked.reason);
+// Calls `swap(n)` for every string in `value` that is exactly "@photo:<n>" and
+// puts its answer there instead. Returns a new value; the input is not changed.
+const PHOTO_REF = /^@photo:(\d+)$/;
+function replacePhotoRefs(value, swap) {
+  if (typeof value === "string") {
+    const m = PHOTO_REF.exec(value);
+    return m ? swap(Number(m[1])) : value;
   }
-  if (!(await takeDailyAllowance(deps))) return failure(TEXT.limit);
+  if (Array.isArray(value)) return value.map((v) => replacePhotoRefs(v, swap));
+  if (isPlainObject(value)) return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, replacePhotoRefs(v, swap)]));
+  return value;
+}
+
+async function proposeChange(deps, { ops, photos } = {}) {
+  const { schema } = deps;
+  if (!Array.isArray(ops) || ops.length > MAX_OPS || !ops.every((op) => wellFormedOp(schema, op))) return refuse(TEXT.cantMake);
+  if (photos !== undefined && photos !== null && (!Array.isArray(photos) || photos.length > MAX_PHOTOS)) return refuse(TEXT.cantMake);
+  const checked = [];
+  for (const photo of photos || []) {
+    const c = checkPhoto(photo);
+    if (!c.ok) return refuse(c.reason);
+    checked.push(c);
+  }
+
+  // Which photos the steps use; a step that uses one that was not sent is a problem.
+  const used = new Set();
+  const problems = [];
+  for (const op of ops) {
+    let missing = false;
+    replacePhotoRefs(op.value, (n) => {
+      if (n >= 1 && n <= checked.length) used.add(n);
+      else missing = true;
+    });
+    if (missing) problems.push({ label: schema.files[op.file].label, message: TEXT.photoNotSent });
+  }
+  if (problems.length) return { ok: false, problems };
 
   const base = await loadBase(deps);
-  let pic = null;
-  if (checked) {
-    // A new photo never replaces one already on the site.
-    for (let i = 0; i < PHOTO_NAME_TRIES && !pic; i++) {
-      const name = photoName(deps.now(), deps.random(3), checked.ext);
-      if (!base.images.has(`/images/${name}`)) {
-        pic = { name, value: `/images/${name}`, mediaType: checked.mediaType, base64: checked.bytes.toString("base64") };
+  // Name each photo a step uses; a new photo never replaces one already on the site.
+  const pics = new Map();
+  for (const n of [...used].sort((a, b) => a - b)) {
+    const c = checked[n - 1];
+    for (let i = 0; i < PHOTO_NAME_TRIES && !pics.has(n); i++) {
+      const name = photoName(deps.now(), deps.random(3), c.ext);
+      const value = `/images/${name}`;
+      if (!base.images.has(value) && ![...pics.values()].some((p) => p.value === value)) {
+        pics.set(n, { name, value, base64: c.bytes.toString("base64") });
       }
     }
-    if (!pic) return failure(TEXT.unsafe);
+    if (!pics.has(n)) return refuse(TEXT.unsafe);
   }
-  const readFile = async (p) =>
-    READABLE_LAYOUT_FILES.includes(p) ? ((await deps.repo.readFiles([p], base.sha))[p] ?? null) : null;
-  const deadlineMs = deps.now() + BUDGET_MS;
-  let feedback;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const reply = await askClaude({
-      client: deps.client, schema: deps.schema, content: base.content, message: text, history, readFile, feedback, deadlineMs,
-      now: deps.now,
-      photo: pic ? { mediaType: pic.mediaType, base64: pic.base64, willBeSavedAs: pic.value } : undefined,
-    });
-    if (reply.kind !== "proposal") return reply.error ? { kind: "message", text: reply.text, error: reply.error, failed: true } : message(reply.text);
+  const contentOps = ops.map((op) => ("value" in op ? { ...op, value: replacePhotoRefs(op.value, (n) => pics.get(n).value) } : { ...op }));
 
-    const tried = await tryProposal(deps, base, reply, pic?.value);
-    if (tried.problems.length) {
-      feedback = tried.problems.join(" ");
-      continue;
-    }
-    if (!tried.changes.length && !Object.keys(tried.layout).length) return failure(TEXT.noChange);
+  const tried = tryProposal(deps, base, contentOps, [...pics.values()].map((p) => p.value));
+  if (tried.problems.length) return { ok: false, problems: tried.problems };
+  if (!tried.changes.length) return refuse(TEXT.noChange);
 
-    const id = deps.random(8);
-    const summary = [
-      ...summarize(tried.changes, deps.schema),
-      ...Object.keys(tried.layout).map((p) => `${layoutLabel(p)}: updated`),
-    ];
-    const record = {
-      id, createdAt: deps.now(), baseSha: base.sha, contentOps: reply.contentOps, fileEdits: reply.fileEdits,
-      summary, note: reply.note, needsPreview: reply.fileEdits.length > 0,
-    };
-    const usesPhoto = pic && (JSON.stringify(tried.content).includes(pic.value)
-      || Object.values(tried.layout).some((f) => f.after.includes(pic.value)));
-    if (usesPhoto) record.photo = { name: pic.name, value: pic.value, base64: pic.base64 };
-    await deps.store.set(key(id), record);
-    return { kind: "proposal", id, summary, note: reply.note, needsPreview: record.needsPreview };
-  }
-  return failure(TEXT.unsafe);
+  const id = deps.random(8);
+  const summary = summarize(tried.changes, schema);
+  const record = { id, createdAt: deps.now(), baseSha: base.sha, contentOps, summary };
+  // A photo a later step took out again is dropped.
+  const finalText = JSON.stringify(tried.content);
+  const kept = [...pics.values()].filter((p) => finalText.includes(p.value));
+  if (kept.length) record.photos = kept;
+  await deps.store.set(key(id), record);
+  return { kind: "proposal", id, summary };
 }
 
 export async function preview(deps, id) {
@@ -445,7 +414,7 @@ export async function preview(deps, id) {
       if (!cur || cur.cancelled) return cur;
       kept = true;
       const { previewing, ...rest } = cur;
-      return { ...rest, preview: { number: opened.number, sha: opened.sha, filesHash: hashFiles(built.files) } };
+      return { ...rest, preview: { number: opened.number, sha: opened.sha } };
     });
     if (!kept) await deps.repo.closePreview({ id, number: opened.number }); // cancelled meanwhile
   } catch (e) {
@@ -525,10 +494,6 @@ export async function publish(deps, id) {
   const p = await loadProposal(deps, id);
   if (!p) return refuse(TEXT.expired);
   if (p.published) return { ok: true, title: p.published.title, sha: p.published.sha };
-  if (p.needsPreview) {
-    if (!p.preview) return refuse(TEXT.previewFirst);
-    if ((await deps.netlify.deployFor(p.preview.sha)).state !== "ready") return refuse(TEXT.previewFirst);
-  }
 
   let outcome = null;
   await deps.store.update(key(id), (cur) => {
@@ -567,8 +532,6 @@ export async function publish(deps, id) {
     result = await retryOnStale(async () => {
       const built = await buildFiles(deps, p);
       if (built.problem) return built;
-      // A bigger change goes live only exactly as it was previewed.
-      if (p.needsPreview && p.preview.filesHash !== hashFiles(built.files)) return { problem: TEXT.noFit };
       return { sha: await deps.repo.write({ branch: "main", baseSha: built.sha, message: `${PREFIX}${title}`, files: built.files }) };
     });
   } catch (e) {
@@ -583,7 +546,7 @@ export async function publish(deps, id) {
   // A record that vanished meanwhile is not brought back.
   await deps.store.update(key(id), (cur) => {
     if (!cur) return null;
-    const { publishing, photo, cancelled, ...rest } = cur;
+    const { publishing, photos, cancelled, ...rest } = cur;
     return { ...rest, published: { sha: result.sha, title } };
   });
   await rememberUnconfirmed(deps, id, result.sha);
@@ -653,7 +616,7 @@ async function markPublished(deps, id, claim, { sha, title }) {
     openPreview = null;
     if (!cur || cur.cancelled || cur.published || cur.publishing !== claim) return cur;
     openPreview = cur.preview || null;
-    const { publishing, photo, ...rest } = cur;
+    const { publishing, photos, ...rest } = cur;
     return { ...rest, published: { sha, title } };
   });
   await rememberUnconfirmed(deps, id, sha);
