@@ -1442,7 +1442,8 @@ function reviewScreen() {
     put(body, "append", el("p", { className: "lead", text: SAY.noChanges }));
   } else if (review.pending) {
     put(body, "append", working());
-  } else if (review.outcome && review.sig === sig && !fresh && review.outcome.kind !== "unreachable") {
+  } else if (review.outcome && review.sig === sig && !fresh) {
+    // "I can't reach the site" is shown like any other answer; only her Try again asks again.
     put(body, "append", ...outcomeNodes(review.outcome));
   } else {
     put(body, "append", working());
@@ -1461,7 +1462,7 @@ function outcomeNodes(o) {
   const out = [];
   if (review.notice) out.push(el("p", { className: "notice", text: review.notice }));
   if (o.kind === "problems") out.push(el("p", { className: "lead", text: SAY.fixFirst }), problemList(o.problems));
-  else if (o.kind === "unreachable") out.push(el("p", { className: "card-said", text: SAY.cantReach }), el("div", { className: "actions" }, button("Try again", "line", () => render())));
+  else if (o.kind === "unreachable") out.push(el("p", { className: "card-said", text: SAY.cantReach }), el("div", { className: "actions" }, button("Try again", "line", () => { review.fresh = true; render(); })));
   else out.push(el("p", { className: "card-said", text: o.text }));
   if (o.sticky && tray.length) {
     out.push(el("div", { className: "actions" },
