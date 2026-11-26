@@ -7,6 +7,10 @@
 // submissions themselves are read from Netlify Forms with a Netlify personal
 // access token kept in the NETLIFY_RSVP_TOKEN environment variable, so it never
 // reaches the browser. See ADMIN-SETUP.md → "RSVP dashboard".
+//
+// The answer also carries the guest list (src/_data/guests.json as it was when
+// the site was built), so the dashboard page itself holds no names and the
+// list is only ever sent to someone who is signed in.
 import * as sessionApi from "../editor/session.mjs";
 import { siteIdFrom } from "../editor/site.mjs";
 
@@ -67,7 +71,8 @@ const SAID = {
 };
 
 // `log(event, fields)` records the cause by name only, never a message or a value.
-export function createRsvpHandler({ sessionApi, env, now, fetchSubmissions: load, log = () => {} }) {
+// `loadGuests()` resolves to the guest list's entries.
+export function createRsvpHandler({ sessionApi, env, now, fetchSubmissions: load, loadGuests = async () => [], log = () => {} }) {
   return async (req) => {
     if (req.method !== "GET") return json(405, { error: "Method not allowed" });
 
@@ -83,7 +88,18 @@ export function createRsvpHandler({ sessionApi, env, now, fetchSubmissions: load
 
     try {
       const { submissions, formId } = await load(netlifyToken);
-      return json(200, { formId, fetchedAt: new Date(now()).toISOString(), submissions });
+      // Without the guest list the replies still show (as "not on the guest list"), so say so rather than fail.
+      let guests = [];
+      let guestsMissing = false;
+      try {
+        guests = await loadGuests();
+        if (!Array.isArray(guests)) throw new TypeError("guest list is not a list");
+      } catch (err) {
+        guests = [];
+        guestsMissing = true;
+        log("rsvp_guests", { name: (err && err.name) || "Error" });
+      }
+      return json(200, { formId, fetchedAt: new Date(now()).toISOString(), submissions, guests, ...(guestsMissing ? { guestsMissing } : {}) });
     } catch (err) {
       // 401: the access key is wrong or has expired; 403: it cannot see this site.
       // Neither is fixed by trying again, so both get the setup answer.
@@ -94,9 +110,13 @@ export function createRsvpHandler({ sessionApi, env, now, fetchSubmissions: load
   };
 }
 
+// The guest list file, bundled with the function when the site is built.
+export const bundledGuests = async () =>
+  (await import("../../src/_data/guests.json", { with: { type: "json" } })).default.guests;
+
 export default async (req) =>
   createRsvpHandler({
-    sessionApi, env: process.env, now: () => Date.now(), fetchSubmissions,
+    sessionApi, env: process.env, now: () => Date.now(), fetchSubmissions, loadGuests: bundledGuests,
     log: (event, fields) => console.error(JSON.stringify({ event, ...fields })),
   })(req);
 
