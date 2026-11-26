@@ -281,11 +281,11 @@ test("oversize body is 413, malformed JSON is 400", async () => {
   assert.equal(res.status, 413);
 });
 
-test("preview, publish and undo are refused on a preview copy; the rest work", async () => {
+test("preview, publish, undo and status are refused on a preview copy; the rest work", async () => {
   const { handle, calls } = setup({ canWrite: false });
   const cookie = await login(handle);
-  for (const [p, b] of [["preview", { id: ID }], ["publish", { id: ID }], ["undo", { sha: "abc1234" }]]) {
-    const res = await handle(post(p, b, { cookie }), ctx());
+  for (const [p, b] of [["preview", { id: ID }], ["publish", { id: ID }], ["undo", { sha: "abc1234" }], ["status", null]]) {
+    const res = await handle(b ? post(p, b, { cookie }) : get(`status?id=${ID}`, cookie), ctx());
     assert.equal(res.status, 403);
     assert.deepEqual(await res.json(), { error: "This is a preview copy of the site, so publishing is turned off here." });
   }
@@ -305,6 +305,13 @@ test("a thrown error is 500 with the generic sentence and nothing else", async (
   assert.ok(!/ghp_|github|stack|at /.test(text));
   assert.deepEqual(logs.find((l) => l.event === "error"), { event: "error", route: "history", name: "FetchError" });
   assert.ok(!JSON.stringify(logs).includes("ghp_secret_value"));
+});
+
+test("a failed outside request logs its status number, and nothing else from the message", async () => {
+  const { handle, logs } = setup({ service: { history: async () => { throw new Error("GitHub request failed (401)"); } } });
+  const cookie = await login(handle);
+  assert.equal((await handle(get("history", cookie), ctx())).status, 500);
+  assert.deepEqual(logs.find((l) => l.event === "error"), { event: "error", route: "history", name: "Error", status: 401 });
 });
 
 test("missing env: 500 'not set up', names only in the log, session still works", async () => {

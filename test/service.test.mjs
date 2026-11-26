@@ -1646,3 +1646,16 @@ test("publish: a store failure after the edit is written still answers ok with t
     await t.cleanup();
   }
 });
+
+test("a preview copy never settles or puts back a live change", async () => {
+  // A preview shares the live site's records but reads another site version.
+  let asked = 0;
+  const deps = {
+    readOnly: true,
+    now: () => 0,
+    store: { get: async () => { asked++; return { entries: [{ id: "0123456789abcdef", sha: "a".repeat(40), at: 0 }] }; }, update: async () => { asked++; } },
+    netlify: { deployFor: async () => { asked++; return { state: "failed" }; } },
+  };
+  assert.deepEqual(await settleUnconfirmed(deps), { putBack: false });
+  assert.equal(asked, 0);
+});
