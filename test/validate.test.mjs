@@ -237,3 +237,11 @@ test("plain text may start with 'Word:', but not with an address or code", () =>
     only(alt(bad), "Gallery → Photos → item 1 → Photo description");
   }
 });
+
+test("text shaped like an access key is refused at review, in plain words", () => {
+  const issues = check("home", (h) => {
+    const field = Object.keys(h.welcome).find((k) => typeof h.welcome[k] === "string");
+    h.welcome[field] = "my code " + "gh" + "p_" + "a1B2".repeat(6);
+  });
+  assert.ok(issues.some((p) => /password or access key/.test(p.message)), JSON.stringify(issues).slice(0, 300));
+});

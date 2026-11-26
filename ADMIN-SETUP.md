@@ -77,7 +77,7 @@ What a failure at this stage means (the function log is under **Logs → Functio
 | What you see | What it means |
 |---|---|
 | Can't sign in: "That password didn't work.", or sent back to sign in straight after | `ADMIN_PASSWORD` or `SESSION_SECRET` is wrong or not available to Deploy Previews. |
-| "That can't be accepted from here. Nothing changed." | The address check: open the preview at exactly the address Netlify gave, not another alias of it. |
+| "That can't be accepted from here. Nothing changed." | The request did not come from the editor page itself. Reload the page and try again. |
 | "The editor isn't set up yet." | A variable is missing or too short. The log line with event `setup` names the missing ones. |
 | "Something went wrong. Nothing changed. Try again in a minute." | Usually `GITHUB_TOKEN` or `NETLIFY_RSVP_TOKEN` is wrong or expired. The log line with event `error` names the route. |
 

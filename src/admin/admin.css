@@ -650,6 +650,7 @@ textarea.input { resize: vertical; min-height: 96px; }
 .item-name, .change-words { flex: 1 1 auto; min-width: 0; font-size: 17px; overflow-wrap: anywhere; }
 .item-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0 20px; margin-top: 2px; }
 .item-actions .btn { flex: 0 0 auto; }
+.item-actions .btn-text { min-width: 44px; justify-content: center; }
 .item-actions .confirm-question { margin-top: 8px; }
 .list-note { margin-top: 16px; }
 @media (max-width: 479px) {
