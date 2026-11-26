@@ -990,8 +990,8 @@ eleventyExcludeFromCollections: true
         .map(function (line) {
           return line.map(function (v) {
             v = String(v == null ? '' : v);
-            if (/^[=+\-@]/.test(v)) v = "'" + v; // keep spreadsheets from running text as a formula
-            return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+            if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; // keep spreadsheets from running text as a formula
+            return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
           }).join(',');
         }).join('\r\n');
       var a = el('a', { href: URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })), download: fileStem() + '.csv' });
