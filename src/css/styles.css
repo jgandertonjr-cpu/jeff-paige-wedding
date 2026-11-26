@@ -2047,13 +2047,20 @@ main .form-success .section-ornament { display: block; }
 
 .accordion__item.open .accordion__icon { transform: rotate(135deg); }
 
+/* A closed answer is hidden outright (not just clipped), so its links can't be
+   reached with the Tab key or read out. It hides once the closing slide ends. */
 .accordion__body {
   max-height: 0;
   overflow: hidden;
-  transition: max-height var(--duration-max) var(--ease);
+  visibility: hidden;
+  transition: max-height var(--duration-max) var(--ease), visibility 0s linear var(--duration-max);
 }
 
-.accordion__item.open .accordion__body { max-height: 600px; }
+.accordion__item.open .accordion__body {
+  max-height: 600px;
+  visibility: visible;
+  transition: max-height var(--duration-max) var(--ease), visibility 0s;
+}
 
 .accordion__answer {
   padding: 0 var(--space-4) var(--space-6);
