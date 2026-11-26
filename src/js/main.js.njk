@@ -220,7 +220,7 @@ eleventyExcludeFromCollections: true
     function closeLightbox() {
       lightbox.classList.remove('open');
       document.body.style.overflow = '';
-      if (lightImg) { lightImg.src = ''; lightImg.alt = ''; }
+      if (lightImg) { lightImg.removeAttribute('src'); lightImg.alt = ''; }
       var opener = items[current];
       if (opener) opener.focus();
     }
