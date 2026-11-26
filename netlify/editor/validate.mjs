@@ -35,6 +35,9 @@ const startsLikeAddress = (v) =>
   ADDRESS_START.test(v.replace(/[\t\n\r]/g, "").replace(/\\/g, "/").replace(/^[\u0000- ]+/, ""));
 
 const TAG = /<[A-Za-z/!]/;
+// The same shapes the site check refuses in the built pages (scripts/check-site.mjs), caught
+// here so she is told at review instead of the change being published and put back.
+const KEY_SHAPED = [/sk-ant-[A-Za-z0-9_-]{10,}/, /github_pat_[A-Za-z0-9_]{20,}/, /ghp_[A-Za-z0-9]{20,}/, /nfp_[A-Za-z0-9]{20,}/];
 const HEX = /^#[0-9A-Fa-f]{6}$/;
 const TEXT_TYPES = new Set(["string", "text", "markdown"]);
 
@@ -93,6 +96,7 @@ export function validateContent(content, ctx) {
         if (typeof v !== "string") return wrong("text");
         if (f.required && v.trim() === "") return here(`${name} needs a value and cannot be left empty.`);
         if (TAG.test(v)) return here(`${name} cannot contain page code such as <b> or <script>.`);
+        if (KEY_SHAPED.some((re) => re.test(v))) return here(`${name} contains something that looks like a password or access key, which can't go on the site.`);
         if (f.maxlength && v.length > f.maxlength) here(`${name} is too long, so please keep it to ${f.maxlength} characters or fewer.`);
         if (f.pattern && !new RegExp(f.pattern).test(v)) {
           return here(f.patternMessage ? f.patternMessage.replace(/[.]?$/, ".") : `${name} is not in the right format.`);

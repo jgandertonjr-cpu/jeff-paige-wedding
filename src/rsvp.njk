@@ -20,7 +20,7 @@ headerDark: true
       <div class="container container--narrow">
 
         <!-- Success message (hidden by default) -->
-        <div class="form-success" id="rsvp-success" role="alert" aria-live="polite">
+        <div class="form-success" id="rsvp-success" role="status" tabindex="-1">
           <div class="section-ornament" aria-hidden="true"><span class="section-ornament__diamond"></span></div>
           <h2 class="form-success__title">{{ rsvp.thank_you.title }}</h2>
           <p class="text-muted measure mb-6">{{ rsvp.thank_you.text }}</p>
@@ -315,6 +315,6 @@ headerDark: true
     </section>
 {% endblock %}
 {%- block scripts %}
-  <script src="js/guests.js?v={{ guests | fingerprint }}" defer></script>
+  <script src="js/guests.js?v={{ [guests, rsvp.rsvp_open] | fingerprint }}" defer></script>
   <script src="js/main.js?v={{ [mainJsSource, site] | fingerprint }}" defer></script>
 {%- endblock %}

@@ -118,7 +118,7 @@ main {
   font-family: var(--font-body); font-size: 13px; font-weight: 500; background: var(--champagne); color: var(--text);
   border-radius: 999px; padding: 2px 10px; line-height: 1.5; white-space: nowrap;
 }
-.eyebrow { display: block; font-size: 12.5px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--link); }
+.eyebrow { display: block; font-size: 13px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--link); }
 .muted { color: var(--muted); }
 .small { font-size: 15px; }
 .empty { color: var(--muted); margin: 6px 0; }
@@ -159,7 +159,7 @@ main {
 .fields { display: grid; gap: 14px; }
 @media (min-width: 560px) { .fields { grid-template-columns: 1fr 1fr; } .span2 { grid-column: 1 / -1; } }
 .field label, .note-add-row label, .controls-row label {
-  display: block; font-size: 12.5px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase;
+  display: block; font-size: 13px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase;
   color: var(--muted); margin-bottom: 5px;
 }
 .field .req { letter-spacing: 0; text-transform: none; font-weight: 400; }
@@ -218,7 +218,7 @@ details.stage-more > summary::-webkit-details-marker { display: none; }
 .stage-more .eyebrow { margin: 14px 0 8px; }
 
 /* Today */
-.group-label { font-family: var(--font-body); font-size: 12.5px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--link); margin: 16px 0 2px; }
+.group-label { font-family: var(--font-body); font-size: 13px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--link); margin: 16px 0 2px; }
 .group-label.urgent { color: var(--error); }
 .card > h2 + .group-label { margin-top: 4px; }
 .group-hint { font-size: 15px; color: var(--muted); margin: 0 0 2px; }
@@ -245,7 +245,7 @@ details.stage-more > summary::-webkit-details-marker { display: none; }
 .datebox {
   background: var(--sage); color: var(--on-sage); border-radius: 9px; text-align: center; padding: 5px 0; line-height: 1.1;
 }
-.datebox small { display: block; font-size: 11.5px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; }
+.datebox small { display: block; font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: .08em; }
 .datebox b { font-size: 21px; line-height: 1.1; }
 .datebox.overdue { background: var(--blush); color: var(--text); }
 .datebox.none { background: var(--mist); color: var(--muted); padding: 11px 0; }
@@ -318,7 +318,7 @@ details.sec > .sec-body { padding: 2px 16px 16px; }
 .notes { list-style: none; margin: 14px 0 0; padding: 0; }
 .notes > li { border-top: 1px solid var(--hairline); padding: 10px 0 4px; }
 .note-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14.5px; font-weight: 500; color: var(--muted); }
-.tag { font-size: 12.5px; font-weight: 500; background: var(--mist); border-radius: 5px; padding: 0 6px; }
+.tag { font-size: 13px; font-weight: 500; background: var(--mist); border-radius: 5px; padding: 0 6px; }
 .note-text { margin: 4px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 .note-actions { display: flex; gap: 12px; }
 .docs { list-style: none; margin: 0; padding: 0; }
@@ -427,7 +427,7 @@ body.typing .tabbar { display: none; }
   var LOG_PREVIEW = 3;
 
   var F = {
-    name: { label: 'Department name', type: 'text', required: true, wide: true, placeholder: 'e.g. Warwick Township PD' },
+    name: { label: 'Department name', type: 'text', required: true, wide: true, placeholder: 'e.g. Springfield Township PD' },
     municipality: { label: 'Municipality', type: 'text' },
     county: { label: 'County', type: 'text', list: 'county-list' },
     url: { label: 'Website / job posting URL', type: 'url', wide: true, placeholder: 'https://', autocap: 'none' },
@@ -473,7 +473,7 @@ body.typing .tabbar { display: none; }
   function dateToStr(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
   function todayStr() { return dateToStr(new Date()); }
   function nowISO() { return new Date().toISOString(); }
-  function isDateStr(s) { return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s); }
+  function isDateStr(s) { return typeof s === 'string' && /^(19|20)\d{2}-\d{2}-\d{2}$/.test(s); }
   function parseDate(s) {
     if (!isDateStr(s)) return null;
     var p = s.split('-').map(Number);
@@ -564,7 +564,7 @@ body.typing .tabbar { display: none; }
     var b = blankDept();
     var d = Object.assign({}, b, raw && typeof raw === 'object' ? raw : {});
     d.contact = Object.assign({}, b.contact, raw && raw.contact && typeof raw.contact === 'object' ? raw.contact : {});
-    if (!d.id) d.id = uid();
+    d.id = d.id || d.id === 0 ? String(d.id) : uid();
     ['name', 'municipality', 'county', 'url', 'nextStepDesc', 'salary', 'payNotes'].forEach(function (k) { d[k] = str(d[k]); });
     ['name', 'title', 'phone', 'email'].forEach(function (k) { d.contact[k] = str(d.contact[k]); });
     ['dateApplied', 'deadline', 'nextStepDate'].forEach(function (k) { if (!isDateStr(d[k])) d[k] = ''; });
@@ -576,14 +576,15 @@ body.typing .tabbar { display: none; }
     d.listRank = d.listRank === '' || d.listRank == null || !Number.isFinite(rank) ? '' : rank;
     d.documents = Array.isArray(raw && raw.documents)
       ? raw.documents.filter(function (x) { return x && str(x.label).trim(); }).map(function (x) {
-          return { id: x.id || uid(), label: str(x.label).trim(), done: !!x.done, custom: !!x.custom };
+          return { id: x.id || x.id === 0 ? String(x.id) : uid(), label: str(x.label).trim(), done: !!x.done, custom: !!x.custom };
         })
       : b.documents;
     d.notes = Array.isArray(raw && raw.notes)
       ? raw.notes.filter(function (n) { return n && typeof n.text === 'string'; }).map(function (n) {
           var c = n.createdAt || n.updatedAt || nowISO();
+          if (isNaN(new Date(c))) c = nowISO();
           return {
-            id: n.id || uid(), date: isDateStr(n.date) ? n.date : dateToStr(new Date(c)),
+            id: n.id || n.id === 0 ? String(n.id) : uid(), date: isDateStr(n.date) ? n.date : dateToStr(new Date(c)),
             text: n.text, auto: !!n.auto, createdAt: c, updatedAt: n.updatedAt || c
           };
         })
@@ -615,20 +616,22 @@ body.typing .tabbar { display: none; }
       data.schemaVersion = v;
     }
     if (!Array.isArray(data.departments)) throw new Error('No departments list found.');
+    // Entries that are not records (a stray number or word in a hand-edited file) are left out,
+    // and two records with the same id get separate ones so each can be opened.
+    var seen = {};
+    var departments = data.departments
+      .filter(function (x) { return x && typeof x === 'object' && !Array.isArray(x); })
+      .map(normalizeDept);
+    departments.forEach(function (d) { if (seen[d.id]) d.id = uid(); seen[d.id] = true; });
     return {
       schemaVersion: SCHEMA_VERSION,
-      departments: data.departments.map(normalizeDept),
+      departments: departments,
       meta: Object.assign({ lastBackup: null, seeded: false, createdAt: nowISO() }, data.meta || {})
     };
   }
   function seedData() {
-    var d = blankDept();
-    Object.assign(d, {
-      name: 'Warwick Township PD', municipality: 'Warwick Township', county: 'Bucks',
-      appType: 'Cadet Sponsorship', status: 'Applied', priority: 'High'
-    });
-    d.notes.push(makeNote(todayStr(), 'Department reached out; phone call scheduled (Oct 2026).', false));
-    return { schemaVersion: SCHEMA_VERSION, departments: [d], meta: { lastBackup: null, seeded: true, createdAt: nowISO() } };
+    // A new browser starts empty: this file is public, so it carries no real department.
+    return { schemaVersion: SCHEMA_VERSION, departments: [], meta: { lastBackup: null, seeded: true, createdAt: nowISO() } };
   }
 
   /* ---------- Storage ---------- */
@@ -665,7 +668,9 @@ body.typing .tabbar { display: none; }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       return true;
     } catch (e) {
+      // Stays on screen until the next message: nothing after this is being kept.
       toast('Could not save. Device storage may be full. Download a backup now.', true);
+      clearTimeout(toastTimer);
       return false;
     }
   }
@@ -713,6 +718,7 @@ body.typing .tabbar { display: none; }
 
   /* ---------- Toast + modal ---------- */
   var toastTimer, undoFn = null;
+  var lastStageChange = 0;
   function hideToast() {
     var el = document.getElementById('toast');
     el.className = el.className.indexOf('error') !== -1 ? 'toast error' : 'toast';
@@ -1224,10 +1230,17 @@ body.typing .tabbar { display: none; }
   function renderNotFound() {
     app.innerHTML = '<div class="card"><h2>Department not found</h2><p class="muted">It may have been deleted.</p><a class="btn" href="#/list">Back to list</a></div>';
   }
+  // "(215) 555-0142 x204" dials the number, pauses, then the extension.
+  function telHref(phone) {
+    var parts = str(phone).split(/\s*(?:x|ext\.?|#)\s*(?=\d)/i);
+    var main = parts[0].replace(/[^\d+]/g, '');
+    var ext = parts.length > 1 ? parts[1].replace(/\D/g, '') : '';
+    return main + (ext ? ',' + ext : '');
+  }
   function detailHeadHTML(d) {
     var loc = [d.municipality, countyLabel(d.county)].filter(Boolean).join(', ');
     var qa = '';
-    if (d.contact.phone) qa += '<a class="btn btn-small" href="tel:' + esc(d.contact.phone.replace(/[^\d+]/g, '')) + '">' + ICONS.phone + 'Call</a>';
+    if (d.contact.phone) qa += '<a class="btn btn-small" href="tel:' + esc(telHref(d.contact.phone)) + '">' + ICONS.phone + 'Call</a>';
     if (d.contact.email) qa += '<a class="btn btn-small" href="mailto:' + esc(d.contact.email) + '">' + ICONS.mail + 'Email</a>';
     if (/^https?:\/\//i.test(d.url)) qa += '<a class="btn btn-small" href="' + esc(d.url) + '" target="_blank" rel="noopener noreferrer">' + ICONS.link + 'Website</a>';
     var tags = prioBadge(d.priority) + (d.listRank !== '' ? '<span class="small muted">List rank #' + esc(d.listRank) + '</span>' : '');
@@ -1485,7 +1498,7 @@ body.typing .tabbar { display: none; }
   }
   function csvCell(v) {
     var s = str(v);
-    if (/^[=+\-@]/.test(s)) s = ' ' + s; // keep Excel from treating text as a formula
+    if (/^[=+\-@\t\r]/.test(s)) s = ' ' + s; // keep Excel from treating text as a formula
     return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   }
   function exportCSV() {
@@ -1656,9 +1669,27 @@ body.typing .tabbar { display: none; }
       flushActiveField();
       var d = getDept(state.id);
       if (!d) return;
-      var undo = snapshot(d);
+      // The button redraws as the next stage, so a double tap would move two stages.
+      var now = Date.now();
+      if (now - lastStageChange < 600) return;
+      var id = d.id, prevStatus = d.status, prevApplied = d.dateApplied;
+      var hadNotes = d.notes.map(function (n) { return n.id; });
       var res = changeStatus(d, el.dataset.status);
       if (!res.changed) return;
+      lastStageChange = now;
+      // Undo puts back only what the move changed, so a document ticked in the meantime is kept.
+      var undo = function () {
+        var x = getDept(id);
+        if (!x) return;
+        x.status = prevStatus;
+        x.dateApplied = prevApplied;
+        x.notes = x.notes.filter(function (n) { return !n.auto || hadNotes.indexOf(n.id) !== -1; });
+        touch(x);
+        if (save()) toast('Undone');
+        var top = window.scrollY;
+        render();
+        window.scrollTo(0, top);
+      };
       save();
       var y = window.scrollY;
       renderDetail();
@@ -1747,9 +1778,10 @@ body.typing .tabbar { display: none; }
     },
     'doc-remove': function (el) {
       var d = getDept(state.id);
+      var undo = snapshot(d);
       d.documents = d.documents.filter(function (x) { return x.id !== el.dataset.id; });
       touch(d);
-      if (save()) toast('Removed');
+      if (save()) toast('Removed', false, undo);
       renderDocs(d);
       refreshDetailChrome(d);
     }
@@ -1783,7 +1815,9 @@ body.typing .tabbar { display: none; }
       var date = form.querySelector('#note-date').value;
       d.notes.push(makeNote(isDateStr(date) ? date : todayStr(), text, false));
       touch(d);
-      if (save()) toast('Note added');
+      // If it could not be saved, the note is not shown as added and the text stays in the box.
+      if (!save()) { d.notes.pop(); return; }
+      toast('Note added');
       setDraft(d.id, '');
       ta.value = '';
       form.querySelector('#note-date').value = todayStr();

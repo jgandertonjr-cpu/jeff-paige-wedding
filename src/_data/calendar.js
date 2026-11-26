@@ -101,7 +101,9 @@ export default function () {
     "BEGIN:VALARM",
     "ACTION:DISPLAY",
     `DESCRIPTION:${icsText(title)}`,
-    "TRIGGER:-P7D",
+    // An all-day event starts at midnight, so "7 days before" would ring at midnight.
+    // Six days and fifteen hours before is 9 am, one week ahead.
+    allDay ? "TRIGGER:-P6DT15H" : "TRIGGER:-P7D",
     "END:VALARM",
     "END:VEVENT",
     "END:VCALENDAR",

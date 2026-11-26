@@ -30,7 +30,12 @@ eleventyExcludeFromCollections: true
           .getPropertyValue('--header-height') || '72', 10
       );
       var top = target.getBoundingClientRect().top + window.scrollY - headerHeight - 16;
-      window.scrollTo({ top: top, behavior: 'smooth' });
+      var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      window.scrollTo({ top: top, behavior: calm ? 'auto' : 'smooth' });
+      /* Move keyboard focus too (this is how "Skip to main content" works),
+         so the next Tab continues from the target, not from the link. */
+      if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
+      target.focus({ preventScroll: true });
     });
   }
 
@@ -220,7 +225,7 @@ eleventyExcludeFromCollections: true
     function closeLightbox() {
       lightbox.classList.remove('open');
       document.body.style.overflow = '';
-      if (lightImg) { lightImg.src = ''; lightImg.alt = ''; }
+      if (lightImg) { lightImg.removeAttribute('src'); lightImg.alt = ''; }
       var opener = items[current];
       if (opener) opener.focus();
     }
@@ -334,12 +339,14 @@ eleventyExcludeFromCollections: true
 
     function showError(field, msg) {
       field.classList.add('error');
+      field.setAttribute('aria-invalid', 'true');
       var errEl = form.querySelector('[data-error-for="' + field.id + '"]');
       if (errEl) { errEl.textContent = msg; errEl.classList.add('visible'); }
     }
 
     function clearError(field) {
       field.classList.remove('error');
+      field.removeAttribute('aria-invalid');
       var errEl = form.querySelector('[data-error-for="' + field.id + '"]');
       if (errEl) { errEl.textContent = ''; errEl.classList.remove('visible'); }
     }
@@ -400,8 +407,10 @@ eleventyExcludeFromCollections: true
       var nameField = qs('#rsvp-name', form);
       var guestIdField = qs('#rsvp-guest-id', form);
       if (nameField && !(guestIdField && guestIdField.value)) {
+        /* The other questions aren't on screen yet, so they aren't checked. */
         showError(nameField, 'Please choose your name from the guest list.');
-        valid = false;
+        nameField.focus();
+        return;
       }
 
       var emailField = qs('#rsvp-email', form);
@@ -420,12 +429,23 @@ eleventyExcludeFromCollections: true
 
       if (!valid) {
         var firstErr = qs('.form-input.error, .form-select.error, .form-textarea.error, .form-error-msg.visible', form);
-        if (firstErr) { firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' }); firstErr.focus(); }
+        if (firstErr) {
+          /* An unanswered question: put focus on its first choice, not on the message. */
+          var target = firstErr;
+          if (firstErr.classList.contains('form-error-msg')) {
+            var group = firstErr.closest('.form-group');
+            target = (group && qs('input:not(:disabled), select:not(:disabled)', group)) || firstErr;
+          }
+          firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          target.focus({ preventScroll: true });
+        }
         return;
       }
 
       var submitBtn = qs('[type="submit"]', form);
       if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Sending…'; }
+      var oldBanner = qs('#rsvp-submit-error', form);
+      if (oldBanner) oldBanner.textContent = '';
 
       var data = Object.fromEntries(new FormData(form).entries());
       /* Party slots left without a name (a guest-of-their-choice they're not
@@ -454,6 +474,7 @@ eleventyExcludeFromCollections: true
           if (!errBanner) {
             errBanner = document.createElement('p');
             errBanner.id = 'rsvp-submit-error';
+            errBanner.setAttribute('role', 'alert');
             errBanner.style.cssText = 'color:var(--color-error);text-align:center;margin-top:var(--space-4);font-size:var(--fs-sm)';
             form.appendChild(errBanner);
           }
@@ -663,9 +684,11 @@ eleventyExcludeFromCollections: true
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         setActive(items, Math.max(activeIndex - 1, -1));
-      } else if (e.key === 'Enter' && activeIndex >= 0) {
+      } else if (e.key === 'Enter' && (activeIndex >= 0 || lastResults.length === 1)) {
+        /* Enter takes the highlighted name, or the only name on offer. */
         e.preventDefault();
-        if (lastResults[activeIndex]) confirmGuest(lastResults[activeIndex]);
+        var chosen = lastResults[activeIndex >= 0 ? activeIndex : 0];
+        if (chosen) confirmGuest(chosen);
       } else if (e.key === 'Escape') {
         listbox.hidden = true;
         listbox.innerHTML = '';

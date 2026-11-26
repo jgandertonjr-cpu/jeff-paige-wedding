@@ -296,7 +296,10 @@ async function main() {
     canWrite: true,
     log: (event, fields) => console.error(JSON.stringify({ event, ...fields })),
   });
-  const rsvp = createRsvpHandler({ sessionApi, env, now: Date.now, fetchSubmissions: async () => ({ formId: null, submissions: [] }) });
+  const rsvp = createRsvpHandler({
+    sessionApi, env, now: Date.now, fetchSubmissions: async () => ({ formId: null, submissions: [] }),
+    loadGuests: async () => JSON.parse(await fs.readFile(path.join(workDir, "src/_data/guests.json"), "utf8")).guests,
+  });
 
   const server = http.createServer(async (req, res) => {
     try {

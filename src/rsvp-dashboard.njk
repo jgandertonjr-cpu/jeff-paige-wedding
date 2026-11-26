@@ -286,9 +286,9 @@ eleventyExcludeFromCollections: true
   <div class="tip" id="tip" role="status" hidden></div>
 
   <script>
-    /* Built into the page from the site's data (src/_data/guests.json, rsvp.json). */
+    /* Built into the page from the site's settings (src/_data/rsvp.json). The guest
+       list is not here: it arrives with the responses, after sign-in. */
     window.RSVP_DATA = {
-      guests: {{ guests.guests | jsonScript | safe }},
       meals: {{ rsvp.meal_options | jsonScript | safe }},
       deadline: {{ (rsvp.deadline or "") | jsonScript | safe }},
       xlsxUrl: "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js",
@@ -300,7 +300,7 @@ eleventyExcludeFromCollections: true
   (function () {
     'use strict';
     var DATA = window.RSVP_DATA;
-    var GUESTS = DATA.guests || [];
+    var GUESTS = [];
     var MEALS = DATA.meals || [];
     var API = '/api/rsvp-responses';
     var STATUS = {
@@ -400,6 +400,7 @@ eleventyExcludeFromCollections: true
           }
           if (!r.res.ok) { showError(r.body.setup ? 'Almost there' : 'Couldn’t load responses', r.body.error || ('The server answered ' + r.res.status + '.')); return; }
           payload = r.body;
+          GUESTS = r.body.guests || [];
           model = buildModel(r.body.submissions || []);
           fillFilterOptions();
           show('dashboard');
@@ -541,7 +542,8 @@ eleventyExcludeFromCollections: true
       $('active-filters').textContent = filtered ? 'Showing ' + plural(s.people.length, 'person', 'people') + ' matching: ' + parts.join(' · ') : '';
 
       var subs = (payload.submissions || []).length;
-      $('meta').textContent = plural(subs, 'submission', 'submissions') + ' · updated ' + fmtDate(payload.fetchedAt);
+      $('meta').textContent = plural(subs, 'submission', 'submissions') + ' · updated ' + fmtDate(payload.fetchedAt) +
+        (payload.guestsMissing ? ' · The guest list could not be loaded, so replies are not matched to invitations.' : '');
       $('xlsx').disabled = $('csv').disabled = !s.people.length;
     }
 
@@ -988,8 +990,8 @@ eleventyExcludeFromCollections: true
         .map(function (line) {
           return line.map(function (v) {
             v = String(v == null ? '' : v);
-            if (/^[=+\-@]/.test(v)) v = "'" + v; // keep spreadsheets from running text as a formula
-            return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+            if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; // keep spreadsheets from running text as a formula
+            return /[",\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
           }).join(',');
         }).join('\r\n');
       var a = el('a', { href: URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' })), download: fileStem() + '.csv' });

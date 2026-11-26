@@ -2047,13 +2047,20 @@ main .form-success .section-ornament { display: block; }
 
 .accordion__item.open .accordion__icon { transform: rotate(135deg); }
 
+/* A closed answer is hidden outright (not just clipped), so its links can't be
+   reached with the Tab key or read out. It hides once the closing slide ends. */
 .accordion__body {
   max-height: 0;
   overflow: hidden;
-  transition: max-height var(--duration-max) var(--ease);
+  visibility: hidden;
+  transition: max-height var(--duration-max) var(--ease), visibility 0s linear var(--duration-max);
 }
 
-.accordion__item.open .accordion__body { max-height: 600px; }
+.accordion__item.open .accordion__body {
+  max-height: 600px;
+  visibility: visible;
+  transition: max-height var(--duration-max) var(--ease), visibility 0s;
+}
 
 .accordion__answer {
   padding: 0 var(--space-4) var(--space-6);
@@ -2178,15 +2185,16 @@ main .form-success .section-ornament { display: block; }
   padding: var(--space-4);
   opacity: 0;
   visibility: hidden;
-  transition: opacity var(--transition-base), visibility var(--transition-base);
+  transition: opacity var(--transition-base), visibility 0s linear var(--duration-base);
 }
 
-.lightbox.open { opacity: 1; visibility: visible; }
+/* Visible from the first instant it opens, so the Close button can take focus. */
+.lightbox.open { opacity: 1; visibility: visible; transition: opacity var(--transition-base), visibility 0s; }
 
 .lightbox__inner {
-  position: relative;
   max-width: min(92vw, 1100px);
   max-height: 88vh;
+  max-height: 88svh; /* the part of a phone screen that's visible with the browser bars showing */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2195,6 +2203,7 @@ main .form-success .section-ornament { display: block; }
 .lightbox__img {
   max-width: 100%;
   max-height: 88vh;
+  max-height: 88svh;
   object-fit: contain;
   border-radius: var(--radius-sm);
   box-shadow: 0 30px 90px rgba(var(--color-dark-rgb), 0.5);
@@ -2207,16 +2216,20 @@ main .form-success .section-ornament { display: block; }
   to   { opacity: 1; transform: scale(1); }
 }
 
+/* Pinned to the corner of the screen, not to the photo: above a tall photo
+   (or with a phone held sideways) it used to sit partly off the top edge. */
 .lightbox__close {
   position: absolute;
-  top: -52px;
-  right: 0;
+  top: max(var(--space-3), env(safe-area-inset-top));
+  right: max(var(--space-3), env(safe-area-inset-right));
+  z-index: 11;
   width: 44px;
   height: 44px;
-  background: none;
-  border: none;
+  background: rgba(var(--color-dark-rgb), 0.55);
+  border: 1px solid rgba(var(--color-ivory-rgb), 0.18);
+  border-radius: 50%;
   cursor: pointer;
-  color: rgba(var(--color-ivory-rgb), 0.7);
+  color: rgba(var(--color-ivory-rgb), 0.85);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2907,6 +2920,9 @@ main .form-success .section-ornament { display: block; }
   transform: translateY(-150%);
   transition: transform var(--transition-fast);
 }
+/* The skip link's target takes focus so Tab continues from it; a ring around the whole page would be noise. */
+main:focus { outline: none; }
+
 .skip-link:focus {
   transform: translateY(0);
   outline: 2px solid var(--color-accent-dark);
@@ -3328,7 +3344,18 @@ main { overflow-x: clip; }
   color: var(--color-text-muted);
 }
 
+/* Links that stand on a line of their own are at least 44px tall (DESIGN.md).
+   Links inside a sentence keep the line's height. */
+.detail-list__value > p > a:only-child {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
 .rsvp-lookup-reset {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   font-size: var(--fs-xs);
   color: var(--color-accent-dark);
   text-decoration: underline;

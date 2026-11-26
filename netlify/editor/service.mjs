@@ -312,6 +312,9 @@ const logEvent = (deps, event, fields) => {
 // is logged by name and the caller carries on.
 export async function settleUnconfirmed(deps) {
   let putBack = false;
+  // A preview copy shares the live site's records but reads a different site
+  // version, so it must never judge or put back a live change.
+  if (deps.readOnly) return { putBack };
   try {
     const started = deps.now();
     const entries = (await deps.store.get(UNCONFIRMED))?.entries;

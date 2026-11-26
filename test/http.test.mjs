@@ -281,11 +281,11 @@ test("oversize body is 413, malformed JSON is 400", async () => {
   assert.equal(res.status, 413);
 });
 
-test("preview, publish and undo are refused on a preview copy; the rest work", async () => {
+test("preview, publish, undo and status are refused on a preview copy; the rest work", async () => {
   const { handle, calls } = setup({ canWrite: false });
   const cookie = await login(handle);
-  for (const [p, b] of [["preview", { id: ID }], ["publish", { id: ID }], ["undo", { sha: "abc1234" }]]) {
-    const res = await handle(post(p, b, { cookie }), ctx());
+  for (const [p, b] of [["preview", { id: ID }], ["publish", { id: ID }], ["undo", { sha: "abc1234" }], ["status", null]]) {
+    const res = await handle(b ? post(p, b, { cookie }) : get(`status?id=${ID}`, cookie), ctx());
     assert.equal(res.status, 403);
     assert.deepEqual(await res.json(), { error: "This is a preview copy of the site, so publishing is turned off here." });
   }
@@ -305,6 +305,13 @@ test("a thrown error is 500 with the generic sentence and nothing else", async (
   assert.ok(!/ghp_|github|stack|at /.test(text));
   assert.deepEqual(logs.find((l) => l.event === "error"), { event: "error", route: "history", name: "FetchError" });
   assert.ok(!JSON.stringify(logs).includes("ghp_secret_value"));
+});
+
+test("a failed outside request logs its status number, and nothing else from the message", async () => {
+  const { handle, logs } = setup({ service: { history: async () => { throw new Error("GitHub request failed (401)"); } } });
+  const cookie = await login(handle);
+  assert.equal((await handle(get("history", cookie), ctx())).status, 500);
+  assert.deepEqual(logs.find((l) => l.event === "error"), { event: "error", route: "history", name: "Error", status: 401 });
 });
 
 test("missing env: 500 'not set up', names only in the log, session still works", async () => {
@@ -571,4 +578,51 @@ test("a preview copy reads the site version it was built from; the live site rea
   const broken = { commitOf: async () => { throw new TypeError("secret detail"); } };
   assert.equal(await repoFor(repo, broken, { context: "deploy-preview", id: "dep1" }, say), repo);
   assert.deepEqual(log, [{ event: "error", route: "setup", name: "TypeError" }]);
+});
+
+// ---- the guest list reaches the RSVP dashboard only after sign-in ----
+
+test("rsvp: the guest list comes with the responses, and only to someone signed in", async () => {
+  const { handle } = setup();
+  const cookie = await login(handle);
+  const guests = [{ id: "1", name: "Sam Rivera", party: [] }];
+  const logs = [];
+  const make = (loadGuests) => createRsvpHandler({
+    sessionApi, env: ENV, now: () => NOW, fetchSubmissions: async () => ({ formId: "f1", submissions: [] }), loadGuests,
+    log: (event, fields) => logs.push({ event, ...fields }),
+  });
+  const url = `${ORIGIN}/api/rsvp-responses`;
+
+  let res = await make(async () => guests)(new Request(url));
+  assert.equal(res.status, 401);
+  assert.ok(!(await res.text()).includes("Sam Rivera"));
+
+  res = await make(async () => guests)(new Request(url, { headers: { cookie } }));
+  let body = await res.json();
+  assert.deepEqual(body.guests, guests);
+  assert.equal(body.guestsMissing, undefined);
+
+  // A guest list that cannot be read does not take the responses down with it.
+  for (const broken of [async () => { throw new SyntaxError("secret detail"); }, async () => ({ not: "a list" })]) {
+    res = await make(broken)(new Request(url, { headers: { cookie } }));
+    assert.equal(res.status, 200);
+    body = await res.json();
+    assert.deepEqual(body.guests, []);
+    assert.equal(body.guestsMissing, true);
+  }
+  assert.deepEqual(logs.map((l) => l.event), ["rsvp_guests", "rsvp_guests"]);
+  assert.ok(!JSON.stringify(logs).includes("secret detail"));
+});
+
+test("rsvp: the bundled guest list is the site's guest list file", async () => {
+  const fs = await import("node:fs");
+  const { bundledGuests } = await import("../netlify/functions/rsvp-responses.mjs");
+  const onDisk = JSON.parse(fs.readFileSync(new URL("../src/_data/guests.json", import.meta.url), "utf8")).guests;
+  assert.deepEqual(await bundledGuests(), onDisk);
+});
+
+test("rsvp: the dashboard page itself is built without the guest list", async () => {
+  const fs = await import("node:fs");
+  const src = fs.readFileSync(new URL("../src/rsvp-dashboard.njk", import.meta.url), "utf8");
+  assert.doesNotMatch(src, /\{\{[^}]*\bguests\b[^}]*\}\}/);
 });

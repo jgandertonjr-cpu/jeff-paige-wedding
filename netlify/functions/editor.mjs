@@ -22,7 +22,9 @@ const ROUTE_VARS = {
   propose: ["GITHUB_TOKEN", "NETLIFY_RSVP_TOKEN"],
   status: ["GITHUB_TOKEN", "NETLIFY_RSVP_TOKEN"],
 };
-const WRITE_ROUTES = new Set(["preview", "publish", "undo"]);
+// Refused on a preview copy. Status is here too: it can put a failed live change
+// back, which a preview (reading a different site version) must never do.
+const WRITE_ROUTES = new Set(["preview", "publish", "undo", "status"]);
 const ROUTES = {
   login: "POST", logout: "POST", session: "GET", preview: "POST",
   status: "GET", publish: "POST", cancel: "POST", history: "GET", undo: "POST",
@@ -146,7 +148,10 @@ export function createHandler(deps) {
       return await route(name, req, (context && context.ip) || "unknown");
     } catch (err) {
       if (err instanceof Reject) return json(err.status, err.body);
-      log("error", { route: name, name: (err && err.name) || "Error" });
+      // The outside services' errors end "(401)", "(403)"…: the number tells an expired
+      // access key from an outage, and carries nothing secret.
+      const code = /\((\d{3})\)$/.exec(String((err && err.message) || ""));
+      log("error", { route: name, name: (err && err.name) || "Error", ...(code ? { status: Number(code[1]) } : {}) });
       return json(500, { error: SAID.failed });
     }
   };
@@ -194,7 +199,9 @@ async function realHandler(context) {
   const store = blobStore("editor");
   const serviceDeps = await realServiceDeps(env, { store });
   const deployContext = context && context.deploy && context.deploy.context;
-  serviceDeps.repo = await repoFor(serviceDeps.repo, serviceDeps.netlify, context && context.deploy, logLine);
+  const mainRepo = serviceDeps.repo;
+  serviceDeps.repo = await repoFor(mainRepo, serviceDeps.netlify, context && context.deploy, logLine);
+  serviceDeps.readOnly = deployContext !== "production" && deployContext !== "dev";
   real = createHandler({
     service, sessionApi, store, serviceDeps, env,
     now: () => Date.now(),
@@ -203,6 +210,13 @@ async function realHandler(context) {
     canWrite: deployContext === "production",
     log: logLine,
   });
+  // A preview that could not find its own site version answers this once from
+  // main and tries again next time, rather than staying on main for good.
+  if (deployContext === "deploy-preview" && serviceDeps.repo === mainRepo) {
+    const once = real;
+    real = undefined;
+    return once;
+  }
   return real;
 }
 
