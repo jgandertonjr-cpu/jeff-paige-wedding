@@ -10,8 +10,10 @@ eleventyExcludeFromCollections: true
      party — the other people on this invitation (plus-one, kids…), in order.
              A name of "" means a guest of their choosing; they type the name.
    ============================================================= */
+{#- While RSVPs are closed the form is hidden and nothing reads this list, so the
+    names stay out of the public file. They are published only once RSVPs open. #}
 window.WEDDING_GUESTS = [
-{%- for g in guests.guests %}
+{%- for g in (guests.guests if rsvp.rsvp_open else []) %}
   { id: {{ g.id | string | dump | safe }}, name: {{ g.name | dump | safe }}, party: [{% for p in (g.party or []) %}{{ (p.name or "") | dump | safe }}{% if not loop.last %}, {% endif %}{% endfor %}] }{% if not loop.last %},{% endif %}
 {%- endfor %}
 ];
