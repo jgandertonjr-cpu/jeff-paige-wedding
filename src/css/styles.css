@@ -3339,7 +3339,18 @@ main { overflow-x: clip; }
   color: var(--color-text-muted);
 }
 
+/* Links that stand on a line of their own are at least 44px tall (DESIGN.md).
+   Links inside a sentence keep the line's height. */
+.detail-list__value > p > a:only-child {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
 .rsvp-lookup-reset {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   font-size: var(--fs-xs);
   color: var(--color-accent-dark);
   text-decoration: underline;
