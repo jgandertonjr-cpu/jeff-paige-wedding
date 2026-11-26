@@ -2834,19 +2834,63 @@ function App(){
   /* Everything that is saved, in one place — the autosave and the backup
      export both write exactly this. Add a field here and nowhere else. */
   const snap=()=>({v:6,done,pmPain,pmShape,amPain,screen,subs,rtr,flags,scores,weights,efforts,runLog,body,tests,lifts,acad,acadAssume,ptDays,ptTemplate,ready,status,runAct});
+  /* writeNow saves the latest state if something is waiting to be saved.
+     storage.set returns null when the phone refuses the write (storage full or
+     blocked), and that must show as "save failed", never as "saved". */
+  const snapRef=useRef(null);
+  snapRef.current=snap;
+  const dirtyRef=useRef(false);
+  const writeNow=()=>{
+    if(!dirtyRef.current)return;
+    clearTimeout(saveRef.current);
+    let ok=false;
+    try{ok=!!storage.set(STORE,JSON.stringify(snapRef.current()));}catch{ok=false;}
+    if(ok){dirtyRef.current=false;setSaveState("saved");setTimeout(()=>setSaveState(s=>s==="saved"?"idle":s),1500);}
+    else setSaveState("error");
+  };
+  const writeNowRef=useRef(null);
+  writeNowRef.current=writeNow;
   useEffect(()=>{
     if(!loaded||loadErr)return;
+    dirtyRef.current=true;
     setSaveState("saving");
     clearTimeout(saveRef.current);
-    saveRef.current=setTimeout(()=>{
-      try{
-        storage.set(STORE,JSON.stringify(snap()));
-        setSaveState("saved");
-        setTimeout(()=>setSaveState("idle"),1500);
-      }catch{setSaveState("error");}
-    },600);
+    saveRef.current=setTimeout(()=>writeNowRef.current(),600);
     return()=>clearTimeout(saveRef.current);
   },[done,pmPain,pmShape,amPain,screen,subs,rtr,flags,scores,weights,efforts,runLog,body,tests,lifts,acad,acadAssume,ptDays,ptTemplate,ready,status,runAct,loaded,loadErr]);
+
+  /* A tick made just before closing the app or switching away used to be lost
+     in the 600 ms wait. Save at once when the page is hidden or closed. */
+  useEffect(()=>{
+    const flush=()=>{if(document.visibilityState==="hidden")writeNowRef.current();};
+    const bye=()=>writeNowRef.current();
+    document.addEventListener("visibilitychange",flush);
+    window.addEventListener("pagehide",bye);
+    return()=>{document.removeEventListener("visibilitychange",flush);window.removeEventListener("pagehide",bye);};
+  },[]);
+
+  /* Left open overnight, the app stayed on yesterday and new ticks went to
+     yesterday. When the date changes and he was looking at (the old) today,
+     move to the new today. If he was browsing another day, leave him there. */
+  const viewRef=useRef({week:t0.week,dow:t0.dow});
+  viewRef.current={week,dow};
+  const lastTodayRef=useRef(t0);
+  const[,setDayTick]=useState(0);
+  useEffect(()=>{
+    const check=()=>{
+      const prev=lastTodayRef.current,now=weekOfToday();
+      if(now.week===prev.week&&now.dow===prev.dow)return;
+      lastTodayRef.current=now;
+      if(viewRef.current.week===prev.week&&viewRef.current.dow===prev.dow){setWeek(now.week);setDow(now.dow);}
+      else setDayTick(n=>n+1);
+    };
+    const onVis=()=>{if(document.visibilityState==="visible")check();};
+    document.addEventListener("visibilitychange",onVis);
+    window.addEventListener("pageshow",check);
+    window.addEventListener("focus",check);
+    const iv=setInterval(check,60000);
+    return()=>{document.removeEventListener("visibilitychange",onVis);window.removeEventListener("pageshow",check);window.removeEventListener("focus",check);clearInterval(iv);};
+  },[]);
 
   /* ── e1RM — most recent logged top set per lift, not the best: in a
      deficit a regression must bring the loads down with it. ── */
@@ -3219,6 +3263,10 @@ function App(){
       let d=null;
       try{d=JSON.parse(String(rd.result||""));}catch{d=null;}
       if(!d||typeof d!=="object"||d.v!==6){window.alert("That file is not a Blue Line Prep backup.");return;}
+      const isObj=x=>x&&typeof x==="object"&&!Array.isArray(x);
+      const badList=["scores","weights","efforts","tests","lifts","ptDays"].some(k=>d[k]!=null&&!Array.isArray(d[k]));
+      const badMap=["done","pmPain","pmShape","amPain","flags","runLog","body","acad","ready","status","runAct","subs"].some(k=>d[k]!=null&&!isObj(d[k]));
+      if(badList||badMap){window.alert("That backup file is damaged, so nothing was changed.");return;}
       if(!window.confirm("Replace everything on this device with this backup? This cannot be undone."))return;
       clearTimeout(saveRef.current);
       if(storage.set(STORE,JSON.stringify(d)))window.location.reload();
@@ -3306,7 +3354,7 @@ function App(){
             {plan.impact&&<Pill label="IMPACT DAY" color="#f4640a"/>}
           </div>
           <div className="save" style={{color:saveState==="error"||loadErr?"#fb7185":saveState==="saved"?"#4ade80":"var(--tx-3)"}}>
-            {loadErr?"not saving":saveState==="saving"?"saving…":saveState==="saved"?"saved ✓":saveState==="error"?"save failed":""}
+            {loadErr?"not saving":saveState==="saving"?"saving…":saveState==="saved"?"saved ✓":saveState==="error"?"NOT SAVED — export a backup":""}
           </div>
         </div>
       </header>
