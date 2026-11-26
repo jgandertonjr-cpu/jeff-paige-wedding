@@ -2915,6 +2915,9 @@ main .form-success .section-ornament { display: block; }
   transform: translateY(-150%);
   transition: transform var(--transition-fast);
 }
+/* The skip link's target takes focus so Tab continues from it; a ring around the whole page would be noise. */
+main:focus { outline: none; }
+
 .skip-link:focus {
   transform: translateY(0);
   outline: 2px solid var(--color-accent-dark);

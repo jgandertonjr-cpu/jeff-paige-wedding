@@ -30,7 +30,12 @@ eleventyExcludeFromCollections: true
           .getPropertyValue('--header-height') || '72', 10
       );
       var top = target.getBoundingClientRect().top + window.scrollY - headerHeight - 16;
-      window.scrollTo({ top: top, behavior: 'smooth' });
+      var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      window.scrollTo({ top: top, behavior: calm ? 'auto' : 'smooth' });
+      /* Move keyboard focus too (this is how "Skip to main content" works),
+         so the next Tab continues from the target, not from the link. */
+      if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1');
+      target.focus({ preventScroll: true });
     });
   }
 
