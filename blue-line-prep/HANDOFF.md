@@ -16,6 +16,7 @@ Break these and he loses check-offs, or the program restarts under him.
 
 1. **His data lives only in his phone's `localStorage`, key `blp-v6`.** Nothing he logs is in this repo. There is an export and restore card on the Records tab (v7). Do not rename the key and do not bump `v:6` without a migration.
 2. **Check-offs are positional.** A ticked item is stored as `${week}-${dow}-am-${i}` or `-pm-${i}` (`trackKeys`). If a day that he has already trained builds a different item list, his ticks land on the wrong items.
+2a. **Since 27 Nov 2026 each day's plan is remembered as it stood on the day** (saved field `built`, keyed `week-dow`; see "REMEMBERED DAYS" in `App`). A past day is drawn, ticked and scored from its remembered plan and is never rebuilt, so a new test date, a change of PT days, the return-to-run ladder or a missed-day adjustment can no longer move ticks that are already there. Days from before this shipped were recorded once, as they built at that moment. A swap he sets on a past day himself rebuilds that one day. Do not clear or rewrite `built`, and keep rule 3 anyway: today and every future day are still built live, and a backup restored on an old copy of the app has no remembered plans.
 3. **So: never change what any past or current week builds.** Gate every program change behind a week constant. `NEW_FROM=4` (v6.2) and `V7_FROM=5` (v7) exist for this. A new revision adds a new constant set to the first week that has not started. Never lower an existing one.
 4. **Change the program forward, never restart it.** Completed weeks are his real, tolerated base. He said so explicitly on 2 Nov 2026.
 5. **Run the checks before every commit that touches the app:**
@@ -416,6 +417,7 @@ All in `src/blue-line-prep.html`. The engine is plain JS from `const STORE=` to 
 | Shin rules | `shinVerdict`, `isPainDay7`; in `App`: `shinScan`, `twice14`, `twiceNow`, `swapNextRuns`, `runCaps` |
 | Calories | `nutrition()`; in `App`: `gateOK`, `shin` |
 | Saved state | `snap()`, the load effect, `exportData`, `importData` |
+| Remembered days | in `App`: `built`, `liveDay`, `planOf`, `keysOf` and the effect that records today and any unrecorded past day |
 | Exercise text | `SHIN_EX`, `PACE_EX`, `STR_EX`, `CARDIO_EX`, `RUN_EX`, `LIBS` |
 | Debug handle | `window.__blp` |
 

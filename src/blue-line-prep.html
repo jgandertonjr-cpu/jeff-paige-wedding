@@ -2762,6 +2762,8 @@ function App(){
      minutes actually run on a partial day. Keyed by day, never by item. */
   const[status,setStatus]=useState({});
   const[runAct,setRunAct]=useState({});
+  /* "w-d" -> that day's plan exactly as it was built on the day (see REMEMBERED DAYS below). */
+  const[built,setBuilt]=useState({});
   const[subs,setSubs]=useState({});   // per-day: bike | row | walk
   const[rtr,setRtr]=useState(null);   // null = not returning; 1-8 = ladder stage
   const[openItems,setOpenItems]=useState({});
@@ -2823,6 +2825,7 @@ function App(){
         if(d.ready)setReady(d.ready);
         if(d.status)setStatus(d.status);
         if(d.runAct)setRunAct(d.runAct);
+        if(d.built&&typeof d.built==="object"&&!Array.isArray(d.built))setBuilt(d.built);
         if(from)setMigNote(from);
       }
       /* v5 restored the last-VIEWED day on open, which on a daily-use app
@@ -2833,7 +2836,7 @@ function App(){
 
   /* Everything that is saved, in one place — the autosave and the backup
      export both write exactly this. Add a field here and nowhere else. */
-  const snap=()=>({v:6,done,pmPain,pmShape,amPain,screen,subs,rtr,flags,scores,weights,efforts,runLog,body,tests,lifts,acad,acadAssume,ptDays,ptTemplate,ready,status,runAct});
+  const snap=()=>({v:6,done,pmPain,pmShape,amPain,screen,subs,rtr,flags,scores,weights,efforts,runLog,body,tests,lifts,acad,acadAssume,ptDays,ptTemplate,ready,status,runAct,built});
   /* writeNow saves the latest state if something is waiting to be saved.
      storage.set returns null when the phone refuses the write (storage full or
      blocked), and that must show as "save failed", never as "saved". */
@@ -2857,7 +2860,7 @@ function App(){
     clearTimeout(saveRef.current);
     saveRef.current=setTimeout(()=>writeNowRef.current(),600);
     return()=>clearTimeout(saveRef.current);
-  },[done,pmPain,pmShape,amPain,screen,subs,rtr,flags,scores,weights,efforts,runLog,body,tests,lifts,acad,acadAssume,ptDays,ptTemplate,ready,status,runAct,loaded,loadErr]);
+  },[done,pmPain,pmShape,amPain,screen,subs,rtr,flags,scores,weights,efforts,runLog,body,tests,lifts,acad,acadAssume,ptDays,ptTemplate,ready,status,runAct,built,loaded,loadErr]);
 
   /* A tick made just before closing the app or switching away used to be lost
      in the 600 ms wait. Save at once when the page is hidden or closed. */
@@ -3095,8 +3098,49 @@ function App(){
   },[ctxLite,runLog,status,runAct,subs,twiceNow,todayKey]);
   const ctx=useMemo(()=>({screenDone,programDays,recentTT,sub:subs[B(week,dow)]||null,rtr,puMax,suMax,e1,acadPlan,trend:trendEff,dtf,run15,acadHard,acadHardWk,acadJumps,ptDays,ptTemplate,gradT,status,runCaps,tt1Slow}),
     [screenDone,programDays,recentTT,subs,week,dow,rtr,puMax,suMax,e1,acadPlan,trendEff,dtf,run15,acadHard,acadHardWk,acadJumps,ptDays,ptTemplate,gradT,status,runCaps,tt1Slow]);
-  const plan=useMemo(()=>buildDay(week,dow,dtf(week,dow),ctx),[week,dow,dtf,ctx]);
-  const tracks=useMemo(()=>trackKeys(week,dow,dtf(week,dow),ctx),[week,dow,dtf,ctx]);
+  /* ── REMEMBERED DAYS ───────────────────────────────────────────────────
+     Check-offs are keyed by item POSITION, and a day used to be rebuilt from
+     today's settings every time it was drawn. A new test date, a change of PT
+     days, the return-to-run ladder, a missed-day adjustment or a swap could
+     then give a day he had already trained a different list, and his ticks
+     landed on other exercises.
+     So each day's plan is kept in `built` as it stood on the day:
+       • today's entry follows the live plan all day;
+       • a past day's entry is final, and the day is drawn, ticked and scored
+         from it — never rebuilt;
+       • a past day with no entry yet (everything before this shipped) is
+         recorded once, as it builds at that moment, and is final from then;
+       • the one exception is a swap he sets on a past day himself: that day
+         is rebuilt once, because he asked for it.
+     Every day is built with ITS OWN swap, not the viewed day's. */
+  const liveDay=(w,d)=>buildDay(w,d,dtf(w,d),{...ctx,sub:subs[B(w,d)]||null});
+  const isPastDay=(w,d)=>dateOf(w,d)<todayMid();
+  const planOf=(w,d)=>{const f=built[B(w,d)];return f&&isPastDay(w,d)?f:liveDay(w,d);};
+  const keysOf=(w,d)=>{
+    const p=planOf(w,d);
+    if(p.pre)return{am:[],pm:[],all:[],pre:true};
+    if(p.rest&&!p.am.length&&!p.pm.length)return{am:[],pm:[],all:[]};
+    const b=B(w,d),am=p.am.map((_,i)=>`${b}-am-${i}`),pm=p.pm.map((_,i)=>`${b}-pm-${i}`);
+    return{am,pm,all:[...am,...pm]};
+  };
+  useEffect(()=>{
+    if(!loaded||loadErr)return;
+    const t=weekOfToday(),today=todayMid();
+    let next=null;
+    for(let w=1;w<=t.week;w++)for(let d=0;d<7;d++){
+      const day=dateOf(w,d);
+      if(day>today)break;
+      const k=B(w,d),isToday=day.getTime()===today.getTime(),sub=subs[k]||null,have=built[k];
+      if(have&&!isToday&&(have._sub||null)===sub)continue;       // a past day is final
+      const p=liveDay(w,d);
+      if(p.pre)continue;
+      const rec=JSON.parse(JSON.stringify({...p,_sub:sub}));
+      if(!have||JSON.stringify(have)!==JSON.stringify(rec)){if(!next)next={...built};next[k]=rec;}
+    }
+    if(next)setBuilt(next);
+  },[loaded,loadErr,todayKey,ctx,dtf,subs,built]);
+  const plan=useMemo(()=>planOf(week,dow),[week,dow,dtf,ctx,built,subs,todayKey]);
+  const tracks=useMemo(()=>keysOf(week,dow),[week,dow,dtf,ctx,built,subs,todayKey]);
   const b=B(week,dow);
   const ph=plan.ph;
 
@@ -3150,7 +3194,7 @@ function App(){
   const streak=useMemo(()=>{
     let s=0,w=week,d=dow;
     for(let i=0;i<300;i++){
-      const t=trackKeys(w,d,dtf(w,d),ctx);
+      const t=keysOf(w,d);
       if(t.pre)break;
       const c=t.all.filter(k=>done[k]).length;
       const pass=t.all.length===0||c/t.all.length>=0.75;
@@ -3159,15 +3203,15 @@ function App(){
       if(w<1)break;
     }
     return s;
-  },[week,dow,done,ctx,dtf]);
+  },[week,dow,done,ctx,dtf,built,subs,todayKey]);
 
   const weekDots=useMemo(()=>DAYS.map((_,d)=>{
-    const t=trackKeys(week,d,dtf(week,d),ctx);
+    const t=keysOf(week,d);
     if(t.pre)return"pre";
     if(!t.all.length)return"rest";
     const ratio=t.all.filter(k=>done[k]).length/t.all.length;
     return ratio>=0.8?"full":ratio>0?"part":"empty";
-  }),[week,done,ctx,dtf]);
+  }),[week,done,ctx,dtf,built,subs,todayKey]);
 
   const toggle=k=>setDone(p=>({...p,[k]:!p[k]}));
   const flip=k=>setOpenItems(p=>({...p,[k]:!p[k]}));
@@ -3265,7 +3309,7 @@ function App(){
       if(!d||typeof d!=="object"||d.v!==6){window.alert("That file is not a Blue Line Prep backup.");return;}
       const isObj=x=>x&&typeof x==="object"&&!Array.isArray(x);
       const badList=["scores","weights","efforts","tests","lifts","ptDays"].some(k=>d[k]!=null&&!Array.isArray(d[k]));
-      const badMap=["done","pmPain","pmShape","amPain","flags","runLog","body","acad","ready","status","runAct","subs"].some(k=>d[k]!=null&&!isObj(d[k]));
+      const badMap=["done","pmPain","pmShape","amPain","flags","runLog","body","acad","ready","status","runAct","subs","built"].some(k=>d[k]!=null&&!isObj(d[k]));
       if(badList||badMap){window.alert("That backup file is damaged, so nothing was changed.");return;}
       if(!window.confirm("Replace everything on this device with this backup? This cannot be undone."))return;
       clearTimeout(saveRef.current);
@@ -3308,7 +3352,7 @@ function App(){
   const KEYIDS=[...RUNIDS,...LIFT_IDS,"suAmrap","puAmrap","pz"];
   const unresolved=(()=>{const o=[],t=todayMid();for(let i=1;i<=9;i++){const d=new Date(t);d.setDate(d.getDate()-i);const w=weekOfDate(d),dd=(daysBetween(START,d)%7+7)%7;if(w<NEW_FROM)continue;const k=B(w,dd);if(status[k])continue;
     const p=buildDay(w,dd,dtf(w,dd),{...ctx,status:null,runCaps:null});if(p.rest||p.pre)continue;const items=[...p.am,...p.pm];if(!items.some(x=>KEYIDS.includes(x.id)))continue;
-    const tk=trackKeys(w,dd,dtf(w,dd),ctx);if(tk.all.some(x=>done[x]))continue;o.push({w,d:dd,k,date:d,label:p.label});}return o;})();
+    const tk=keysOf(w,dd);if(tk.all.some(x=>done[x]))continue;o.push({w,d:dd,k,date:d,label:p.label});}return o;})();
   const isPastOrToday=dayDate<=todayMid();
 
   return(
