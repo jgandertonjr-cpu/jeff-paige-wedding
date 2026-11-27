@@ -1,0 +1,43 @@
+<!doctype html>
+<!-- TEST ONLY — not shipped (see HANDOFF.md §11). Serve the repo root, then open
+     /blue-line-prep/tools/ui-shot.html. Loads the app in a frame with seeded history, clicks to a
+     tab / week / day, and sizes the frame to its content so a headless browser can
+     photograph the whole page. ?src=&tab=0-3&w=±weeks&d=0-6&open=1&tick=n -->
+<meta charset="utf-8">
+<style>html,body{margin:0;background:#888}iframe{display:block;border:0;width:390px;height:844px}</style>
+<iframe id="f"></iframe>
+<script src="ui-seed.js"></script>
+<script>
+const q=new URLSearchParams(location.search), f=document.getElementById("f");
+const src=q.get("src")||"/src/blue-line-prep.html";
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+const ready=async()=>{for(let i=0;i<200;i++){const w=f.contentWindow;if(w&&w.__blp&&w.document.querySelector(".tab"))return;await wait(50);}throw new Error("app did not load");};
+(async()=>{
+  f.src=src; await ready();
+  const w=f.contentWindow;
+  w.eval(window.__seed.toString().replace(/^function\s*\(\)/,"window.__seed=function()")); w.__seed();
+  w.Storage.prototype.setItem=function(){};          // keep the app from overwriting the seed on unload
+  f.src="about:blank"; await wait(50); f.src=src; await ready(); await wait(300);
+  const d=f.contentDocument, click=el=>{if(el)el.click();};
+  const wk=+(q.get("w")||0);
+  for(let i=0;i<Math.abs(wk);i++){click(d.querySelectorAll(".arr")[wk<0?0:1]);await wait(30);}
+  if(q.get("d")!=null){click(d.querySelectorAll(".day")[+q.get("d")]);await wait(60);}
+  for(let i=0;i<+(q.get("tick")||0);i++){click(d.querySelectorAll(".cbx")[i]);await wait(30);}
+  if(q.get("tab")){click(d.querySelectorAll(".tab")[+q.get("tab")]);await wait(120);}
+  if(q.get("open")){for(const b of d.querySelectorAll(".fold-h[aria-expanded=false]")){b.click();await wait(20);}}
+  if(q.get("expand")){
+    for(const b of d.querySelectorAll(".chev")){b.click();await wait(5);}
+    for(const b of [...d.querySelectorAll("button")].filter(b=>/^(SHINS HURT\? REPORT IT|Show the five stop signs|Log sleep, resting heart rate or soreness)$/.test(b.textContent.trim()))){b.click();await wait(30);}
+  }
+  await wait(400);
+  if(q.get("text")){
+    d.querySelectorAll(".next,.alldone").forEach(e=>e.remove());      // a second view of an item already in the list
+    const out=[],tw=d.createTreeWalker(d.querySelector(".app"),NodeFilter.SHOW_TEXT);
+    while(tw.nextNode()){const t=tw.currentNode.nodeValue.trim();if(t)out.push(t);}
+    document.body.innerHTML="<pre id=out></pre>";document.getElementById("out").textContent=JSON.stringify(out);
+    document.title="ready";return;
+  }
+  f.style.height=Math.max(844,d.documentElement.scrollHeight)+"px";
+  document.title="ready "+d.documentElement.scrollHeight;
+})().catch(e=>{document.title="ERROR "+e.message;});
+</script>

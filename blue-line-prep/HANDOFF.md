@@ -31,7 +31,7 @@ Break these and he loses check-offs, or the program restarts under him.
    ```bash
    node blue-line-prep/tools/spec.cjs > blue-line-prep/PROGRAM_SPEC.md
    ```
-7. **Test in a browser with realistic data,** not an empty store. `.claude/launch.json` starts the Eleventy dev server on port 8080; the app is at `/blue-line-prep.html`. Seed `localStorage['blp-v6']` with ticks for the past weeks (use `window.__blp.trackKeys`) and confirm the streak and past days are intact.
+7. **Test in a browser with realistic data,** not an empty store. `.claude/launch.json` starts the Eleventy dev server on port 8080; the app is at `/blue-line-prep.html`. Seed `localStorage['blp-v6']` with ticks for the past weeks (use `window.__blp.trackKeys`) and confirm the streak and past days are intact. Without `node_modules`, the `blp-static` entry in `.claude/launch.json` serves the repo root on port 8137 instead (the app is then at `/src/blue-line-prep.html`), and §11 describes a ready-made seed and screenshot helper.
 8. **Do not deploy without his OK.** Deployment is a push to `main`.
 9. **Anything saved goes through `snap()`** in `App`. The autosave and the backup export both write exactly that object. Add a new saved field there, and load it with a default in the load effect.
 10. **Freeze the structure until the mock PFT (22 Dec 2026).** The program was rewritten three times on 2 Nov and again on 4 Nov. He agreed that after v7 only the numbers move. Do not restructure the week before the mock unless he asks or a rule in §6 requires it.
@@ -420,6 +420,7 @@ All in `src/blue-line-prep.html`. The engine is plain JS from `const STORE=` to 
 | Remembered days | in `App`: `built`, `liveDay`, `planOf`, `keysOf` and the effect that records today and any unrecorded past day |
 | Exercise text | `SHIN_EX`, `PACE_EX`, `STR_EX`, `CARDIO_EX`, `RUN_EX`, `LIBS` |
 | Debug handle | `window.__blp` |
+| Look and layout | the `<style>` block (tokens at the top); after the engine: `cv`, `kindOf`, `kindWord`, `doseParts`, `ExItem`, `Fold`; in `App`: `folds`, `weekKinds`, `nextUp`. See §11 |
 
 **Old code that still runs:** the v6 and v6.2 templates, `puFor`, `suFor`, `WAVE`, `liftSr`, `SPEED`, `cadNote` build Weeks 1–4. Do not delete them. Their table entries for Weeks 5–10 are dead.
 
@@ -439,3 +440,30 @@ All in `src/blue-line-prep.html`. The engine is plain JS from `const STORE=` to 
 - **If he gives his real bodyweight, age or shin status,** revisit the calorie numbers and the 30–39 bracket note.
 - **The Sunday shin check and the calf-capacity test** were not discussed with him. They were kept as weekly, not daily, items. Remove them only if he asks.
 - **Not built:** automatic handling of the missed-target, stall and recovery rules beyond the time-trial repeat. They are written rules he applies himself.
+
+
+---
+
+## 11. Look and layout ("Logbook", 27 Nov 2026)
+
+A visual redesign only. The engine (`const STORE=` to the icons section) is byte-identical to the version before it, and so is everything saved. He chose this direction from three mock-ups.
+
+**What it is**
+- Ink on off-white paper, ruled rows, square corners. IBM Plex Sans for words and IBM Plex Mono for every number. Light and dark both exist and follow the phone's setting; there is no toggle.
+- **Colour carries meaning and nothing else.** One colour per kind of work, the same on every tab, always with the word beside it: `--run`, `--bike` (bike and rower), `--lift`, `--test` (anything scored), `--warn` (warnings only). Buttons, ticks, selected states and "good" are plain ink. Amber and red are both `--warn`; severity is shown by weight and wording. Do not add decorative colour.
+- The engine still returns the old hex colours (phases, verdicts, events). `cv()` turns them into tokens at the point of display. Do not edit the engine to change a colour.
+- Every text and meaning colour is 4.5:1 or better on all three backgrounds in both themes, and control borders are 3:1 or better. Re-check if a token changes.
+
+**Today tab**
+- A short header, then a **Next** card: the first item not yet ticked, with the main part of its dose large and a full-width Done button. Done is the same toggle as that row's tick. "How to" opens the instructions in the card.
+- A dose line is split at its first " · ": the first part is shown large (`doseParts`), the rest sits under it and is clamped to two lines until the row is opened. The words are never changed.
+- Pips under each weekday show the kinds of work that day holds (`weekKinds`).
+
+**Plan, Fuel, Records**
+- Every card is a collapsible section (`Fold`) with a one-line summary, grouped under headings. Which sections are open is display state (`folds` in `App`) and is not saved. Plan and Records were reordered; no section was removed.
+
+**Kept exactly:** every control and what it does, every instruction, rule, source and standard, the saved object, the storage key and the positional check-off keys. The one sentence that changed is the bodyweight chart legend ("The line is the trend; the dots are the daily readings it smooths"), because the line is no longer green. Emoji in the header and score history were replaced with words.
+
+**Testing helpers** (`blue-line-prep/tools/`, not deployed)
+- `ui-seed.js` defines `window.__seed()`: realistic history up to yesterday (ticks from the app's own `trackKeys`, scores, lifts, weights, one swap, one partial day). The app saves when the page is left, so after seeding run `Storage.prototype.setItem=function(){}` and then reload, or the seed is overwritten.
+- `ui-shot.html?src=/src/blue-line-prep.html&tab=0-3&w=±weeks&d=0-6&open=1&expand=1&tick=n` loads the app in a 390 px frame with the seed, clicks to that tab, week and day, and sizes the frame to the whole page for a headless screenshot. `&text=1` prints every word on screen instead, which is how the wording was compared before and after.
